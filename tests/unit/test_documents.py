@@ -79,7 +79,8 @@ def _doc(status_interest="needs_review", fye_inferred=False):
               "reasons": []} for f in pdf_extract.CRITICAL]
     facts[2]["status"] = status_interest
     facts[2]["reasons"] = ["interest shown net of interest income"]
-    return {"facts": facts, "fye_inferred": fye_inferred, "fiscal_year_end": "2026-01-03"}
+    return {"facts": facts, "fye_inferred": fye_inferred, "fiscal_year_end": "2026-01-03", "currency": "USD",
+            "scale_label": "thousands"}
 
 
 def test_gate_blocks_until_critical_fact_reviewed():

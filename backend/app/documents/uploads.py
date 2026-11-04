@@ -15,24 +15,53 @@ from .xbrl import TAG_REGISTRY, build_company_years
 DURATION = {k for k, (ptype, _) in TAG_REGISTRY.items() if ptype == "duration"}
 
 
+SCALES = {"units": 1.0, "thousands": 1e3, "millions": 1e6, "billions": 1e9}
+CURRENCIES = ("USD", "EUR", "CHF", "GBP", "CAD", "JPY")
+FIELD_NAMES = {"revenue": "revenue", "operating_income": "operating income", "interest_expense": "interest expense",
+               "depreciation_amortization": "depreciation and amortization",
+               "operating_cash_flow": "operating cash flow", "long_term_debt": "long-term debt",
+               "total_assets": "total assets"}
+
+
 def effective_value(f: dict) -> Optional[float]:
-    if f["status"] in ("auto_accepted", "accepted"):
+    if f["status"] in ("auto_accepted", "accepted", "manual"):
         return f["value"]
     if f["status"] == "corrected":
         return f["reviewed_value"]
-    return None   # rejected or still needs review
+    return None   # rejected, marked unavailable, or still needs review
+
+
+def valid_fiscal_year_end(s: Optional[str]) -> bool:
+    try:
+        d = date.fromisoformat(s or "")
+    except ValueError:
+        return False
+    return date(1990, 1, 1) <= d <= date.today() + timedelta(days=366)
 
 
 def blocking_reasons(doc: dict) -> list[str]:
+    """Everything that must be resolved before the reviewed figures can be analysed (test DATA-01)."""
     out = []
+    if not doc.get("currency"):
+        out.append("Confirm the reporting currency (not stated on the statements)")
+    if not doc.get("scale_label"):
+        out.append("Confirm the unit scale: units, thousands, millions or billions (not stated on the statements)")
+    if doc["fye_inferred"] or not valid_fiscal_year_end(doc["fiscal_year_end"]):
+        out.append("Confirm the fiscal year-end date (not stated on the statements, or not a valid date)")
+    present = {f["field"] for f in doc["facts"] if f["period"] == "t"}
+    for fld in CRITICAL:
+        if fld not in present:
+            out.append(f"Not found: {FIELD_NAMES[fld]}. Enter it from the report or mark it unavailable")
     for f in doc["facts"]:
         if f["period"] == "t" and f["field"] in CRITICAL and f["status"] == "needs_review":
-            out.append(f"Review {f['field'].replace('_', ' ')} (page {f['page']}): {'; '.join(f['reasons'])}")
-    if doc["fye_inferred"]:
-        out.append("Confirm the fiscal year-end date (it was not stated on the statements)")
-    if not doc["fiscal_year_end"]:
-        out.append("Fiscal year-end missing")
+            out.append(f"Review {FIELD_NAMES[f['field']]} (page {f['page']}): {'; '.join(f['reasons'])}")
     return out
+
+
+def unavailable_critical(doc: dict) -> list[str]:
+    """Critical figures the analysis will run without (rejected or marked unavailable): shown, never zero-filled."""
+    return [FIELD_NAMES[f["field"]] for f in doc["facts"]
+            if f["period"] == "t" and f["field"] in CRITICAL and f["status"] in ("rejected", "unavailable")]
 
 
 def to_companyfacts(doc: dict) -> dict:
@@ -52,7 +81,8 @@ def to_companyfacts(doc: dict) -> dict:
         tag = TAG_REGISTRY[f["field"]][1][0]
         facts.setdefault(tag, {"units": {"USD": []}})["units"]["USD"].append(e)
     return {"cik": doc["company_id"], "entityName": f"{doc['company_name']} (uploaded report)",
-            "facts": {"us-gaap": facts}, "currency": doc["currency"], "source": "Uploaded annual report"}
+            "facts": {"us-gaap": facts}, "currency": doc["currency"], "source": "Uploaded annual report",
+            "unavailable_critical": unavailable_critical(doc), "sec_check": doc.get("sec_check")}
 
 
 def cross_check_xbrl(extraction: dict, companyfacts: dict, tolerance: float = 0.005) -> int:
@@ -63,8 +93,9 @@ def cross_check_xbrl(extraction: dict, companyfacts: dict, tolerance: float = 0.
     match = next((y for k, y in years.items() if fye and abs((date.fromisoformat(k) - date.fromisoformat(fye)).days) <= 7), None)
     if match is None:
         extraction["issues"].append("No SEC XBRL year matches this fiscal year-end; cross-check skipped")
+        extraction["sec_check"] = "Not checked against SEC: no SEC fiscal year matches this report's year-end"
         return 0
-    vals = match.values()
+    vals = match.credit_values()
     mismatches = 0
     for c in extraction["candidates"]:
         if c["period"] != "t" or vals.get(c["field"]) is None:
@@ -78,4 +109,6 @@ def cross_check_xbrl(extraction: dict, companyfacts: dict, tolerance: float = 0.
             mismatches += 1
         else:
             c["reasons"].append("matches SEC XBRL")
+    extraction["sec_check"] = (f"Checked against SEC XBRL for fiscal year {match.fiscal_year_end}: "
+                               f"{mismatches} figure{'s' if mismatches != 1 else ''} differ")
     return mismatches

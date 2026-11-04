@@ -17,9 +17,13 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
 | 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.0.0** — 150 automated tests + 5 browser tests; every blueprint test ID passes (`docs/test_matrix.md`).
+**Release v1.1.0** — 187 automated tests + 7 browser tests, 194 passed, 0 failed (`docs/test_matrix.md`).
+Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
+
+> Course demo. Use public company filings and sample data only; do not upload confidential documents.
 
 ## Week 2–3 headline results
 
@@ -115,16 +119,34 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
+## v1.1 — Stages A and B
+
+- **Two value bases.** Ratios, loan scenarios and the memo use the *credit basis*. It applies the 10-K
+  reconciliation rules R5 (unrestricted cash), R6 (total D&A) and R7 (income-statement interest). The neural screen
+  uses the *model basis*, which is exactly its training inputs, so its frozen evaluation stays valid
+  (`docs/manual_cross_check.md`).
+- **Loan engine 1.1.0.** Refinancing retires debt at the entered rate or the average cost of debt. Inputs that
+  contradict the reported figures are refused with a reason, never clamped.
+- **Uploads.** Currency, units and year-end must be confirmed when the report does not state them. Missing
+  critical figures can be entered from the report (with page) or marked unavailable. Non-USD figures get no
+  neural score. Uploads are visible only through their own link. `GET /audit` needs `x-admin-token`
+  (`CREDITLENS_ADMIN_TOKEN`).
+- **Analysis snapshot.** `POST /scenarios` returns `snapshot.id`, the SHA-256 of the canonical inputs (first
+  12 hex digits). `POST /memos` with the same inputs, including `shocks`, carries the same id. The UI marks a memo
+  "Outdated — regenerate" when the ids differ. The PDF prints every assumption and the id.
+- **Workflow.** The start page (`/`) leads to the workspace (`/workspace`) with a progress cue. The site waits
+  visibly for a sleeping API, with retries and "Try again". Stale results are dimmed and labelled.
+
 ## Week 7–8 — quality and release
 
 - `tests/end_to_end/` drives the full journeys in Chrome and runs axe-core WCAG 2.1 AA scans
   (`E2E_BASE_URL=http://localhost:3000 pytest tests/end_to_end`).
-- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 17 defects and their fixes.
+- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 32 defects and their fixes.
 - Security: upload type/size/page limits, no file persistence, retention purge, rate limits, security headers,
-  `no-store` on uploads and memos, generic errors with a request reference, audit trail at `GET /audit`.
-- `release/manifest.json` freezes 24 artifacts (data, model, configs, fixtures) by SHA-256;
+  `no-store` on uploads and memos, generic errors with a request reference, operator-only audit trail at `GET /audit`.
+- `release/manifest.json` freezes 25 artifacts (data, model, configs, fixtures) by SHA-256;
   `tests/unit/test_release_manifest.py` fails if any changes. Re-freeze deliberately with
-  `python scripts/freeze_release.py <version>`.
+  `python scripts/freeze_release.py <version> "<reason>"` (it refuses if model artifacts changed).
 - `scripts/record_demo.py` re-records the captioned fallback video and the screenshots in `docs/screenshots/`.
 
 ## Deploy
@@ -142,7 +164,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 150 tests
+pytest -q                                        # 187 tests (+7 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

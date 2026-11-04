@@ -35,7 +35,7 @@ export default function RiskScreen({ risk }: { risk: RiskModel }) {
     return (
       <div className="sheet risk">
         <div className="notice">
-          <strong>Score withheld.</strong> The model only scores company-years it was built for:{" "}
+          <strong>Score withheld.</strong> The network only scores company-years like those it was trained on:{" "}
           {(risk.gate_reasons ?? []).join("; ")}.
         </div>
         <ModelMeta risk={risk} />
@@ -51,10 +51,16 @@ export default function RiskScreen({ risk }: { risk: RiskModel }) {
         <span className={`band ${risk.band}`}>{risk.band === "elevated" ? "Elevated" : risk.band === "high" ? "High" : "Low"} screening risk</span>
         <span className="fine">{risk.label}</span>
       </div>
+      {(risk.critical_inputs_unavailable?.length ?? 0) > 0 && (
+        <div className="notice" style={{ margin: "10px 0" }}>
+          Scored with {risk.critical_inputs_unavailable!.join(", ")} not available. The network treats missing inputs as it did in
+          training, which makes this score less reliable.
+        </div>
+      )}
       <Ruler
         min={0}
         max={1}
-        ariaLabel="Stress probability against screening bands"
+        ariaLabel="Next-FY accounting-stress screen against screening bands"
         segments={[
           { to: 0.15, color: "#cfe6e4" },
           { to: 0.4, color: "#f0dcb7" },

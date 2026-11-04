@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-04 19:58 UTC by `scripts/test_matrix.py`: 155 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-04 22:32 UTC by `scripts/test_matrix.py`: 194 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -19,7 +19,15 @@ _Generated 2026-11-04 19:58 UTC by `scripts/test_matrix.py`: 155 passed, 0 faile
 | G01 | Narrative numeric claims | All reconcile to package | 10 | ✅ pass |
 | G02 | References / source links | Every claim resolves | 5 | ✅ pass |
 | E01 | Complete demo user journey | PDF exported without manual intervention | 3 | ✅ pass |
-| A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 3 | ✅ pass |
+| FIN-01 | Refinancing interest (v1.1) | New-loan interest never erased; conflicts refused | 7 | ✅ pass |
+| FIN-02 | Restricted cash (v1.1) | Unrestricted cash or qualified net debt | 4 | ✅ pass |
+| FIN-03 | Currency / scope gating (v1.1) | Non-USD neural score withheld, ratios kept | 1 | ✅ pass |
+| DATA-01 | Review completeness and dates (v1.1) | Missing / invalid inputs block analysis | 15 | ✅ pass |
+| A5 | 10-K reconciliation rules R5-R7 (v1.1) | Credit basis matches the 10-K; model basis frozen | 7 | ✅ pass |
+| WF-01 | Start page to memo (v1.1) | Guided journey with progress and wake-up states | 1 | ✅ pass |
+| WF-02 | Shared analysis snapshot (v1.1) | Table, memo and PDF share one snapshot id | 7 | ✅ pass |
+| HYG | Upload privacy hygiene (v1.1) | Uploads unlisted; audit operator-only | 2 | ✅ pass |
+| A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 4 | ✅ pass |
 | SEC | Security controls | Validation, limits, headers, deletion | 6 | ✅ pass |
 
 ## Release acceptance (Blueprint p.22)

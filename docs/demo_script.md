@@ -7,8 +7,8 @@ misbehaves for more than ten seconds, switch to the video and keep talking over 
 
 1. Open `https://creditlens-api-mgcf.onrender.com/health` — wait until it says `"status":"ok"` (wakes the free
    Render instance; first call can take ~60 s).
-2. Open three tabs: the workspace (`/`), the Model X-Ray (`/model`), and the upload page (`/upload`).
-3. In the workspace, select **United Rentals** once so its data is cached.
+2. Open three tabs: the start page (`/`), the Model X-Ray (`/model`), and the upload page (`/upload`).
+3. On the start page, open **United Rentals** once so its data is cached.
 4. Have `tests/fixtures/ar_thousands.pdf` on the desktop for the upload step.
 5. Have the video open in a player, paused at 0:00.
 
@@ -16,12 +16,12 @@ misbehaves for more than ten seconds, switch to the video and keep talking over 
 
 | Time | Do | Say (point demonstrated) |
 |---|---|---|
-| 0:00–0:25 | Workspace → company picker → **United Rentals**. | "CreditLens screens a borrower for a USD 100m facility. Everything here comes from the company's SEC 10-K XBRL filings — no typing, no copy-paste." *(real data enters)* |
-| 0:25–0:55 | Click **Net debt / EBITDA** in the ledger. Point at the right rail. | "3.12x. Here's the formula, its inputs, and the exact 10-K accession for each input. Every figure on screen has this trail." *(traceable sources, deterministic formulas)* |
-| 0:55–1:25 | Scroll to **Neural stress screen** (1.8%, low). Switch to the Model X-Ray tab. | "A PyTorch network trained on 1,626 company-years filed 2009–18 estimates next-year accounting stress. Tested once on 2021–25 filings: PR-AUC 0.805 against 0.825 for XGBoost — statistically level, and we say so. It clearly beats the simple rule." *(real deep learning, honest evaluation)* |
-| 1:25–2:05 | Back to the workspace → **Loan lab**. EBITDA slider to −20%, rate shock to +200 bp. Point at the covenant ruler and the steps list. | "Add the facility, stress it. EBITDA down 20%, rates up 200 bp: net leverage hits 3.93x and breaches a 3.5x covenant. Every step of the arithmetic is listed — and it reconciles exactly to an independent Excel model." *(real loan computations)* |
-| 2:05–2:35 | **Draft credit memo**. Click a citation number. Edit a sentence to add "margins will reach 45%". | "The memo writer can't type numbers — it places references; the engines fill them in. Click a citation and you get its source. If I invent a figure, it's flagged and kept out of the PDF." *(evidence-constrained generative AI)* |
-| 2:35–3:00 | **Download PDF**, then close. | "Committee-ready PDF with an evidence appendix. It's decision support: no rating, no default probability, analyst review required. Limitations are on the Model X-Ray page." *(decision-support positioning)* |
+| 0:00–0:25 | Start page → **Explore a sample company** → **United Rentals**. Point at the progress steps. | "CreditLens screens a borrower for a USD 100m facility. Everything here comes from the company's SEC 10-K filings — no typing, no copy-paste. The steps at the top track the file from company to committee memo." *(real data enters)* |
+| 0:25–0:55 | Click **Net debt / EBITDA** in the ledger. Point at the right rail, then at the D&A source. | "1.94x. Here's the formula, its inputs, and the exact 10-K accession for each input. We reconciled the three sample companies against the original 10-Ks: United Rentals reports rental-fleet depreciation inside cost of revenue, so a rule adds it back — EBITDA is 7,081, not 4,411. Every figure on screen has this trail." *(traceable sources, deterministic formulas)* |
+| 0:55–1:25 | Scroll to **Neural screen** (1.8%, low). Switch to the Model X-Ray tab. | "A PyTorch network trained on 1,626 company-years filed 2009–18 estimates next-year accounting stress. Tested once on 2021–25 filings: PR-AUC 0.805 against 0.825 for XGBoost — statistically level, and we say so. It clearly beats the simple rule." *(real deep learning, honest evaluation)* |
+| 1:25–2:05 | Back to the workspace → **Loan lab**. EBITDA slider to −20%, rate shock to +200 bp. Then set the max net debt / EBITDA covenant to 2.25x. Point at the covenant ruler and the steps list. | "Add the facility, stress it. EBITDA down 20%, rates up 200 bp: net debt / EBITDA rises to 2.45x — inside a 3.5x covenant. Tighten the covenant to 2.25x and the same stress breaches it. Every step of the arithmetic is listed — and it reconciles exactly to an independent Excel model." *(real loan computations)* |
+| 2:05–2:35 | **Draft credit memo**. Click a citation number. Change the facility amount: point at "Outdated — regenerate", click it. Edit a sentence to add "margins will reach 45%". | "The memo writer can't type numbers — it places references; the engines fill them in. Click a citation and you get its source. The memo, the table and the PDF share one snapshot id, so if I change the loan the memo is marked outdated until I regenerate. If I invent a figure, it's flagged and kept out of the PDF." *(evidence-constrained generative AI)* |
+| 2:35–3:00 | **Download PDF**, then close. | "Committee-ready PDF with every assumption, the snapshot id and an evidence appendix. It's decision support: no rating, no default probability, analyst review required. Limitations are on the Model X-Ray page." *(decision-support positioning)* |
 
 Optional (+40 s, if time allows): Upload page → `ar_thousands.pdf` with CIK `1278027` → accept the flagged
 net-interest line → **Analyse reviewed figures** → same 11.59x leverage as the SEC data, now cited to report pages.
@@ -53,4 +53,11 @@ inflation). Calibration was fitted on 2019–20, so the model somewhat understat
 chart.
 
 **How good is the data?** Period selection agrees with SEC's own aggregates on 99.4–99.7% of 2,560 like-for-like
-comparisons; 17 defects found and fixed are in `docs/defects.md`.
+comparisons; the three sample issuers were also reconciled line by line against their original 10-Ks
+(`docs/manual_cross_check.md`), which found and fixed the United Rentals D&A and the cash-interest issue; 32 defects
+found and fixed are in `docs/defects.md`.
+
+**Why does the neural screen use different D&A for United Rentals than the ratios?** The network was trained and
+evaluated on the v1.0 input definitions across 1,626 company-years. Feeding it corrected definitions for three
+companies would score them on inputs it never saw. The credit ratios use the corrected figures; the screen keeps
+its training basis until a documented retrain.

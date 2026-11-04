@@ -14,7 +14,8 @@ from typing import Any, Optional
 from ..documents.xbrl import build_company_years, engine_inputs
 from ..finance.metrics import compute_all
 from ..models import risk as risk_service
-from ..scenarios.loan import Baseline, Covenants, Facility, Shock, UseOfProceeds, run_scenario
+from ..scenarios.loan import Covenants, Facility, Shock, UseOfProceeds, run_scenario
+from ..scenarios.snapshot import FIXED_CASES, case_key, credit_baseline, make_snapshot
 
 SCALE = 1_000_000
 FACT_FIELDS = ["revenue", "operating_income", "net_income", "interest_expense", "depreciation_amortization",
@@ -31,8 +32,7 @@ METRIC_LABELS = {"ebitda": ("EBITDA (approx.)", "amount"), "ebitda_margin": ("EB
                  "current_ratio": ("Current ratio", "x")}
 USE_TEXT = {"capex": "capital expenditure", "acquisition": "an acquisition", "refinancing": "refinancing existing debt",
             "retained_cash": "general liquidity (held as cash)"}
-CASES = {"base": Shock(name="base"), "downside": Shock(name="downside", ebitda_shock=-0.20, rate_shock_bps=200),
-         "severe": Shock(name="severe", ebitda_shock=-0.35, rate_shock_bps=400)}
+CASE_LABELS = {"base": "Base", "downside": "Downside", "severe": "Severe", "custom": "Your"}
 
 
 def fmt(value: Any, unit: str, ccy: str = "USD") -> str:
@@ -59,6 +59,8 @@ def fmt(value: Any, unit: str, ccy: str = "USD") -> str:
 
 
 class Package:
+    snapshot: Optional[dict] = None
+
     def __init__(self, currency: str):
         self.ccy = currency
         self.items: dict[str, dict] = {}
@@ -78,7 +80,8 @@ class Package:
 
 
 def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional[str], facility: Optional[Facility],
-                  covenants: Optional[Covenants], existing_floating_share: float = 0.0) -> Package:
+                  covenants: Optional[Covenants], existing_floating_share: float = 0.0,
+                  shocks: Optional[list[Shock]] = None) -> Package:
     years = build_company_years(companyfacts)
     if not years:
         raise ValueError("No annual data available")
@@ -111,7 +114,7 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                            method=fact.extraction_method)
             pk.add(f"fact.{f}.{tag}", f"{FACT_LABELS[f]} ({year.fiscal_year_end[:4]})", vals.get(f), "amount", src)
         prior_vals = v_p if tag == "t" else None
-        m = compute_all(vals, prior_vals)
+        m = compute_all(vals, prior_vals, cash_basis=year.cash_basis)
         for k, (label, unit) in METRIC_LABELS.items():
             r = m[k]
             pk.add(f"metric.{k}.{tag}", f"{label} ({year.fiscal_year_end[:4]})", r.value, unit,
@@ -125,7 +128,21 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                pk.val("metric.ebitda_margin.t") - pk.val("metric.ebitda_margin.t1"), "pp",
                {"kind": "formula", "formula": "ebitda_margin_t - ebitda_margin_t-1", "version": "1.0.0"})
     pk.add("data.warning_count", "Data-quality warnings", len(cy.warnings), "text",
-           {"kind": "data_checks", "warnings": cy.warnings, "derived": {k: r for k, (_, r) in cy.derived.items()}})
+           {"kind": "data_checks", "warnings": cy.warnings, "derived": {k: r for k, (_, r) in cy.derived.items()},
+            "credit_rules": {k: r for k, (_, r) in cy.credit.items()}})
+    if cy.credit:
+        names = {"cash": "unrestricted cash", "depreciation_amortization": "total depreciation and amortization",
+                 "interest_expense": "income-statement interest expense"}
+        pk.add("data.credit_rules", "Credit-basis adjustments",
+               ", ".join(names.get(k, k.replace("_", " ")) for k in cy.credit), "text",
+               {"kind": "data_checks", "detail": "credit-basis rules R5-R7; the neural screen keeps its training inputs",
+                "rules": {k: r for k, (_, r) in cy.credit.items()}})
+    if cy.cash_basis == "combined_not_separable":
+        pk.add("data.cash_basis", "Cash basis", "includes restricted cash that the filing does not separate", "text",
+               {"kind": "data_checks", "detail": "R5: only a combined cash-and-restricted-cash total is tagged"})
+    if companyfacts.get("unavailable_critical"):
+        pk.add("data.unavailable", "Figures marked unavailable", ", ".join(companyfacts["unavailable_critical"]),
+               "text", {"kind": "data_checks", "detail": "marked unavailable in the document review; never zero-filled"})
 
     # ---------------- neural screen
     r = risk_service.score(companyfacts, cy.fiscal_year_end)
@@ -150,7 +167,13 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
         pk.add("risk.gate", "Reason the screen was withheld", "; ".join(r.get("gate_reasons", [])), "text",
                {"kind": "model"})
 
-    # ---------------- facility and scenarios
+    # ---------------- facility and scenarios (one snapshot shared with the loan lab and the PDF)
+    cases = shocks or FIXED_CASES
+    snap_base, _ = credit_baseline(cy, ccy, existing_floating_share)
+    snap = make_snapshot(company_id, cy.fiscal_year_end, snap_base, facility, covenants, cases, cy.cash_basis)
+    pk.snapshot = snap
+    pk.add("meta.snapshot", "Analysis snapshot", snap["id"], "text",
+           {"kind": "snapshot", "detail": "SHA-256 of the canonical scenario inputs (first 12 hex digits)"})
     if facility is not None:
         amt_src = {"kind": "assumption", "detail": "entered in the loan lab"}
         pk.add("facility.amount", "Facility amount",
@@ -161,41 +184,41 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                ("floating-rate " if facility.floating else "fixed-rate ") +
                ("bullet" if facility.annual_amortization == 0 else "amortizing"), "text", amt_src)
         pk.add("facility.use", "Use of proceeds", USE_TEXT[UseOfProceeds(facility.use_of_proceeds).value], "text", amt_src)
-        m_t = compute_all(v_t)
-        needed = {"ebitda": m_t["ebitda"].value, "gross_debt": m_t["gross_debt"].value, "cash": v_t.get("cash"),
-                  "interest_expense": v_t.get("interest_expense")}
-        if all(x is not None for x in needed.values()):
-            base = Baseline(currency=ccy, existing_floating_share=existing_floating_share, **needed)
+        base, missing = credit_baseline(cy, ccy, existing_floating_share)
+        if base is not None:
             if covenants:
                 if covenants.max_net_leverage is not None:
-                    pk.add("covenant.max_net_leverage", "Covenant: maximum net leverage", covenants.max_net_leverage,
+                    pk.add("covenant.max_net_leverage", "Covenant: maximum net debt / EBITDA", covenants.max_net_leverage,
                            "x", amt_src)
                 if covenants.min_ebitda_interest_cover is not None:
-                    pk.add("covenant.min_cover", "Covenant: minimum EBITDA cover",
+                    pk.add("covenant.min_cover", "Covenant: minimum EBITDA / interest",
                            covenants.min_ebitda_interest_cover, "x", amt_src)
-            for name, shock in CASES.items():
+            for shock in cases:
+                name = case_key(shock.name)
                 res = run_scenario(base, facility, shock, covenants)
-                src = {"kind": "scenario", "case": name, "ebitda_shock": shock.ebitda_shock,
-                       "rate_shock_bps": shock.rate_shock_bps, "steps": res.steps, "engine_version": res.engine_version}
-                pk.add(f"scen.{name}.assumptions", f"{name.title()} case assumptions",
-                       f"EBITDA {shock.ebitda_shock:+.0%}, rates {shock.rate_shock_bps:+.0f} bp" if name != "base"
-                       else "no EBITDA or rate shock", "text", src)
+                src = {"kind": "scenario", "case": shock.name, "ebitda_shock": shock.ebitda_shock,
+                       "rate_shock_bps": shock.rate_shock_bps, "steps": res.steps, "engine_version": res.engine_version,
+                       "snapshot": snap["id"]}
+                pk.add(f"scen.{name}.assumptions", f"{CASE_LABELS.get(name, shock.name)} case assumptions",
+                       f"EBITDA {shock.ebitda_shock:+.0%}, rates {shock.rate_shock_bps:+.0f} bp"
+                       if (shock.ebitda_shock or shock.rate_shock_bps) else "no EBITDA or rate shock", "text", src)
                 for k, label, unit in (("gross_debt", "gross debt", "amount"), ("net_debt", "net debt", "amount"),
                                        ("ebitda", "EBITDA", "amount"), ("interest_expense", "interest", "amount"),
                                        ("net_leverage", "net debt / EBITDA", "x"),
                                        ("ebitda_interest_cover", "EBITDA / interest", "x")):
-                    pk.add(f"scen.{name}.{k}", f"{name.title()} case {label}", getattr(res, k), unit, src)
-                for cov_key, item in (("max_net_leverage", "headroom_lev"), ("min_ebitda_interest_cover", "headroom_cov")):
+                    pk.add(f"scen.{name}.{k}", f"{CASE_LABELS.get(name, shock.name)} case {label}", getattr(res, k), unit,
+                           src)
+                for cov_key, item, what in (("max_net_leverage", "headroom_lev", "max net debt / EBITDA"),
+                                            ("min_ebitda_interest_cover", "headroom_cov", "min EBITDA / interest")):
                     if cov_key in res.covenant_headroom:
                         h = res.covenant_headroom[cov_key]
-                        pk.add(f"scen.{name}.{item}", f"{name.title()} case headroom ({cov_key.replace('_', ' ')})",
+                        pk.add(f"scen.{name}.{item}", f"{CASE_LABELS.get(name, shock.name)} case headroom ({what})",
                                h, "x", src)
                         if h is not None and h < 0:   # shortfall as a positive magnitude, for readable breach wording
                             pk.add(f"scen.{name}.{item}_shortfall",
-                                   f"{name.title()} case covenant shortfall ({cov_key.replace('_', ' ')})", -h, "x", src)
+                                   f"{CASE_LABELS.get(name, shock.name)} case covenant shortfall ({what})", -h, "x", src)
         else:
-            pk.add("scen.unavailable", "Scenario inputs missing",
-                   ", ".join(k for k, x in needed.items() if x is None), "text", {"kind": "data_checks"})
+            pk.add("scen.unavailable", "Scenario inputs missing", ", ".join(missing), "text", {"kind": "data_checks"})
     pk.add("meta.generated_at", "Package built", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), "text",
            {"kind": "identity"})
     return pk

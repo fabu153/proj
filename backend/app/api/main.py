@@ -30,8 +30,9 @@ from ..memos.pdf import render_pdf
 from ..memos.writer import llm_status
 from ..models import risk as risk_service
 from ..models.inference import ARTIFACT_DIR
-from ..scenarios.loan import DEFAULT_CASES, Baseline, Facility, FXBlocked, amortization_schedule, run_scenario
-from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, DocumentMetaUpdate, EvidenceRef,
+from ..scenarios.snapshot import credit_baseline, make_snapshot
+from ..scenarios.loan import DEFAULT_CASES, Baseline, Facility, FXBlocked, ScenarioInputError, amortization_schedule, run_scenario
+from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, DocumentMetaUpdate, EvidenceRef, FactEntry,
                            FactReview, HistoryPoint, MemoEdit, MemoRequest, MetricOut, PredictRequest, ScenarioRequest,
                            ScenarioResponse)
 
@@ -41,7 +42,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -86,7 +87,7 @@ async def observe(request: Request, call_next):
     response.headers["x-content-type-options"] = "nosniff"
     response.headers["x-frame-options"] = "DENY"
     response.headers["referrer-policy"] = "no-referrer"
-    if path.startswith(("/documents", "/facts", "/memos", "/audit")):
+    if path.startswith(("/documents", "/facts", "/memos", "/audit", "/companies", "/analyses", "/scenarios")):
         response.headers["cache-control"] = "no-store"     # uploaded figures and memos are never cached
     log.info(json.dumps({"rid": rid, "method": request.method, "path": path, "status": response.status_code,
                          "ms": round((time.perf_counter() - start) * 1000, 1)}))
@@ -106,12 +107,17 @@ def _curated() -> dict[str, dict]:
 
 
 def _companyfacts() -> dict[str, dict]:
-    """Curated SEC issuers plus finalized uploaded reports (rebuilt from reviewed facts on each call)."""
+    """Curated SEC issuers plus finalized uploaded reports (rebuilt from reviewed facts on each call).
+
+    A malformed upload is logged and skipped so it can never break other companies (DATA-01)."""
     out = dict(_curated())
     for row in store.list_finalized():
-        doc = store.get_document(row["id"])
-        if doc:
-            out[doc["company_id"]] = uploads.to_companyfacts(doc)
+        try:
+            doc = store.get_document(row["id"])
+            if doc:
+                out[doc["company_id"]] = uploads.to_companyfacts(doc)
+        except Exception:  # noqa: BLE001
+            log.exception(json.dumps({"event": "skipped_malformed_upload", "document": row["id"]}))
     return out
 
 
@@ -146,10 +152,18 @@ def health():
 
 
 @app.get("/companies", response_model=list[CompanySummary])
-def companies():
+def companies(include: Optional[str] = None):
+    """The curated sample issuers. Uploaded reports are private to whoever holds their link, so they are listed
+    only when that link's id is passed as `include` — never to every visitor."""
     out = []
     for cid, cf in _companyfacts().items():
-        ys = build_company_years(cf)
+        if cid not in _curated() and cid != include:
+            continue
+        try:
+            ys = build_company_years(cf)
+        except Exception:  # noqa: BLE001 — isolate a malformed record
+            log.exception(json.dumps({"event": "skipped_company", "company": cid}))
+            continue
         out.append(CompanySummary(company_id=cid, name=cf.get("entityName", cid),
                                   source=cf.get("source", "SEC XBRL companyfacts"),
                                   fiscal_years=[y.fiscal_year_end for y in ys],
@@ -164,7 +178,7 @@ def analyses(req: AnalysisRequest):
     cy, prior = _pick(build_company_years(cf, as_of=req.as_of), req.fiscal_year_end)
     vals = _scaled(engine_inputs(cy))
     prior_vals = _scaled(engine_inputs(prior)) if prior else None
-    metrics = compute_all(vals, prior_vals)
+    metrics = compute_all(vals, prior_vals, cash_basis=cy.cash_basis)
     ccy = cf.get("currency", "USD")
     return AnalysisResponse(
         company_id=req.company_id, company_name=cy.company_name, fiscal_year_end=cy.fiscal_year_end, currency=ccy,
@@ -176,7 +190,14 @@ def analyses(req: AnalysisRequest):
                                   accession=f.accession, form=f.form, filed=f.filed, period_end=f.period_end,
                                   extraction_method=f.extraction_method, page=f.page) if f else None)
                   for k, f in cy.facts.items()},
-        derived={k: {"value": v / SCALE, "rule": r} for k, (v, r) in cy.derived.items()},
+        derived={**{k: {"value": v / SCALE, "rule": r, "basis": "model and credit"} for k, (v, r) in cy.derived.items()},
+                 **{k: {"value": v / SCALE, "rule": r, "basis": "credit"} for k, (v, r) in cy.credit.items()}},
+        supplemental={k: EvidenceRef(field=f.field, value=f.value / SCALE, unit=f"{ccy} millions", tag=f.tag,
+                                     accession=f.accession, form=f.form, filed=f.filed, period_end=f.period_end,
+                                     extraction_method=f.extraction_method, page=f.page)
+                      for k, f in cy.supplemental.items()},
+        cash_basis=cy.cash_basis, unavailable_inputs=cf.get("unavailable_critical", []),
+        sec_check=cf.get("sec_check", "SEC XBRL is the source" if "unavailable_critical" not in cf else None),
         warnings=cy.warnings, hard_failures=cy.hard_failures,
         risk_model=risk_service.score(cf, cy.fiscal_year_end, req.as_of))
 
@@ -207,7 +228,7 @@ def history(company_id: str):
     out, prev = [], None
     for cy in years:
         v = _scaled(engine_inputs(cy))
-        m = compute_all(v, prev)
+        m = compute_all(v, prev, cash_basis=cy.cash_basis)
         out.append(HistoryPoint(
             fiscal_year_end=cy.fiscal_year_end, filed=cy.available_as_of, scorable=cy.scorable,
             values={k: v.get(k) for k in ("revenue", "operating_income", "net_income", "interest_expense",
@@ -219,35 +240,35 @@ def history(company_id: str):
     return out
 
 
-def _baseline(company_id: str, fye: Optional[str], floating_share: float) -> Baseline:
+def _baseline(company_id: str, fye: Optional[str], floating_share: float) -> tuple[Baseline, CompanyYear]:
     cf = _cf(company_id)
     cy, _ = _pick(build_company_years(cf), fye)
     if not cy.scorable:
         raise HTTPException(422, f"Hard data checks failed: {cy.hard_failures}")
-    v = _scaled(engine_inputs(cy))
-    m = compute_all(v)
-    needed = {"ebitda": m["ebitda"].value, "gross_debt": m["gross_debt"].value, "cash": v.get("cash"),
-              "interest_expense": v.get("interest_expense")}
-    missing = [k for k, x in needed.items() if x is None]
+    base, missing = credit_baseline(cy, cf.get("currency", "USD"), floating_share)
     if missing:
         raise HTTPException(422, f"Cannot run scenario; not available: {', '.join(missing)}. Review source facts.")
-    return Baseline(currency=cf.get("currency", "USD"), existing_floating_share=floating_share, **needed)
+    return base, cy
 
 
 @app.post("/scenarios", response_model=ScenarioResponse)
 def scenarios(req: ScenarioRequest):
+    snap = None
+    shocks = req.shocks or DEFAULT_CASES
     if req.baseline_override:
         base = Baseline(**req.baseline_override)
     elif req.company_id:
-        base = _baseline(req.company_id, req.fiscal_year_end, req.existing_floating_share)
+        base, cy = _baseline(req.company_id, req.fiscal_year_end, req.existing_floating_share)
+        snap = make_snapshot(req.company_id, cy.fiscal_year_end, base, req.facility, req.covenants, shocks,
+                             cy.cash_basis)
     else:
         raise HTTPException(422, "Provide company_id or baseline_override")
     try:
-        results = [run_scenario(base, req.facility, s, req.covenants) for s in (req.shocks or DEFAULT_CASES)]
-    except FXBlocked as e:
+        results = [run_scenario(base, req.facility, s, req.covenants) for s in shocks]
+    except (FXBlocked, ScenarioInputError) as e:
         raise HTTPException(422, str(e))
     sched = amortization_schedule(req.facility) if req.facility else []
-    return ScenarioResponse(baseline=base.model_dump(), results=results, facility_schedule=sched)
+    return ScenarioResponse(baseline=base.model_dump(), results=results, facility_schedule=sched, snapshot=snap)
 
 
 # ------------------------------------------------------------------ documents (Week 6)
@@ -264,6 +285,11 @@ async def upload_document(file: UploadFile = File(...), company_name: str = Form
     cik10 = cik.strip().zfill(10) if cik.strip().isdigit() else None
     if cik10 and cik10 in _curated():
         uploads.cross_check_xbrl(extraction, _curated()[cik10])
+    elif cik10:
+        extraction["sec_check"] = (f"Not checked against SEC: CIK {cik10.lstrip('0')} is not one of the "
+                                   f"{len(_curated())} sample issuers held offline")
+    else:
+        extraction["sec_check"] = "Not checked against SEC: no CIK given"
     sha = hashlib.sha256((file.filename or "").encode() + str(extraction["candidates"]).encode()).hexdigest()
     doc_id = store.create_document(filename=file.filename or "upload.pdf", sha256=sha, extraction=extraction,
                                    company_name=company_name.strip() or (file.filename or "Uploaded company").rsplit(".", 1)[0])
@@ -277,7 +303,9 @@ def _document_view(doc_id: str) -> dict:
     if not doc:
         raise HTTPException(404, "Document not found (it may have been deleted or expired)")
     doc["blocking"] = uploads.blocking_reasons(doc)
+    doc["unavailable_critical"] = uploads.unavailable_critical(doc)
     doc["can_finalize"] = not doc["blocking"] and doc["status"] != "finalized"
+    doc["currencies"], doc["scales"] = list(uploads.CURRENCIES), list(uploads.SCALES)
     return doc
 
 
@@ -288,9 +316,23 @@ def get_document(doc_id: str):
 
 @app.patch("/documents/{doc_id}")
 def update_document(doc_id: str, body: DocumentMetaUpdate):
-    _document_view(doc_id)
-    store.set_document_meta(doc_id, body.fiscal_year_end, body.company_name)
-    return _document_view(doc_id)
+    doc = _document_view(doc_id)
+    try:
+        store.set_document_meta(doc["id"], body.fiscal_year_end, body.company_name, body.currency, body.scale_label)
+    except PermissionError as e:
+        raise HTTPException(409, str(e))
+    return _document_view(doc["id"])
+
+
+@app.post("/documents/{doc_id}/facts")
+def add_document_fact(doc_id: str, body: FactEntry):
+    """Enter a figure the parser did not find, or record explicitly that it is not available."""
+    doc = _document_view(doc_id)
+    try:
+        store.add_fact(doc["id"], body.field, body.period, body.value, body.page, body.note)
+    except PermissionError as e:
+        raise HTTPException(409, str(e))
+    return _document_view(doc["id"])
 
 
 @app.patch("/facts/{fact_id}/review")
@@ -333,8 +375,8 @@ def create_memo(req: MemoRequest):
     facility = req.facility or Facility(amount=100.0, currency=cf.get("currency", "USD"))
     try:
         return memo_service.generate(cf, req.company_id, req.fiscal_year_end, facility, req.covenants,
-                                     req.existing_floating_share, prefer_llm=req.use_llm)
-    except FXBlocked as e:
+                                     req.existing_floating_share, prefer_llm=req.use_llm, shocks=req.shocks)
+    except (FXBlocked, ScenarioInputError) as e:
         raise HTTPException(422, str(e))
     except (ValueError, StopIteration) as e:
         raise HTTPException(422, f"Memo could not be built: {e}")
@@ -370,5 +412,9 @@ def memo_pdf(memo_id: str):
 
 
 @app.get("/audit")
-def audit(subject: Optional[str] = None, limit: int = 100):
+def audit(request: Request, subject: Optional[str] = None, limit: int = 100):
+    """Operator-only: raw audit entries can reveal what was uploaded, so they need CREDITLENS_ADMIN_TOKEN."""
+    token = os.environ.get("CREDITLENS_ADMIN_TOKEN")
+    if not token or request.headers.get("x-admin-token") != token:
+        raise HTTPException(404, "Not found")
     return store.audit_log(subject, min(max(limit, 1), 500))

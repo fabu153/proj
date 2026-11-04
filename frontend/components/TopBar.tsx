@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Company } from "@/lib/api";
 
 type Props = {
-  active: "workspace" | "model" | "upload";
+  active: "start" | "workspace" | "model" | "upload";
   companies?: Company[];
   companyId?: string;
   onCompany?: (id: string) => void;
@@ -20,7 +20,10 @@ export default function TopBar({ active, companies, companyId, onCompany, fiscal
         Credit<span>Lens</span>
       </Link>
       <nav aria-label="Main">
-        <Link href="/" aria-current={active === "workspace" ? "page" : undefined}>
+        <Link href="/" aria-current={active === "start" ? "page" : undefined}>
+          Start
+        </Link>
+        <Link href="/workspace" aria-current={active === "workspace" ? "page" : undefined}>
           Workspace
         </Link>
         <Link href="/upload" aria-current={active === "upload" ? "page" : undefined}>
@@ -32,7 +35,7 @@ export default function TopBar({ active, companies, companyId, onCompany, fiscal
       </nav>
       {companies && onCompany && (
         <label>
-          <span className="sr-only" style={{ position: "absolute", left: -9999 }}>Company</span>
+          <span className="sr-only">Company</span>
           <select value={companyId} onChange={(e) => onCompany(e.target.value)}>
             {companies.map((c) => (
               <option key={c.company_id} value={c.company_id}>
@@ -45,7 +48,7 @@ export default function TopBar({ active, companies, companyId, onCompany, fiscal
       )}
       {company && onFiscalYear && (
         <label>
-          <span style={{ position: "absolute", left: -9999 }}>Fiscal year</span>
+          <span className="sr-only">Fiscal year</span>
           <select value={fiscalYear} onChange={(e) => onFiscalYear(e.target.value)}>
             {[...company.fiscal_years].reverse().map((fy) => (
               <option key={fy} value={fy}>

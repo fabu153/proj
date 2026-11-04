@@ -15,14 +15,16 @@ def _upload():
                            data={"company_name": "B&G Foods"}).json()
 
 
-def test_full_upload_to_memo_flow():
+def test_full_upload_to_memo_flow(monkeypatch):
+    monkeypatch.setenv("CREDITLENS_ADMIN_TOKEN", "t0ken")
     d = _upload()
     assert d["status"] == "in_review" and not d["can_finalize"]
     assert client.post(f"/documents/{d['id']}/finalize").status_code == 409        # gate holds
     fid = next(f["id"] for f in d["facts"] if f["field"] == "interest_expense" and f["period"] == "t")
     assert client.patch(f"/facts/{fid}/review", json={"decision": "accept"}).status_code == 200
     cid = client.post(f"/documents/{d['id']}/finalize").json()["company_id"]
-    assert cid in [c["company_id"] for c in client.get("/companies").json()]
+    assert cid not in [c["company_id"] for c in client.get("/companies").json()]      # private to its link
+    assert cid in [c["company_id"] for c in client.get("/companies", params={"include": cid}).json()]
 
     a = client.post("/analyses", json={"company_id": cid}).json()
     assert a["source"] == "Uploaded annual report" and a["evidence"]["revenue"]["page"] == 2
@@ -40,7 +42,8 @@ def test_full_upload_to_memo_flow():
 
     assert client.delete(f"/documents/{d['id']}").status_code == 200
     assert client.get(f"/documents/{d['id']}").status_code == 404
-    kinds = [e["kind"] for e in client.get("/audit").json()]
+    assert client.get("/audit").status_code == 404                                     # operator-only
+    kinds = [e["kind"] for e in client.get("/audit", headers={"x-admin-token": "t0ken"}).json()]
     for k in ("document_uploaded", "fact_reviewed", "document_finalized", "memo_generated", "memo_exported",
               "memo_sentence_edited", "document_deleted"):
         assert k in kinds
@@ -72,7 +75,7 @@ def test_health_reports_writer():
 def test_security_headers_and_no_store():
     r = client.get("/health")
     assert r.headers["x-content-type-options"] == "nosniff" and r.headers["x-frame-options"] == "DENY"
-    assert client.get("/audit").headers["cache-control"] == "no-store"
+    assert client.get("/documents/nope").headers["cache-control"] == "no-store"
 
 
 def test_upload_rate_limit(monkeypatch):

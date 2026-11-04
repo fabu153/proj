@@ -1,142 +1,84 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import CreditProfile from "@/components/CreditProfile";
-import EvidenceRail from "@/components/EvidenceRail";
-import LoanLab from "@/components/LoanLab";
-import MemoPanel, { type MemoParams } from "@/components/MemoPanel";
-import RiskScreen from "@/components/RiskScreen";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import ApiStatus from "@/components/ApiStatus";
+import Progress from "@/components/Progress";
 import TopBar from "@/components/TopBar";
-import TrendCharts from "@/components/TrendCharts";
-import type { Analysis, Company, HistoryPoint, PackageItem } from "@/lib/api";
-import { API_URL, api } from "@/lib/api";
+import type { Company } from "@/lib/api";
+import { api, fyLabel } from "@/lib/api";
+import { useApiReady } from "@/lib/useApi";
 
-export default function Workspace() {
+export default function Start() {
+  const apiState = useApiReady();
   const [companies, setCompanies] = useState<Company[] | null>(null);
-  const [companyId, setCompanyId] = useState<string>("");
-  const [fiscalYear, setFiscalYear] = useState<string>("");
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [history, setHistory] = useState<HistoryPoint[]>([]);
-  const [selected, setSelected] = useState("net_leverage");
   const [error, setError] = useState<string | null>(null);
-  const [memoParams, setMemoParams] = useState<MemoParams | null>(null);
-  const [citation, setCitation] = useState<PackageItem | null>(null);
-  const onParams = useCallback((p: MemoParams) => setMemoParams(p), []);
 
   useEffect(() => {
+    if (apiState.phase !== "ready") return;
     api
       .companies()
-      .then((cs) => {
-        const real = cs.filter((c) => !c.synthetic);
-        const list = real.length ? real : cs;
-        setCompanies(list);
-        // ?company=<id> opens a specific company, e.g. an uploaded report after review
-        const wanted = new URLSearchParams(window.location.search).get("company");
-        const first = list.find((c) => c.company_id === wanted) ?? list[0];
-        setCompanyId(first.company_id);
-        setFiscalYear(first.fiscal_years[first.fiscal_years.length - 1]);
-      })
-      .catch((e) => setError(`Could not reach the CreditLens API at ${API_URL}: ${e.message}. It may be waking up; reload in a minute.`));
-  }, []);
+      .then((cs) => setCompanies(cs.filter((c) => !c.synthetic).length ? cs.filter((c) => !c.synthetic) : cs))
+      .catch((e) => setError((e as Error).message));
+  }, [apiState.phase]);
 
-  useEffect(() => {
-    if (!companyId || !fiscalYear) return;
-    setAnalysis(null);
-    setCitation(null);
-    Promise.all([api.analysis(companyId, fiscalYear), api.history(companyId)])
-      .then(([a, h]) => {
-        setAnalysis(a);
-        setHistory(h);
-        setError(null);
-      })
-      .catch((e) => setError(e.message));
-  }, [companyId, fiscalYear]);
-
-  const changeCompany = (id: string) => {
-    const c = companies?.find((x) => x.company_id === id);
-    setCompanyId(id);
-    if (c) setFiscalYear(c.fiscal_years[c.fiscal_years.length - 1]);
-  };
-
-  const ev = analysis?.evidence.revenue;
   return (
     <>
-      <TopBar
-        active="workspace"
-        companies={companies ?? undefined}
-        companyId={companyId}
-        onCompany={changeCompany}
-        fiscalYear={fiscalYear}
-        onFiscalYear={setFiscalYear}
-      />
-      <main className="page">
-        {error && <div className="notice error">{error}</div>}
-        {!analysis && !error && <p className="skeleton">Loading the credit file…</p>}
-        {analysis && (
-          <>
-            <div className="file-head">
-              <h1>{analysis.company_name}</h1>
-              <p className="num">
-                Fiscal year ending {analysis.fiscal_year_end}
-                {ev?.page
-                  ? `, from an uploaded annual report reviewed ${ev.filed}. ${analysis.currency} millions.`
-                  : `${ev ? `, from the ${ev.form} filed ${ev.filed}` : ""}. SEC XBRL data, ${analysis.currency} millions.`}
-              </p>
-            </div>
-            <div className="workspace">
-              <div>
-                <section className="block" aria-labelledby="h-profile">
-                  <h2 id="h-profile">Credit profile</h2>
-                  <p className="lede">
-                    Every figure comes from the company&apos;s 10-K filings and a versioned formula. Grey dots mark ratios that are
-                    undefined, amber dots mark approximations.
-                  </p>
-                  <CreditProfile analysis={analysis} history={history} selected={selected} onSelect={setSelected} />
-                </section>
+      <TopBar active="start" />
+      <main className="page start">
+        <div className="start-head">
+          <h1>Evidence-linked credit analysis</h1>
+          <p>
+            Pick a company, check where every figure comes from, read a trained next-FY accounting-stress screen, stress a proposed
+            loan, and draft a cited memo for the credit committee.
+          </p>
+        </div>
+        <Progress states={{ company: "current", financials: "todo", screen: "todo", lab: "todo", memo: "todo" }} />
 
-                <section className="block" aria-labelledby="h-trends">
-                  <h2 id="h-trends">Trends</h2>
-                  <TrendCharts history={history} upto={analysis.fiscal_year_end} />
-                </section>
-
-                <section className="block" aria-labelledby="h-risk">
-                  <h2 id="h-risk">Neural stress screen</h2>
-                  <p className="lede">
-                    A trained network estimates the chance that next year&apos;s accounts show financial stress: at least two of EBIT
-                    below 1.5x interest, debt above 5x EBITDA, or negative operating cash flow.
-                  </p>
-                  <RiskScreen risk={analysis.risk_model} />
-                </section>
-
-                <section className="block" aria-labelledby="h-lab">
-                  <h2 id="h-lab">Loan lab</h2>
-                  <p className="lede">
-                    Add the proposed facility, then stress it. Base, downside and severe cases are fixed for comparability; your case
-                    follows the sliders. Every number is recalculated by the API.
-                  </p>
-                  <LoanLab
-                    key={analysis.company_id}
-                    companyId={analysis.company_id}
-                    fiscalYear={analysis.fiscal_year_end}
-                    reportingCurrency={analysis.currency}
-                    blocked={!analysis.scorable}
-                    onParams={onParams}
-                  />
-                </section>
-
-                <section className="block" aria-labelledby="h-memo">
-                  <h2 id="h-memo">Credit memo</h2>
-                  <p className="lede">
-                    A draft for the credit committee built from everything above, using the facility and covenants in the loan lab. Each
-                    number is inserted by the engines and cited; select a citation to see its source, or edit a sentence and it is checked again.
-                  </p>
-                  <MemoPanel companyId={analysis.company_id} fiscalYear={analysis.fiscal_year_end} params={memoParams} onCite={setCitation} />
-                </section>
+        <div className="start-grid">
+          <section className="sheet start-card" aria-labelledby="h-sample">
+            <h2 id="h-sample">Explore a sample company</h2>
+            <p className="fine">Three U.S. issuers with figures taken from their SEC 10-K XBRL filings, including a stressed borrower.</p>
+            <ApiStatus state={apiState} onRetry={apiState.retry} />
+            {error && (
+              <div className="notice error" role="alert">
+                {error}{" "}
+                <button type="button" className="link" onClick={apiState.retry}>
+                  Try again
+                </button>
               </div>
-              <EvidenceRail analysis={analysis} selected={selected} citation={citation} />
-            </div>
-          </>
-        )}
+            )}
+            {apiState.phase === "ready" && !companies && !error && <p className="fine" role="status">Loading the sample companies…</p>}
+            {companies && (
+              <ul className="company-list">
+                {companies.map((c) => (
+                  <li key={c.company_id}>
+                    <Link href={`/workspace?company=${c.company_id}`}>
+                      <strong>{c.name}</strong>
+                      <span className="fine">
+                        {c.fiscal_years.length} fiscal years, latest {fyLabel(c.fiscal_years[c.fiscal_years.length - 1])}
+                        {c.last_filed ? `, filed ${c.last_filed}` : ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="sheet start-card" aria-labelledby="h-upload">
+            <h2 id="h-upload">Upload a public annual report</h2>
+            <p className="fine">
+              A text-based PDF of a public company&apos;s financial statements. You confirm the currency, units and year-end and review
+              each extracted figure before anything is analysed. The PDF itself is never stored, and the extracted figures are deleted
+              after 24 hours.
+            </p>
+            <Link className="btn" href="/upload">
+              Upload a report
+            </Link>
+            <p className="fine">Use public filings only. Do not upload confidential or client documents.</p>
+          </section>
+        </div>
       </main>
     </>
   );

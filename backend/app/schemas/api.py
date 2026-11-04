@@ -1,9 +1,10 @@
 """Typed API contracts (Blueprint p.15). The frontend codes against these shapes."""
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..scenarios.loan import Covenants, Facility, ScenarioResult, Shock
 
@@ -59,7 +60,11 @@ class AnalysisResponse(BaseModel):
     evidence: dict[str, Optional[EvidenceRef]]
     warnings: list[str]
     hard_failures: list[str]
-    derived: dict[str, dict] = Field(default_factory=dict, description="values filled by logged rules R1-R4")
+    derived: dict[str, dict] = Field(default_factory=dict, description="values set by logged rules R1-R7")
+    supplemental: dict[str, EvidenceRef] = Field(default_factory=dict, description="credit-basis source facts")
+    cash_basis: str = "unrestricted"
+    unavailable_inputs: list[str] = Field(default_factory=list, description="critical figures marked unavailable")
+    sec_check: Optional[str] = None
     risk_model: dict = Field(default_factory=dict)
     review_required: bool = True
 
@@ -92,6 +97,7 @@ class ScenarioResponse(BaseModel):
     baseline: dict
     results: list[ScenarioResult]
     facility_schedule: list[dict] = []
+    snapshot: Optional[dict] = Field(None, description="id + complete inputs; shared with the memo and its PDF")
     disclaimer: str = ("Mechanical sensitivities only; not a forecast, rating or probability of default. "
                        "Analyst review required.")
 
@@ -103,8 +109,34 @@ class FactReview(BaseModel):
 
 
 class DocumentMetaUpdate(BaseModel):
-    fiscal_year_end: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    fiscal_year_end: Optional[str] = Field(None, description="YYYY-MM-DD, a real calendar date")
     company_name: Optional[str] = Field(None, max_length=120)
+    currency: Optional[Literal["USD", "EUR", "CHF", "GBP", "CAD", "JPY"]] = None
+    scale_label: Optional[Literal["units", "thousands", "millions", "billions"]] = None
+
+    @field_validator("fiscal_year_end")
+    @classmethod
+    def _real_date(cls, v):
+        if v is None:
+            return v
+        try:
+            d = date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(f"{v!r} is not a calendar date (YYYY-MM-DD)")
+        if not date(1990, 1, 1) <= d <= date.today() + timedelta(days=366):
+            raise ValueError("fiscal year-end must be between 1990 and one year from today")
+        return d.isoformat()
+
+
+class FactEntry(BaseModel):
+    field: Literal["revenue", "operating_income", "net_income", "interest_expense", "depreciation_amortization",
+                   "operating_cash_flow", "capital_expenditures", "cash", "short_term_borrowings",
+                   "current_maturities_ltd", "long_term_debt", "total_assets", "total_liabilities",
+                   "stockholders_equity", "current_assets", "current_liabilities"]
+    period: Literal["t", "t-1"] = "t"
+    value: Optional[float] = Field(None, description="Base currency units (not millions); null = not available")
+    page: Optional[int] = Field(None, ge=0, le=5000)
+    note: Optional[str] = Field(None, max_length=500)
 
 
 class MemoRequest(BaseModel):
@@ -113,6 +145,7 @@ class MemoRequest(BaseModel):
     facility: Optional[Facility] = Field(None, description="Defaults to 100m in the reporting currency")
     covenants: Optional[Covenants] = None
     existing_floating_share: float = Field(0.0, ge=0, le=1)
+    shocks: Optional[list[Shock]] = Field(None, description="The loan lab's cases, including 'Your case'")
     use_llm: bool = True
 
 

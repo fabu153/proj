@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Optional
 
 import httpx
 
@@ -69,16 +68,19 @@ class TemplateWriter:
             out["profile"].append(S("Gross debt stood at {{metric.gross_debt.t}} and cash at {{fact.cash.t}}, "
                                     "for net debt of {{metric.net_debt.t}}."))
         if h("metric.net_leverage.t") and h("metric.ebitda_interest_cover.t"):
-            out["profile"].append(S("Net debt was {{metric.net_leverage.t}} EBITDA and EBITDA covered interest "
+            out["profile"].append(S("Net debt / EBITDA was {{metric.net_leverage.t}} and EBITDA / interest "
                                     "{{metric.ebitda_interest_cover.t}}."))
+        if h("data.credit_rules"):
+            out["profile"].append(S("For the credit ratios the filing figures were adjusted to {{data.credit_rules}}; "
+                                    "the appendix gives each rule."))
 
         # strengths / risks (thresholds are presentation rules, not credit policy)
         lev, cov = v("metric.net_leverage.t"), v("metric.ebitda_interest_cover.t")
         fcf, cr = v("metric.fcf_simple.t"), v("metric.current_ratio.t")
         if lev is not None and lev <= 2.5:
-            out["strengths"].append(S("Leverage is moderate at {{metric.net_leverage.t}} net debt to EBITDA."))
+            out["strengths"].append(S("Leverage is moderate, with net debt / EBITDA of {{metric.net_leverage.t}}."))
         if cov is not None and cov >= 5:
-            out["strengths"].append(S("Interest is comfortably covered at {{metric.ebitda_interest_cover.t}} EBITDA."))
+            out["strengths"].append(S("Interest is comfortably covered, with EBITDA / interest of {{metric.ebitda_interest_cover.t}}."))
         if fcf is not None and fcf > 0:
             out["strengths"].append(S("The business generated positive free cash flow of {{metric.fcf_simple.t}}."))
         if cr is not None and cr >= 1.5:
@@ -87,11 +89,11 @@ class TemplateWriter:
             out["strengths"].append(S("No clear quantitative strengths stand out on the metrics reviewed.", "framing"))
 
         if lev is not None and lev > 3.5:
-            out["risks"].append(S("Leverage is high at {{metric.net_leverage.t}} net debt to EBITDA."))
+            out["risks"].append(S("Leverage is high, with net debt / EBITDA of {{metric.net_leverage.t}}."))
         if h("metric.ebitda.t") and v("metric.ebitda.t") <= 0:
             out["risks"].append(S("EBITDA is not positive ({{metric.ebitda.t}}), so leverage ratios are undefined."))
         if cov is not None and cov < 3:
-            out["risks"].append(S("Interest cover is thin at {{metric.ebitda_interest_cover.t}} EBITDA."))
+            out["risks"].append(S("Interest cover is thin, with EBITDA / interest of {{metric.ebitda_interest_cover.t}}."))
         if h("metric.ebitda_margin.change") and v("metric.ebitda_margin.change") <= -0.02:
             out["risks"].append(S("The EBITDA margin moved by {{metric.ebitda_margin.change}} year on year."))
         if h("metric.revenue_growth.t") and v("metric.revenue_growth.t") < 0:
@@ -101,6 +103,11 @@ class TemplateWriter:
         if cr is not None and cr < 1:
             out["risks"].append(S("The current ratio of {{metric.current_ratio.t}} is below one, so current "
                                   "liabilities exceed current assets."))
+        if h("data.cash_basis"):
+            out["risks"].append(S("Reported cash {{data.cash_basis}}, so net debt and net debt / EBITDA may be understated."))
+        if h("data.unavailable"):
+            out["risks"].append(S("These figures were marked unavailable in the document review and are not used: "
+                                  "{{data.unavailable}}."))
         if v("data.warning_count"):
             out["risks"].append(S("Some inputs were derived or approximated ({{data.warning_count}} data warnings); "
                                   "see the evidence appendix."))
@@ -125,16 +132,19 @@ class TemplateWriter:
 
         # loan
         if h("scen.base.net_leverage"):
-            out["loan"].append(S("After the facility, gross debt rises to {{scen.base.gross_debt}} and net debt to "
-                                 "EBITDA moves to {{scen.base.net_leverage}}, with EBITDA cover of "
+            out["loan"].append(S("After the facility, gross debt rises to {{scen.base.gross_debt}} and net debt / "
+                                 "EBITDA moves to {{scen.base.net_leverage}}, with EBITDA / interest at "
                                  "{{scen.base.ebitda_interest_cover}}."))
-            out["loan"].append(S("In the downside case ({{scen.downside.assumptions}}) net leverage reaches "
-                                 "{{scen.downside.net_leverage}} and cover falls to "
+            out["loan"].append(S("In the downside case ({{scen.downside.assumptions}}) net debt / EBITDA reaches "
+                                 "{{scen.downside.net_leverage}} and EBITDA / interest falls to "
                                  "{{scen.downside.ebitda_interest_cover}}."))
-            out["loan"].append(S("In the severe case ({{scen.severe.assumptions}}) net leverage reaches "
-                                 "{{scen.severe.net_leverage}} and cover {{scen.severe.ebitda_interest_cover}}."))
-            for cov, item, what in (("covenant.max_net_leverage", "headroom_lev", "a maximum net leverage"),
-                                    ("covenant.min_cover", "headroom_cov", "a minimum EBITDA cover")):
+            out["loan"].append(S("In the severe case ({{scen.severe.assumptions}}) net debt / EBITDA reaches "
+                                 "{{scen.severe.net_leverage}} and EBITDA / interest {{scen.severe.ebitda_interest_cover}}."))
+            if h("scen.custom.net_leverage"):
+                out["loan"].append(S("In the analyst's own case ({{scen.custom.assumptions}}) net debt / EBITDA is "
+                                     "{{scen.custom.net_leverage}} and EBITDA / interest {{scen.custom.ebitda_interest_cover}}."))
+            for cov, item, what in (("covenant.max_net_leverage", "headroom_lev", "a maximum net debt / EBITDA"),
+                                    ("covenant.min_cover", "headroom_cov", "a minimum EBITDA / interest")):
                 if not (h(cov) and h(f"scen.downside.{item}") and h(f"scen.base.{item}")):
                     continue
                 base_breach, down_breach = v(f"scen.base.{item}") < 0, v(f"scen.downside.{item}") < 0
@@ -154,7 +164,7 @@ class TemplateWriter:
 
         # considerations
         if h("covenant.max_net_leverage"):
-            out["considerations"].append(S("Is a maximum net leverage covenant of {{covenant.max_net_leverage}} "
+            out["considerations"].append(S("Is a maximum net debt / EBITDA covenant of {{covenant.max_net_leverage}} "
                                            "appropriate given the downside headroom?", "question"))
         out["considerations"].append(S("How much of the existing debt is floating-rate, and is it hedged?", "question"))
         out["considerations"].append(S("Does operating income include one-off items that an adjusted EBITDA would "

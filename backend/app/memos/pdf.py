@@ -41,8 +41,47 @@ def _source_text(it: dict) -> str:
     if k == "assumption":
         return "Analyst input in the loan lab"
     if k == "data_checks":
-        return "Data-quality checks"
+        rules = "; ".join((s.get("rules") or {}).values())
+        return f"Data-quality checks{': ' + rules if rules else ''}{' (' + s['detail'] + ')' if s.get('detail') and not rules else ''}"
+    if k == "snapshot":
+        return s.get("detail", "Analysis snapshot")
     return s.get("detail", k or "")
+
+
+def _assumptions(snap: dict, h2, small) -> list:
+    """The complete inputs of the analysis snapshot, so the PDF can be reproduced in the loan lab (WF-02)."""
+    i = snap["inputs"]
+    f, c, b = i.get("facility") or {}, i.get("covenants") or {}, i.get("baseline") or {}
+    ccy = b.get("currency") or f.get("currency", "")
+    pct = lambda x: "n/a" if x is None else f"{x * 100:.2f}%"   # noqa: E731
+    xx = lambda x: "not tested" if x is None else f"{x:.2f}x"   # noqa: E731
+    m = lambda x: "n/a" if x is None else f"{x:,.1f}m"          # noqa: E731
+    rows = [["Input", "Value"],
+            ["Baseline (credit basis)", f"EBITDA {ccy} {m(b.get('ebitda'))}, gross debt {m(b.get('gross_debt'))}, cash "
+                                        f"{m(b.get('cash'))}, interest {m(b.get('interest_expense'))}" if b else "not available"],
+            ["Cash basis", i.get("cash_basis", "").replace("_", " ")]]
+    if f:
+        refi = f.get("refinanced_debt_rate")
+        rows += [["Facility", f"{f['currency']} {f['amount']:,.1f}m, {f['tenor_years']}-year, "
+                              f"{'floating' if f['floating'] else 'fixed'} at {pct(f['coupon'])}, repayment "
+                              f"{f['annual_amortization']:,.1f}m a year"],
+                 ["Use of proceeds", f["use_of_proceeds"].replace("_", " ") +
+                  (f", retired debt at {pct(refi)}" if refi is not None else
+                   ", retired debt at the average cost of debt" if f["use_of_proceeds"] == "refinancing" else "")]]
+        if f.get("fx_rate_to_reporting"):
+            rows.append(["FX rate", f"{f['fx_rate_to_reporting']} {ccy} per {f['currency']} ({f.get('fx_rate_date') or 'no date'})"])
+    rows += [["Existing debt at floating rate", pct(b.get("existing_floating_share", 0.0))],
+             ["Covenants", f"max net debt / EBITDA {xx(c.get('max_net_leverage'))}; "
+                           f"min EBITDA / interest {xx(c.get('min_ebitda_interest_cover'))}"]]
+    for s in i.get("cases", []):
+        rows.append([f"Case: {s['name']}", f"EBITDA {s['ebitda_shock'] * 100:+.0f}%, rates {s['rate_shock_bps']:+.0f} bp"])
+    rows.append(["Snapshot", f"{snap['id']} (loan engine v{i.get('engine_version')}, snapshot format v{i.get('snapshot_version')})"])
+    t = Table([[Paragraph(escape(str(a)), small), Paragraph(escape(str(v)), small)] for a, v in rows],
+              colWidths=[52 * mm, 118 * mm], repeatRows=1)
+    t.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, 0), 0.6, INK),
+                           ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#d4dae1")),
+                           ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
+    return [Paragraph("Assumptions (analysis snapshot " + escape(snap["id"]) + ")", h2), t]
 
 
 def _ranges(nums: list[int]) -> str:
@@ -99,6 +138,10 @@ def render_pdf(memo: dict) -> bytes:
             para.append(escape(s["text"]) + marks + ("<font size=7 color='#56677a'> (edited)</font>" if s["edited"] else ""))
         flow.append(Paragraph(" ".join(para), body))
 
+    snap = memo.get("snapshot")
+    if snap and snap.get("inputs"):
+        flow += _assumptions(snap, h2, small)
+
     flow.append(Paragraph("Evidence appendix", h2))
     rows = [["#", "Item", "Value", "Source"]]
     for i, ref in enumerate(cited, 1):
@@ -115,6 +158,7 @@ def render_pdf(memo: dict) -> bytes:
         for title, s in excluded:
             flow.append(Paragraph(f"{escape(title)}: “{escape(s['text'])}” — {escape('; '.join(s['issues']))}", small))
     flow += [Spacer(1, 8), Paragraph(
+        (f"Analysis snapshot {snap['id']} · " if snap else "") +
         f"Package SHA-256 {memo['package_sha256'][:16]}… · memo {memo['id'][:12]} · {len(cited)} cited items. Numbers are "
         "inserted from deterministic engines; generated text cannot introduce figures.", small)]
     doc.build(flow)

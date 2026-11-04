@@ -53,17 +53,19 @@ def main():
 
         # 1 — real data enters the system
         pg.goto(BASE + "/", wait_until="networkidle")
-        pg.wait_for_selector("text=Pro forma credit metrics", timeout=60000)
-        cap("CreditLens: an analyst copilot for a proposed corporate loan. Every number comes from SEC 10-K filings.", 3800)
-        pg.select_option("header select >> nth=0", value="0001067701")
+        pg.wait_for_selector(".company-list a", timeout=90000)
+        cap("CreditLens: an analyst copilot for a proposed corporate loan. Start from a sample company or a public annual report.", 3800)
+        pg.screenshot(path=str(SHOTS / "start.png"))
+        pg.click(".company-list a:has-text('United Rentals')")
         pg.wait_for_selector("h1:has-text('United Rentals')", timeout=30000)
         pg.wait_for_selector("text=Pro forma credit metrics", timeout=30000)
-        cap("We open United Rentals: four years of credit metrics computed by versioned formulas.", 3200)
+        cap("United Rentals: four years of credit metrics from its 10-K filings. The steps above track the analysis.", 3200)
         pg.screenshot(path=str(SHOTS / "workspace.png"))
 
         # 2 — traceable sources
         pg.click("tr.row:has-text('Net debt / EBITDA')")
-        cap("Select any figure: the rail shows its formula, its inputs and the exact 10-K accession it came from.", 3800)
+        cap("Select any figure: the rail shows its formula, its inputs and the 10-K line it came from, including the "
+            "rental-fleet depreciation the 10-K reconciliation added.", 4200)
 
         # 3 — the trained network
         scroll_to("#h-risk")
@@ -78,7 +80,7 @@ def main():
         cap("Calibration: predicted risk against what actually happened, bucket by bucket.", 3200)
 
         # 4 — the loan
-        pg.goto(BASE + "/", wait_until="networkidle")
+        pg.goto(BASE + "/workspace", wait_until="networkidle")
         pg.select_option("header select >> nth=0", value="0001067701")
         pg.wait_for_selector("h1:has-text('United Rentals')", timeout=30000)
         pg.wait_for_selector("text=Pro forma credit metrics", timeout=30000)
@@ -88,7 +90,11 @@ def main():
         pg.locator("input[type=range]").nth(1).fill("200")
         pg.wait_for_selector("text=EBITDA shock -20%", timeout=15000)
         pg.wait_for_timeout(600)
-        cap("EBITDA −20% and rates +200 bp: the downside breaches the covenant. Every step of the arithmetic is listed.", 4400)
+        yours = pg.locator(".ruler-legend span:has-text('Your case')").first.inner_text().split()[-1]
+        cap(f"EBITDA −20% and rates +200 bp: net debt / EBITDA rises to {yours}, inside the 3.5x covenant.", 3800)
+        pg.get_by_label("Max net debt / EBITDA (x)").fill("2.25")
+        pg.wait_for_timeout(1200)
+        cap("Tighten the covenant to 2.25x and the same stress breaches it. Every step of the arithmetic is listed.", 4000)
         pg.screenshot(path=str(SHOTS / "loan_lab.png"))
 
         # 5 — evidence-constrained memo
@@ -102,6 +108,12 @@ def main():
         scroll_to(".memo-section:nth-of-type(6)", -120)
         cap("Select a citation: it resolves to the scenario case, its assumptions and the calculation trail.", 4000)
         pg.screenshot(path=str(SHOTS / "memo.png"))
+        pg.get_by_label("Amount (m)").fill("150")
+        pg.wait_for_selector("text=Outdated — regenerate", timeout=15000)
+        scroll_to(".notice.outdated", -160)
+        cap("Change the loan and the memo is marked outdated: table, memo and PDF always share one snapshot id.", 4000)
+        pg.click("text=Regenerate now")
+        pg.wait_for_selector("text=Download PDF", timeout=60000)
         s = pg.locator(".memo-section").nth(1).locator(".sentence").first
         s.hover()
         s.locator("button.edit-link").click()

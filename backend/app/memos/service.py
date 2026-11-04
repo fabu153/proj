@@ -5,7 +5,7 @@ import uuid
 from typing import Optional
 
 from .. import store
-from ..scenarios.loan import Covenants, Facility
+from ..scenarios.loan import Covenants, Facility, Shock
 from .package import Package, build_package
 from .validator import validate_sentence
 from .writer import TemplateWriter, get_writer
@@ -23,8 +23,9 @@ def _validated_sections(raw: list[dict], pk: Package) -> list[dict]:
 
 
 def generate(companyfacts: dict, company_id: str, fiscal_year_end: Optional[str], facility: Optional[Facility],
-             covenants: Optional[Covenants], existing_floating_share: float = 0.0, prefer_llm: bool = True) -> dict:
-    pk = build_package(companyfacts, company_id, fiscal_year_end, facility, covenants, existing_floating_share)
+             covenants: Optional[Covenants], existing_floating_share: float = 0.0, prefer_llm: bool = True,
+             shocks: Optional[list[Shock]] = None) -> dict:
+    pk = build_package(companyfacts, company_id, fiscal_year_end, facility, covenants, existing_floating_share, shocks)
     writer, error = get_writer(prefer_llm), None
     try:
         raw = writer.write(pk)
@@ -35,11 +36,13 @@ def generate(companyfacts: dict, company_id: str, fiscal_year_end: Optional[str]
     sections = _validated_sections(raw, pk)
     memo = {"id": uuid.uuid4().hex, "company_id": company_id, "fiscal_year_end": pk.val("meta.fye"),
             "created_at": store.now(), "writer": writer.name, "writer_note": error,
-            "package_sha256": pk.sha256(), "currency": pk.ccy, "package": pk.items, "sections": sections}
+            "package_sha256": pk.sha256(), "currency": pk.ccy, "package": pk.items, "sections": sections,
+            "snapshot": pk.snapshot}
     memo["summary"] = summarize(memo)
     store.save_memo(memo)
     store.audit("memo_generated", memo["id"], company_id=company_id, writer=writer.name,
-                flagged=memo["summary"]["flagged"], package_sha256=memo["package_sha256"])
+                flagged=memo["summary"]["flagged"], package_sha256=memo["package_sha256"],
+                snapshot=(pk.snapshot or {}).get("id"))
     return memo
 
 

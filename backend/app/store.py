@@ -40,6 +40,10 @@ def now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+MIGRATIONS = ["ALTER TABLE documents ADD COLUMN sec_check TEXT"]
+_migrated: set[str] = set()
+
+
 @contextmanager
 def conn() -> Iterator[sqlite3.Connection]:
     with _lock:
@@ -48,6 +52,13 @@ def conn() -> Iterator[sqlite3.Connection]:
         c.execute("PRAGMA foreign_keys = ON")
         try:
             c.executescript(SCHEMA)
+            if DB_PATH not in _migrated:          # additive column migrations for databases created by v1.0
+                for m in MIGRATIONS:
+                    try:
+                        c.execute(m)
+                    except sqlite3.OperationalError:
+                        pass                      # column already exists
+                _migrated.add(DB_PATH)
             yield c
             c.commit()
         finally:
@@ -82,13 +93,16 @@ def purge_expired() -> int:
 # ------------------------------------------------------------------ documents
 def create_document(*, filename: str, sha256: str, extraction: dict, company_name: str) -> str:
     doc_id = uuid.uuid4().hex
-    company_id = f"doc{doc_id[:7]}"
+    company_id = f"doc{doc_id}"     # unguessable: an upload is reachable only by whoever holds its link
     with conn() as c:
-        c.execute("INSERT INTO documents VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        c.execute("INSERT INTO documents (id, company_id, filename, sha256, pages, company_name, currency, scale_label, "
+                  "fiscal_year_end, fye_inferred, statement_pages, issues, status, created_at, finalized_at, sec_check) "
+                  "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                   (doc_id, company_id, filename[:200], sha256, extraction["pages"], company_name[:120],
                    extraction["currency"], extraction["scale_label"], extraction["fiscal_year_end"],
                    int(extraction["fiscal_year_end_inferred"]), json.dumps(extraction["statement_pages"]),
-                   json.dumps(extraction["issues"]), "in_review", now(), None))
+                   json.dumps(extraction["issues"]), "in_review", now(), None,
+                   extraction.get("sec_check") or "Not checked against SEC"))
         for cand in extraction["candidates"]:
             status = "needs_review" if cand["needs_review"] else "auto_accepted"
             c.execute("INSERT INTO facts VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -133,13 +147,46 @@ def review_fact(fact_id: str, decision: str, value: Optional[float], note: Optio
     return {"id": fact_id, "status": status}
 
 
-def set_document_meta(doc_id: str, fiscal_year_end: Optional[str], company_name: Optional[str]) -> None:
+def set_document_meta(doc_id: str, fiscal_year_end: Optional[str], company_name: Optional[str],
+                      currency: Optional[str] = None, scale_label: Optional[str] = None) -> None:
+    from .documents.uploads import SCALES
     with conn() as c:
+        d = c.execute("SELECT status, scale_label FROM documents WHERE id = ?", (doc_id,)).fetchone()
+        if d["status"] == "finalized":
+            raise PermissionError("Document already finalized; delete and re-upload to change it")
         if fiscal_year_end:
             c.execute("UPDATE documents SET fiscal_year_end = ?, fye_inferred = 0 WHERE id = ?", (fiscal_year_end, doc_id))
         if company_name:
             c.execute("UPDATE documents SET company_name = ? WHERE id = ?", (company_name[:120], doc_id))
-    audit("document_meta_updated", doc_id, fiscal_year_end=fiscal_year_end, company_name=company_name)
+        if currency:
+            c.execute("UPDATE documents SET currency = ? WHERE id = ?", (currency, doc_id))
+        if scale_label and scale_label != d["scale_label"]:
+            # extracted values were stored at the previously assumed scale (unconfirmed = as printed); rescale them
+            factor = SCALES[scale_label] / SCALES.get(d["scale_label"] or "units", 1.0)
+            c.execute("UPDATE facts SET value = value * ?, reviewed_value = reviewed_value * ? WHERE document_id = ?",
+                      (factor, factor, doc_id))
+            c.execute("UPDATE documents SET scale_label = ? WHERE id = ?", (scale_label, doc_id))
+    audit("document_meta_updated", doc_id, fiscal_year_end=fiscal_year_end, company_name=company_name,
+          currency=currency, scale_label=scale_label)
+
+
+def add_fact(doc_id: str, field: str, period: str, value: Optional[float], page: Optional[int],
+             note: Optional[str]) -> str:
+    """An analyst-entered figure (status manual) or an explicit 'not available' (status unavailable)."""
+    fact_id = uuid.uuid4().hex
+    status = "unavailable" if value is None else "manual"
+    with conn() as c:
+        d = c.execute("SELECT status FROM documents WHERE id = ?", (doc_id,)).fetchone()
+        if d["status"] == "finalized":
+            raise PermissionError("Document already finalized; delete and re-upload to change figures")
+        c.execute("DELETE FROM facts WHERE document_id = ? AND field = ? AND period = ? AND status IN "
+                  "('manual', 'unavailable')", (doc_id, field, period))
+        c.execute("INSERT INTO facts VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                  (fact_id, doc_id, field, period, value, page or 0,
+                   "Entered by analyst" if value is not None else "Marked unavailable by analyst",
+                   (note or "")[:300], "manual", "manual", json.dumps([]), status, None, (note or "")[:500], now()))
+    audit("fact_added", doc_id, fact=field, period=period, value=value, status=status, note=note)
+    return fact_id
 
 
 def finalize(doc_id: str) -> None:

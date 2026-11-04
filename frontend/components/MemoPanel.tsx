@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Covenants, Facility, Memo, PackageItem, Sentence } from "@/lib/api";
+import type { LabState } from "./LoanLab";
+import type { Memo, PackageItem, Sentence } from "@/lib/api";
 import { memos } from "@/lib/api";
-
-export type MemoParams = { facility: Facility; covenants: Covenants; existing_floating_share: number };
 
 type Props = {
   companyId: string;
   fiscalYear: string;
-  params: MemoParams | null;
+  lab: LabState | null;
+  blocked: boolean;
   onCite: (item: PackageItem) => void;
+  onMemo?: (snapshotId: string | null) => void;
 };
 
-export default function MemoPanel({ companyId, fiscalYear, params, onCite }: Props) {
+export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite, onMemo }: Props) {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [writer, setWriter] = useState<{ writer: string; llm_configured: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -22,32 +23,52 @@ export default function MemoPanel({ companyId, fiscalYear, params, onCite }: Pro
   useEffect(() => {
     memos.config().then(setWriter).catch(() => setWriter(null));
   }, []);
-  useEffect(() => setMemo(null), [companyId, fiscalYear]);
+  useEffect(() => onMemo?.(memo?.snapshot?.id ?? null), [memo, onMemo]);
+
+  const labReady = lab?.status === "current" && !!lab.snapshotId;
+  const memoSnap = memo?.snapshot?.id ?? null;
+  // a memo is current only when it was built from exactly the inputs the loan table now shows
+  const outdated = !!memo && labReady && memoSnap !== lab!.snapshotId;
 
   const draft = async () => {
-    if (!params) return;
+    if (!lab || !labReady) return;
     setBusy(true);
     setError(null);
     try {
-      setMemo(await memos.create({ company_id: companyId, fiscal_year_end: fiscalYear, ...params }));
+      const m = await memos.create({ company_id: companyId, fiscal_year_end: fiscalYear, ...lab.params });
+      if (m.snapshot?.id !== lab.snapshotId) {
+        // the server rebuilt the case from the same inputs; a different id means the inputs drifted in transit
+        setError(`The memo was built from snapshot ${m.snapshot?.id}, but the loan lab shows ${lab.snapshotId}. Regenerate.`);
+      }
+      setMemo(m);
     } catch (e) {
-      setError((e as Error).message);
+      setError(`The memo could not be drafted: ${(e as Error).message}`);
     } finally {
       setBusy(false);
     }
   };
 
+  if (blocked) {
+    return <div className="notice error">The memo is blocked until the data-check failures on the right are resolved.</div>;
+  }
+
   // citation numbers in order of first appearance, as in the PDF appendix
   const order: string[] = [];
   memo?.sections.forEach((s) => s.sentences.forEach((x) => x.refs.forEach((r) => !order.includes(r) && order.push(r))));
 
+  const waiting = !labReady
+    ? lab?.status === "error"
+      ? "Fix the loan lab inputs first: the memo is built from the loan lab's current case."
+      : "Waiting for the loan lab to finish calculating…"
+    : null;
+
   return (
     <div className="sheet memo">
       <div className="memo-bar">
-        <button className="btn" type="button" onClick={draft} disabled={busy || !params}>
-          {busy ? "Drafting…" : memo ? "Redraft with current loan lab inputs" : "Draft credit memo"}
+        <button className="btn" type="button" onClick={draft} disabled={busy || !labReady}>
+          {busy ? "Drafting…" : memo ? (outdated ? "Regenerate with the current loan lab inputs" : "Redraft") : "Draft credit memo"}
         </button>
-        {memo && (
+        {memo && !outdated && (
           <a className="btn ghost" href={memos.pdfUrl(memo.id)} target="_blank" rel="noreferrer">
             Download PDF
           </a>
@@ -57,9 +78,29 @@ export default function MemoPanel({ companyId, fiscalYear, params, onCite }: Pro
           every number is inserted from the engines.
         </span>
       </div>
-      {error && <div className="notice error">{error}</div>}
+      {busy && (
+        <p className="fine" role="status">
+          <span className="spinner" aria-hidden="true" />
+          Drafting from snapshot <code className="snap">{lab?.snapshotId}</code>…
+        </p>
+      )}
+      {!memo && waiting && <p className="fine" role="status">{waiting}</p>}
+      {error && <div className="notice error" role="alert">{error}</div>}
+      {outdated && (
+        <div className="notice outdated" role="status">
+          <strong>Outdated — regenerate.</strong>
+          <span>
+            This memo describes snapshot <code className="snap">{memoSnap}</code>; the loan lab now shows{" "}
+            <code className="snap">{lab!.snapshotId}</code>. Its numbers and PDF no longer match the table.
+          </span>
+          <button type="button" className="link" onClick={draft} disabled={busy}>
+            Regenerate now
+          </button>
+        </div>
+      )}
+      {memo && lab?.status === "calculating" && <p className="fine" role="status">Loan lab recalculating; checking whether this memo is still current…</p>}
       {memo && (
-        <>
+        <div className={outdated ? "stale-results" : undefined} aria-hidden={outdated || undefined}>
           <p className="fine" style={{ margin: "4px 0 12px" }}>
             {memo.summary.sentences} sentences citing {memo.summary.cited_items} sourced items.{" "}
             {memo.summary.flagged
@@ -88,10 +129,11 @@ export default function MemoPanel({ companyId, fiscalYear, params, onCite }: Pro
             ) : null,
           )}
           <p className="fine">
-            Memo {memo.id.slice(0, 12)}, package {memo.package_sha256.slice(0, 12)}, generated {memo.created_at}. Select a citation number to
-            see its source.
+            Snapshot <code className="snap">{memoSnap ?? "n/a"}</code> · memo {memo.id.slice(0, 12)} · package{" "}
+            {memo.package_sha256.slice(0, 12)} · generated {memo.created_at}. The PDF prints the full assumptions of this snapshot.
+            Select a citation number to see its source.
           </p>
-        </>
+        </div>
       )}
     </div>
   );

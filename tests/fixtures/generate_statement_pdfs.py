@@ -1,10 +1,14 @@
 """Render two annual-report-style statement PDFs for the upload tests (Blueprint p.12, Week 6 exit gate).
 
-Figures are the companies' REAL SEC XBRL values (training/data/panel_v1.csv); the layouts are test
-renderings, not the original documents. Two deliberately different templates:
+Figures are the companies' reported values, checked line by line against the original 10-Ks (P&G FY2026,
+accession 0000080424-26-000103; B&G Foods FY2025, accession 0001104659-26-022961; docs/manual_cross_check.md).
+The layouts are test renderings, not the original documents. v1.1 corrected two lines: B&G "Interest expense, net"
+(v1.0 used cash interest paid) and P&G "Debt due within one year" (includes the 3m "Other" line). Two deliberately different templates:
 
   A  us_10k_millions.pdf   P&G-style 10-K: "Amounts in millions", $ signs, 2 year columns, cover
                            and narrative pages, capex shown in parentheses.
+  C  ar_unlabelled.pdf     Template B without currency, unit scale, year-end date or operating cash flow
+                           (exercises the review gate, DATA-01).
   B  ar_thousands.pdf      B&G-style annual report: "In thousands", a Note column, 3 year columns,
                            em-dash zeros, 52/53-week year-end, numbers inside narrative text.
 
@@ -19,11 +23,11 @@ OUT = Path(__file__).parent
 PG = {  # USD millions, FY2026 then FY2025
     "rev": (87032, 84284), "oi": (19748, 20451), "int": (877, 907), "ni": (16046, 15974),
     "da": (3160, 2847), "cfo": (19556, 17817), "capex": (4409, 3773), "cash": (9942, 9556),
-    "stb_cur": (11294, 9485), "ltd": (22842, 24995), "ca": (26208, 25392), "ta": (126521, 125231),
+    "stb_cur": (11296, 9513), "ltd": (22842, 24995), "ca": (26208, 25392), "ta": (126521, 125231),
     "cl": (38694, 36058), "tl": (72210, 72946), "eq": (54311, 52284),
 }
 BG = {  # USD thousands, FY2025 (ended Jan 3 2026), FY2024, FY2023
-    "rev": (1828687, 1932454, 2062313), "oi": (97147, -177277, 80419), "int": (149039, 142424, 141950),
+    "rev": (1828687, 1932454, 2062313), "oi": (97147, -177277, 80419), "int": (149631, 157447, 151333),
     "ni": (-43257, -251251, -66198), "da": (66223, 68614, 69620), "cfo": (101396, 130914, 247759),
     "capex": (30647, 27263, 25689), "cash": (56293, 50583, 41094), "cur": (4500, 5625, 22000),
     "stb": (0, 0, 0), "ltd": (1945576, 2014823, 2023088), "ca": (739818, 781444, 802824),
@@ -42,7 +46,7 @@ def money(v, dollar=False, dash_zero=False):
 
 class Doc:
     def __init__(self, path):
-        self.c = canvas.Canvas(str(path), pagesize=LETTER)
+        self.c = canvas.Canvas(str(path), pagesize=LETTER, invariant=1)   # byte-stable output
         self.y = 740
 
     def text(self, s, x=54, size=9, bold=False, dy=13):
@@ -127,49 +131,58 @@ def template_a():
     d.save()
 
 
-def template_b():
-    d = Doc(OUT / "ar_thousands.pdf")
+def template_b(unlabelled=False):
+    """unlabelled=True renders C, ar_unlabelled.pdf: the same statements with no currency, no unit scale, no
+    year-end date and no operating-cash-flow line, to exercise the review gate (DATA-01) end to end."""
+    d = Doc(OUT / ("ar_unlabelled.pdf" if unlabelled else "ar_thousands.pdf"))
     xs, nx = [420, 490, 560], 330
+    usd = not unlabelled
+
+    def mny(v, dollar=False, dash_zero=False):   # variant C prints no currency symbols
+        return money(v, dollar and usd, dash_zero)
     d.text("B&G Foods, Inc. Annual Report (test rendering of reported figures)", size=11, bold=True)
     d.y -= 10
-    for line in ["Letter to shareholders",
-                 "In fiscal 2025 net sales were $1.83 billion, down 5.4% from $1.93 billion in fiscal 2024.",
-                 "We reduced long-term debt by $69 million and remain focused on deleveraging toward 5.5x.",
-                 "Our 52-week fiscal year 2025 ended on January 3, 2026."]:
+    for line in (["Letter to shareholders",
+                  "In fiscal 2025 net sales were $1.83 billion, down 5.4% from $1.93 billion in fiscal 2024.",
+                  "We reduced long-term debt by $69 million and remain focused on deleveraging toward 5.5x.",
+                  "Our 52-week fiscal year 2025 ended on January 3, 2026."] if usd else
+                 ["Letter to shareholders", "Fiscal 2025 was a year of deleveraging and portfolio simplification."]):
         d.text(line)
     d.page()
     d.text("B&G Foods, Inc. and Subsidiaries", bold=True)
     d.text("Consolidated Statements of Operations", size=11, bold=True)
-    d.text("(In thousands, except per share data)   Fiscal years ended January 3, 2026, December 28, 2024 and December 30, 2023")
+    d.text("(In thousands, except per share data)   Fiscal years ended January 3, 2026, December 28, 2024 and December 30, 2023"
+           if usd else "Fiscal years 2025, 2024 and 2023")
     d.row("", ["2025", "2024", "2023"], xs, bold=True, note="Note", note_x=nx)
-    d.row("Net sales", [money(v, True) for v in BG["rev"]], xs, note="3", note_x=nx)
+    d.row("Net sales", [mny(v, True) for v in BG["rev"]], xs, note="3", note_x=nx)
     d.row("Cost of goods sold", ["1,423,111", "1,513,876", "1,632,912"], xs)
     d.row("Gross profit", ["405,576", "418,578", "429,401"], xs)
     d.row("Impairment of assets held for sale", ["—", "322,000", "63,000"], xs, note="6", note_x=nx)
-    d.row("Operating income (loss)", [money(v) for v in BG["oi"]], xs)
-    d.row("Interest expense, net", [money(v) for v in BG["int"]], xs, note="9", note_x=nx)
-    d.row("Net loss", [money(v, True) for v in BG["ni"]], xs, bold=True)
+    d.row("Operating income (loss)", [mny(v) for v in BG["oi"]], xs)
+    d.row("Interest expense, net", [mny(v) for v in BG["int"]], xs, note="9", note_x=nx)
+    d.row("Net loss", [mny(v, True) for v in BG["ni"]], xs, bold=True)
     d.page()
     d.text("Consolidated Balance Sheets", size=11, bold=True)
-    d.text("(In thousands)")
+    d.text("(In thousands)" if usd else "")
     d.row("", ["2025", "2024", "2023"], xs, bold=True)
-    d.row("Cash and cash equivalents", [money(v, True) for v in BG["cash"]], xs)
-    d.row("Total current assets", [money(v) for v in BG["ca"]], xs)
-    d.row("Total assets", [money(v, True) for v in BG["ta"]], xs, bold=True)
-    d.row("Current portion of long-term debt", [money(v) for v in BG["cur"]], xs, note="9", note_x=nx)
-    d.row("Short-term borrowings", [money(v, dash_zero=True) for v in BG["stb"]], xs)
-    d.row("Total current liabilities", [money(v) for v in BG["cl"]], xs)
-    d.row("Long-term debt, net of current portion", [money(v) for v in BG["ltd"]], xs, note="9", note_x=nx)
-    d.row("Total liabilities", [money(v) for v in BG["tl"]], xs, bold=True)
-    d.row("Total stockholders' equity", [money(v) for v in BG["eq"]], xs, bold=True)
+    d.row("Cash and cash equivalents", [mny(v, True) for v in BG["cash"]], xs)
+    d.row("Total current assets", [mny(v) for v in BG["ca"]], xs)
+    d.row("Total assets", [mny(v, True) for v in BG["ta"]], xs, bold=True)
+    d.row("Current portion of long-term debt", [mny(v) for v in BG["cur"]], xs, note="9", note_x=nx)
+    d.row("Short-term borrowings", [mny(v, dash_zero=True) for v in BG["stb"]], xs)
+    d.row("Total current liabilities", [mny(v) for v in BG["cl"]], xs)
+    d.row("Long-term debt, net of current portion", [mny(v) for v in BG["ltd"]], xs, note="9", note_x=nx)
+    d.row("Total liabilities", [mny(v) for v in BG["tl"]], xs, bold=True)
+    d.row("Total stockholders' equity", [mny(v) for v in BG["eq"]], xs, bold=True)
     d.page()
     d.text("Consolidated Statements of Cash Flows", size=11, bold=True)
-    d.text("(In thousands)")
+    d.text("(In thousands)" if usd else "")
     d.row("", ["2025", "2024", "2023"], xs, bold=True)
-    d.row("Net loss", [money(v) for v in BG["ni"]], xs)
-    d.row("Depreciation and amortization", [money(v) for v in BG["da"]], xs)
-    d.row("Net cash provided by operating activities", [money(v) for v in BG["cfo"]], xs, bold=True)
-    d.row("Capital expenditures", [money(-v) for v in BG["capex"]], xs)
+    d.row("Net loss", [mny(v) for v in BG["ni"]], xs)
+    d.row("Depreciation and amortization", [mny(v) for v in BG["da"]], xs)
+    if usd:
+        d.row("Net cash provided by operating activities", [mny(v) for v in BG["cfo"]], xs, bold=True)
+    d.row("Capital expenditures", [mny(-v) for v in BG["capex"]], xs)
     d.row("Net cash used in investing activities", ["(18,102)", "(14,915)", "(6,700)"], xs, bold=True)
     d.save()
 
@@ -177,4 +190,5 @@ def template_b():
 if __name__ == "__main__":
     template_a()
     template_b()
-    print("wrote", OUT / "us_10k_millions.pdf", OUT / "ar_thousands.pdf")
+    template_b(unlabelled=True)
+    print("wrote", OUT / "us_10k_millions.pdf", OUT / "ar_thousands.pdf", OUT / "ar_unlabelled.pdf")

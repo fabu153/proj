@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import re
 from dataclasses import asdict, dataclass, field
+from datetime import date
 from typing import Optional
 
 import pdfplumber
@@ -169,7 +170,10 @@ def detect_year_end(text: str, latest_year: int) -> tuple[Optional[str], bool]:
         m = m2
     month = MONTHS.index(m.group(1).lower()) + 1
     year = int(m.group(3)) if m.lastindex and m.lastindex >= 3 and m.group(3) else latest_year
-    return f"{year:04d}-{month:02d}-{int(m.group(2)):02d}", False
+    try:
+        return date(year, month, int(m.group(2))).isoformat(), False
+    except ValueError:            # e.g. "June 31": not a calendar date -> the analyst must confirm it
+        return None, True
 
 
 def classify_page(text: str) -> Optional[str]:
@@ -221,12 +225,12 @@ def extract(data: bytes) -> Extraction:
     stmt_text = "\n".join(texts[i] for pages in statement_pages.values() for i in pages)
     scale, scale_label = detect_scale(stmt_text)
     if scale is None:
-        issues.append("Unit scale (thousands/millions) not stated on statement pages; assumed units")
-        scale, scale_label = 1.0, "units"
-    currency = detect_currency(stmt_text) or None
+        # values are kept in the units as printed; the analyst must confirm the scale before analysis
+        issues.append("Unit scale (thousands/millions) not stated on the statement pages; confirm it in review")
+        scale, scale_label = 1.0, None
+    currency = detect_currency(stmt_text)
     if currency is None:
-        issues.append("Currency not detected; assumed USD")
-        currency = "USD"
+        issues.append("Reporting currency not stated on the statement pages; confirm it in review")
 
     raw: dict[str, list[Candidate]] = {}
     years: list[int] = []
@@ -291,7 +295,7 @@ def extract(data: bytes) -> Extraction:
     latest = max(years) if years else 0
     fye, inferred = detect_year_end(stmt_text, latest) if latest else (None, True)
     if inferred:
-        issues.append("Fiscal year-end date not stated; assumed December 31 — confirm in review")
+        issues.append("Fiscal year-end date not stated or not a valid date; confirm it in review")
     _cross_checks(candidates, scale, issues)
     found = {c.field for c in candidates if c.period == "t"}
     for f in CRITICAL:

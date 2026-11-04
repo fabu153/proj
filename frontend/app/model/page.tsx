@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import ApiStatus from "@/components/ApiStatus";
 import TopBar from "@/components/TopBar";
 import { api } from "@/lib/api";
+import { useApiReady } from "@/lib/useApi";
 import { featureLabel } from "@/lib/labels";
 
 const f3 = (v: number) => v.toFixed(3);
@@ -11,15 +13,28 @@ const f3 = (v: number) => v.toFixed(3);
 export default function ModelXRay() {
   const [data, setData] = useState<{ metadata: any; xray: any } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const apiState = useApiReady();
   useEffect(() => {
+    if (apiState.phase !== "ready") return;
+    setError(null);
     api.model().then(setData).catch((e) => setError(e.message));
-  }, []);
+  }, [apiState.phase]);
 
   if (error || !data) {
     return (
       <>
         <TopBar active="model" />
-        <main className="page">{error ? <div className="notice error">{error}</div> : <p className="skeleton">Loading model evidence…</p>}</main>
+        <main className="page">
+          <ApiStatus state={apiState} onRetry={apiState.retry} />
+          {error ? (
+            <div className="notice error" role="alert">
+              Could not load the model evidence: {error}{" "}
+              <button type="button" className="link" onClick={apiState.retry}>Try again</button>
+            </div>
+          ) : apiState.phase === "ready" ? (
+            <p className="skeleton" role="status"><span className="spinner" aria-hidden="true" />Loading model evidence…</p>
+          ) : null}
+        </main>
       </>
     );
   }

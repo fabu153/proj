@@ -1,6 +1,7 @@
 """Freeze a release (Blueprint p.20, Week 8): checksum every data, model and config artifact.
 
     python scripts/freeze_release.py 1.0.0
+    python scripts/freeze_release.py 1.1.0 "reason for the new release"
 
 Writes release/manifest.json. tests/unit/test_release_manifest.py recomputes the hashes, so any
 change to a frozen artifact fails CI until it is re-frozen on purpose (new version).
@@ -51,8 +52,15 @@ def files() -> list[Path]:
     return out
 
 
-def main(version: str):
+def main(version: str, reason: str = ""):
     meta = json.loads(Path("backend/models/stress_mlp_v1/metadata.json").read_text())
+    prev_path = Path("release/manifest.json")
+    prev = json.loads(prev_path.read_text()) if prev_path.exists() else None
+    current = {str(p): sha256(p) for p in files()}
+    changed = sorted(f for f in current if prev and prev["files"].get(f) != current[f])
+    if any(f.startswith("backend/models/") for f in changed):
+        sys.exit(f"refusing to freeze: model artifacts changed {[f for f in changed if f.startswith('backend/models/')]}; "
+                 "a model change needs its own documented version")
     commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     manifest = {
         "version": version,
@@ -64,7 +72,11 @@ def main(version: str):
         "test_metrics": {"mlp_pr_auc": meta["test_metrics_calibrated"]["pr_auc"],
                          "mlp_pr_auc_ci95": meta["test_bootstrap"]["pr_auc_ci95"],
                          "xgboost_pr_auc": meta["xgboost_test_pr_auc"]},
-        "files": {str(p): sha256(p) for p in files()},
+        "previous_version": prev["version"] if prev else None,
+        "reason": reason or None,
+        "changed_since_previous": changed,
+        "model_artifacts_unchanged": not any(f.startswith("backend/models/") for f in changed),
+        "files": current,
         "reproduce": REPRODUCE,
     }
     Path("release").mkdir(exist_ok=True)
@@ -73,4 +85,4 @@ def main(version: str):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "1.0.0")
+    main(sys.argv[1] if len(sys.argv) > 1 else "1.0.0", sys.argv[2] if len(sys.argv) > 2 else "")

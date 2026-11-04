@@ -17,7 +17,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-ENGINE_VERSION = "1.0.0"
+ENGINE_VERSION = "1.1.0"   # 1.1: refinancing/rate-floor validation, no interest clamp
 
 
 class UseOfProceeds(str, Enum):
@@ -75,6 +75,10 @@ class FXBlocked(ValueError):
     """Raised when a facility currency differs from reporting currency and no FX rate is given."""
 
 
+class ScenarioInputError(ValueError):
+    """Assumptions that contradict the borrower's reported figures. The scenario is withheld, never patched."""
+
+
 class ScenarioResult(BaseModel):
     name: str
     engine_version: str = ENGINE_VERSION
@@ -125,25 +129,41 @@ def pro_forma(base: Baseline, fac: Facility) -> tuple[float, float, float, float
                      f"net debt unchanged at close.")
     elif use is UseOfProceeds.REFINANCING:
         repaid = min(amt, base.gross_debt)
-        rate = fac.refinanced_debt_rate
-        if rate is None:
-            rate = base.interest_expense / base.gross_debt if base.gross_debt > 0 else 0.0
-        saved = repaid * rate
-        existing_int -= saved
-        # assume repaid debt comes pro rata from fixed/floating buckets
-        if base.gross_debt > 0:
+        if repaid == 0:
+            cash += amt
+            gd += amt
+            steps.append(f"Uses: refinancing selected but the borrower reports no existing debt; proceeds {amt:,.2f} "
+                         f"held as cash -> gross debt +{amt:,.2f}, cash +{amt:,.2f}.")
+        else:
+            entered = fac.refinanced_debt_rate is not None
+            rate = fac.refinanced_debt_rate if entered else base.interest_expense / base.gross_debt
+            saved = repaid * rate
+            # The retired debt's interest is part of the reported total, so it cannot exceed that total.
+            if saved > base.interest_expense * 1.005 + 0.01:
+                max_rate = base.interest_expense / repaid
+                raise ScenarioInputError(
+                    f"Refinancing assumption conflicts with the reported figures: retiring {repaid:,.2f} at "
+                    f"{rate:.2%} would remove {saved:,.2f} of interest, but total reported interest expense is only "
+                    f"{base.interest_expense:,.2f}. Use a rate of at most {max_rate:.2%} (or leave it blank to use the "
+                    f"average cost of debt, {base.interest_expense / base.gross_debt:.2%}).")
+            existing_int -= saved
+            # repaid debt is assumed to come pro rata from the fixed and floating buckets
             existing_floating *= (base.gross_debt - repaid) / base.gross_debt
-        gd = gd - repaid + amt
-        cash += amt - repaid
-        steps.append(f"Uses: refinance {repaid:,.2f} of existing debt at {rate:.2%} -> interest saved {saved:,.2f}; "
-                     f"gross debt {base.gross_debt:,.2f} -> {gd:,.2f}.")
-        if amt > repaid:
-            steps.append(f"Excess proceeds {amt - repaid:,.2f} retained as cash.")
+            gd = gd - repaid + amt
+            cash += amt - repaid
+            steps.append(f"Uses: refinance {repaid:,.2f} of existing debt at {rate:.2%} "
+                         f"({'entered' if entered else 'average cost of debt = interest / gross debt'}) -> interest "
+                         f"on retired debt {saved:,.2f} removed; existing interest {base.interest_expense:,.2f} -> "
+                         f"{existing_int:,.2f}; gross debt {base.gross_debt:,.2f} -> {gd:,.2f}.")
+            if amt > repaid:
+                steps.append(f"Excess proceeds {amt - repaid:,.2f} retained as cash.")
 
     new_int = amt * fac.coupon
     steps.append(f"New facility interest: {amt:,.2f} x {fac.coupon:.2%} = {new_int:,.2f} "
                  f"({'floating' if fac.floating else 'fixed'}, {fac.tenor_years}y "
-                 f"{'bullet' if fac.annual_amortization == 0 else 'amortizing'}).")
+                 f"{'bullet' if fac.annual_amortization == 0 else 'amortizing'})"
+                 + ("; first-year interest on the full opening balance, repayments lower it from year 2 "
+                    "(see the repayment schedule)." if fac.annual_amortization else "."))
     floating_debt = existing_floating + (amt if fac.floating else 0.0)
     return gd, cash, existing_int, new_int, floating_debt, steps
 
@@ -161,11 +181,21 @@ def run_scenario(base: Baseline, fac: Optional[Facility], shock: Shock,
     if shock.ebitda_shock:
         steps.append(f"EBITDA shock {shock.ebitda_shock:+.0%}: {base.ebitda:,.2f} -> {ebitda:,.2f}.")
     delta_rate = shock.rate_shock_bps / 10_000
+    if delta_rate < 0:   # a cut cannot take any floating rate below zero
+        if fac is not None and fac.floating and fac.coupon + delta_rate < 0:
+            raise ScenarioInputError(f"A {shock.rate_shock_bps:+.0f} bp shock would take the facility coupon "
+                                     f"({fac.coupon:.2%}) below zero.")
+        avg = base.interest_expense / base.gross_debt if base.gross_debt > 0 else 0.0
+        if base.existing_floating_share > 0 and avg + delta_rate < 0:
+            raise ScenarioInputError(f"A {shock.rate_shock_bps:+.0f} bp shock would take the existing floating debt "
+                                     f"(average cost {avg:.2%}) below zero.")
     rate_add = floating_debt * delta_rate
     if shock.rate_shock_bps:
         steps.append(f"Rate shock {shock.rate_shock_bps:+.0f} bps on floating debt {floating_debt:,.2f} "
                      f"-> interest {rate_add:+,.2f}. Fixed-rate debt not repriced.")
-    interest = max(existing_int + new_int + rate_add, 0.0)
+    interest = existing_int + new_int + rate_add
+    if interest < new_int + min(rate_add, 0.0) - 1e-9 or interest < 0:   # guarded above; never clamp silently
+        raise ScenarioInputError(f"Inconsistent interest result ({interest:,.2f}); check the refinancing inputs.")
     nd = gd - cash
 
     lev_ok = ebitda > 0

@@ -66,8 +66,8 @@ class SECClient:
 
     # ------------------------------------------------------------------ endpoints
     def company_facts(self, cik: str | int, refresh: bool = False) -> dict:
-        from .xbrl import TAG_REGISTRY
-        keep = {t for _, tags in TAG_REGISTRY.values() for t in tags}
+        from .xbrl import SUPPLEMENTAL_REGISTRY, TAG_REGISTRY
+        keep = {t for _, tags in {**TAG_REGISTRY, **SUPPLEMENTAL_REGISTRY}.values() for t in tags}
 
         def compact(d: dict) -> dict:
             ug = d.get("facts", {}).get("us-gaap", {})

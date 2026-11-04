@@ -35,11 +35,13 @@ function describeSource(src: Record<string, any>): string {
     case "model_evaluation":
       return "Frozen test-window evaluation (Model X-Ray)";
     case "scenario":
-      return `Loan engine v${src.engine_version}, ${src.case} case: EBITDA ${Math.round(src.ebitda_shock * 100)}%, rates +${src.rate_shock_bps} bp`;
+      return `Loan engine v${src.engine_version}, ${src.case} case: EBITDA ${Math.round(src.ebitda_shock * 100)}%, rates ${src.rate_shock_bps >= 0 ? "+" : ""}${src.rate_shock_bps} bp${src.snapshot ? `, snapshot ${src.snapshot}` : ""}`;
     case "assumption":
       return "Your input in the loan lab";
     case "data_checks":
-      return "Data-quality checks for this fiscal year";
+      return src.rules ? `Data-quality rules: ${Object.values(src.rules).join("; ")}` : src.detail ?? "Data-quality checks for this fiscal year";
+    case "snapshot":
+      return src.detail ?? "Analysis snapshot";
     default:
       return src.detail ?? "";
   }
@@ -99,7 +101,17 @@ export default function EvidenceRail({ analysis, selected, citation }: { analysi
           return (
             <div className="src" key={f}>
               <strong>{FACT_LABELS[f] ?? f}</strong>
-              {ev && ev.page ? (
+              {der ? (
+                <div className="num">
+                  {fmt(der.value, "amount")} used in the ratios, by rule {der.rule}
+                  {ev && (
+                    <div className="fine">
+                      As {ev.page ? `extracted from page ${ev.page}` : <>tagged in XBRL (<code>{ev.tag}</code>)</>}: {fmt(ev.value, "amount")}
+                      {der.basis === "credit" ? ". The neural screen keeps the as-tagged value, which is what it was trained on." : "."}
+                    </div>
+                  )}
+                </div>
+              ) : ev && ev.page ? (
                 <div className="num">
                   {fmt(ev.value, "amount")} from the uploaded report, page {ev.page}
                   <br />
@@ -114,14 +126,9 @@ export default function EvidenceRail({ analysis, selected, citation }: { analysi
                     accession {ev.accession}
                   </a>
                 </div>
-              ) : der ? (
-                <div className="num">
-                  {fmt(der.value, "amount")} derived by rule {der.rule}
-                </div>
               ) : (
                 <div className="na">Not reported in this filing</div>
               )}
-              {der && ev && <div className="fine">Overridden by derivation rule {der.rule}</div>}
             </div>
           );
         })}

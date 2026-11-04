@@ -28,15 +28,19 @@ const m1 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFra
 const x2 = (v: number | null) => (v === null ? "n/a" : `${v.toFixed(2)}x`);
 const amt = (v: number) => (v < 0 ? `(${m1.format(-v)})` : m1.format(v));
 
+export type LabParams = { facility: Facility; covenants: Covenants; existing_floating_share: number; shocks: Shock[] };
+/** What the loan table currently shows. The memo compares its own snapshot id with `snapshotId`. */
+export type LabState = { params: LabParams; snapshotId: string | null; status: "calculating" | "current" | "error" };
+
 type Props = {
   companyId: string;
   fiscalYear: string;
   reportingCurrency: string;
   blocked: boolean;
-  onParams?: (p: { facility: Facility; covenants: Covenants; existing_floating_share: number }) => void;
+  onState?: (s: LabState) => void;
 };
 
-export default function LoanLab({ companyId, fiscalYear, reportingCurrency, blocked, onParams }: Props) {
+export default function LoanLab({ companyId, fiscalYear, reportingCurrency, blocked, onState }: Props) {
   const [fac, setFac] = useState<Facility>({
     amount: 100,
     currency: reportingCurrency,
@@ -71,10 +75,10 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     [companyId, fiscalYear, fac, fxNeeded, ebitdaShock, rateBps, cov, floatShare],
   );
 
-  useEffect(() => {
-    onParams?.({ facility: body.facility, covenants: body.covenants, existing_floating_share: body.existing_floating_share });
-  }, [body, onParams]);
-
+  const params: LabParams = useMemo(
+    () => ({ facility: body.facility, covenants: body.covenants, existing_floating_share: body.existing_floating_share, shocks: body.shocks }),
+    [body],
+  );
   const fxMissing = fxNeeded && !fac.fx_rate_to_reporting;
 
   useEffect(() => {
@@ -82,9 +86,12 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     if (fxMissing) {
       // known to be refused by the API (currencies are never mixed); ask for the rate without a failing request
       setError("fx");
+      onState?.({ params, snapshotId: null, status: "error" });
       return;
     }
     let live = true;
+    setBusy(true);                          // results on screen are now stale until the new ones arrive
+    onState?.({ params, snapshotId: null, status: "calculating" });
     const t = setTimeout(async () => {
       setBusy(true);
       try {
@@ -96,8 +103,12 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
         setRes(withLoan);
         setBefore(statusQuo.results[0]);
         setError(null);
+        onState?.({ params, snapshotId: withLoan.snapshot?.id ?? null, status: "current" });
       } catch (e) {
-        if (live) setError((e as Error).message);
+        if (live) {
+          setError((e as Error).message);
+          onState?.({ params, snapshotId: null, status: "error" });
+        }
       } finally {
         if (live) setBusy(false);
       }
@@ -106,7 +117,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
       live = false;
       clearTimeout(t);
     };
-  }, [body, blocked, fxMissing]);
+  }, [body, params, blocked, fxMissing, onState]);
 
   if (blocked) {
     return <div className="notice error">Loan scenarios are blocked until the data-check failures on the right are resolved.</div>;
@@ -159,6 +170,18 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
               ))}
             </select>
           </Field>
+          {fac.use_of_proceeds === "refinancing" && (
+            <Field label="Rate on the debt repaid (%; blank = average cost of debt)">
+              <input
+                type="number"
+                step={0.25}
+                min={0}
+                placeholder="interest / gross debt"
+                value={fac.refinanced_debt_rate === null ? "" : +(fac.refinanced_debt_rate * 100).toFixed(2)}
+                onChange={(e) => set("refinanced_debt_rate", e.target.value === "" ? null : +e.target.value / 100)}
+              />
+            </Field>
+          )}
           <div className="inline">
             <Field label="All-in coupon (%)">
               <input type="number" step={0.25} min={0} value={+(fac.coupon * 100).toFixed(2)} onChange={(e) => set("coupon", +e.target.value / 100)} />
@@ -191,10 +214,10 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
         <fieldset>
           <legend>Covenants to test</legend>
           <div className="inline">
-            <Field label="Max net leverage (x)">
+            <Field label="Max net debt / EBITDA (x)">
               <input type="number" step={0.25} min={0} value={cov.max_net_leverage ?? ""} onChange={(e) => setCov((c) => ({ ...c, max_net_leverage: e.target.value ? +e.target.value : null }))} />
             </Field>
-            <Field label="Min EBITDA cover (x)">
+            <Field label="Min EBITDA / interest (x)">
               <input type="number" step={0.25} min={0} value={cov.min_ebitda_interest_cover ?? ""} onChange={(e) => setCov((c) => ({ ...c, min_ebitda_interest_cover: e.target.value ? +e.target.value : null }))} />
             </Field>
           </div>
@@ -202,6 +225,13 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
       </form>
 
       <div className="results" aria-live="polite" aria-busy={busy}>
+        {!error && res && (
+          busy ? (
+            <span className="stale-tag" role="status"><span className="spinner" aria-hidden="true" />Recalculating: the figures below are from the previous inputs</span>
+          ) : res.snapshot ? (
+            <span className="ok-tag">Current · snapshot <code className="snap">{res.snapshot.id}</code></span>
+          ) : null
+        )}
         {error ? (
           <div className="notice">
             {error === "fx"
@@ -209,9 +239,9 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
               : error}
           </div>
         ) : !res ? (
-          <p className="skeleton">Calculating scenarios…</p>
+          <p className="skeleton" role="status"><span className="spinner" aria-hidden="true" />Calculating scenarios…</p>
         ) : (
-          <>
+          <div className={busy ? "stale-results" : undefined}>
             <h4>Covenant headroom</h4>
             {cov.max_net_leverage !== null && (
               <CovenantRuler cases={cases} limit={cov.max_net_leverage} kind="max" />
@@ -301,7 +331,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
               </table>
             </details>
             <p className="fine">{res.disclaimer} Proceeds spent on capex or acquisitions are assumed to add no EBITDA.</p>
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -346,7 +376,7 @@ function CovenantRuler({ cases, limit, kind }: { cases: ScenarioResult[]; limit:
       <Ruler
         min={0}
         max={max}
-        ariaLabel={kind === "max" ? "Net leverage by case against covenant" : "Interest cover by case against covenant"}
+        ariaLabel={kind === "max" ? "Net debt / EBITDA by case against covenant" : "EBITDA / interest by case against covenant"}
         segments={kind === "max" ? [{ to: limit, color: ok }, { to: max, color: bad }] : [{ to: limit, color: bad }, { to: max, color: ok }]}
         threshold={{ value: limit, label: `limit ${limit.toFixed(2)}x` }}
         marks={cases.map((c, i) => ({ label: c.name, value: vals[i], color: CASE_COLORS[c.name] ?? "#0e1b2c" }))}

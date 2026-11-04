@@ -17,7 +17,7 @@ Conventions
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Mapping, Optional
 
@@ -191,9 +191,13 @@ def debt_to_assets(gross_debt_value: Optional[float], total_assets: Optional[flo
 
 
 # --------------------------------------------------------------------------- full panel
-def compute_all(fy: Mapping[str, Optional[float]], prior: Optional[Mapping[str, Optional[float]]] = None
-                ) -> dict[str, MetricResult]:
-    """Compute the whole metric dictionary for one company-year of canonical facts."""
+def compute_all(fy: Mapping[str, Optional[float]], prior: Optional[Mapping[str, Optional[float]]] = None,
+                cash_basis: str = "unrestricted") -> dict[str, MetricResult]:
+    """Compute the whole metric dictionary for one company-year of canonical facts.
+
+    cash_basis="combined_not_separable" (rule R5) qualifies net debt and net leverage: the cash figure includes
+    restricted cash that the filing does not separate, so net debt may be understated.
+    """
     g = fy.get
     out: dict[str, MetricResult] = {}
     out["ebitda"] = e = ebitda(g("operating_income"), g("depreciation_amortization"))
@@ -209,4 +213,10 @@ def compute_all(fy: Mapping[str, Optional[float]], prior: Optional[Mapping[str, 
     out["fcf_simple"] = free_cash_flow(g("operating_cash_flow"), g("capital_expenditures"))
     out["current_ratio"] = current_ratio(g("current_assets"), g("current_liabilities"))
     out["debt_to_assets"] = debt_to_assets(gd.value, g("total_assets"))
+    if cash_basis == "combined_not_separable":
+        note = "cash_includes_restricted_cash_not_separable"
+        for k in ("net_debt", "net_leverage"):
+            r = out[k]
+            if r.value is not None:
+                out[k] = replace(r, status=Status.WARNING, reason=f"{r.reason};{note}" if r.reason else note)
     return out

@@ -12,7 +12,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="demo-banner" role="note">
+          Course demo, IE Master in Finance (AI in Finance). Public company filings and sample data only; not for real credit decisions.
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

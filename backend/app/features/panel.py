@@ -33,10 +33,10 @@ def panel_rows(companyfacts: dict, meta: Optional[dict] = None, as_of: Optional[
     years = build_company_years(companyfacts, as_of=as_of, vintage="original")
     comp = []
     for i, cy in enumerate(years):
-        vals = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(cy).items()}
+        vals = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(cy, basis="model").items()}
         prior = None
         if i > 0 and 330 <= (_d(cy.fiscal_year_end) - _d(years[i - 1].fiscal_year_end)).days <= 400:
-            prior = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(years[i - 1]).items()}
+            prior = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(years[i - 1], basis="model").items()}
         comp.append((cy, vals, compute_all(vals, prior)))
 
     rows = []

@@ -1,7 +1,7 @@
 {
- "version": "1.0.0",
- "frozen_at": "2026-11-04 19:48 UTC",
- "frozen_from_commit": "14080f4da07a95cf09599a3b210a4ee4c13855d1",
+ "version": "1.1.0",
+ "frozen_at": "2026-11-04 22:31 UTC",
+ "frozen_from_commit": "ad4b087a4725e2e034fcfafa6ac8fceb7ba1e4dd",
  "python": "3.13.18",
  "model": {
   "model": "stress_mlp_v1",
@@ -20,6 +20,17 @@
   ],
   "xgboost_pr_auc": 0.8250541134723463
  },
+ "previous_version": "1.0.0",
+ "reason": "Stage A 10-K reconciliation: curated SEC caches refetched with supplemental tags for credit-basis rules R5-R7; upload fixtures regenerated from the 10-Ks (B&G interest corrected), new fixture C, byte-stable rendering. Model artifacts unchanged.",
+ "changed_since_previous": [
+  "backend/data/curated/companyfacts_0000080424.json.gz",
+  "backend/data/curated/companyfacts_0001067701.json.gz",
+  "backend/data/curated/companyfacts_0001278027.json.gz",
+  "tests/fixtures/ar_thousands.pdf",
+  "tests/fixtures/ar_unlabelled.pdf",
+  "tests/fixtures/us_10k_millions.pdf"
+ ],
+ "model_artifacts_unchanged": true,
  "files": {
   "configs/assumptions.yaml": "ebb374a77536302cfff8a5263168ae00d6027de489bf81295137c612786728f4",
   "configs/experiment_baselines_v1.yaml": "ee1a3a98ddc6d1418a48039a8f4dba505cf6fffb86949951f610db2f36ed6e3a",
@@ -36,12 +47,13 @@
   "backend/models/stress_mlp_v1/training_ciks.json": "6fd124b5308704b2629128257eb31ae41f6edc22b223b0ecf53a3ba7f59a2437",
   "backend/models/stress_mlp_v1/weights.npz": "eadaca645fb13d26d17b6d93f081a2af0e4f7a6fc65107d479f651b845e50736",
   "backend/models/stress_mlp_v1/xray.json": "5c198ff7d73921107382f624e6f659a000002106eec4d411bed15dc40e94a46b",
-  "backend/data/curated/companyfacts_0000080424.json.gz": "8326f8e11c989f9d7799d5fdf6679278e29dd60aec24f0d5dcec88da9197eb4b",
-  "backend/data/curated/companyfacts_0001067701.json.gz": "6ed1f7eb8aa746c20f9648dbef016e66c9cf28cf4df800bb440de9b6cd3309d0",
-  "backend/data/curated/companyfacts_0001278027.json.gz": "4f47521fbf25e0253a6e03127378e1fc17628cb4b232fbfc4e2c02ccf9b02168",
+  "backend/data/curated/companyfacts_0000080424.json.gz": "12a812369cf78e0d16cc83ef15a6e6aeb6b6a0fe800ef9539158d6b322c42084",
+  "backend/data/curated/companyfacts_0001067701.json.gz": "ad35be8069413a3b7b8d60cfaca38d6a77c772209bde42a7abe7b13822bd6434",
+  "backend/data/curated/companyfacts_0001278027.json.gz": "73fd7b866ac700c69d339f1ff9191c2e474571cb29b3951524d88db9df3c4074",
   "docs/scenario_crosscheck.xlsx": "982baaecdf40e7ffbbd6769ad7dc4a419832f1ac23cd1bc0aff7698a6077e6cd",
-  "tests/fixtures/ar_thousands.pdf": "8811c101aa4d91715d218b7ac1ba1a8345b652930a9f61a281c1d6d9930e58e6",
-  "tests/fixtures/us_10k_millions.pdf": "0ced640c9d858575217ea2305020947395aed6f113352136679920a3928d9912",
+  "tests/fixtures/ar_thousands.pdf": "8f88003a5921b1ae2fcf8e41f3c8198ec0fbd3a058fd8779fee10b0542a7cb4a",
+  "tests/fixtures/ar_unlabelled.pdf": "0f01a431f6d3f19cbcc41b5ac42f1b6ad51015c9edb1409e671b4abce504888d",
+  "tests/fixtures/us_10k_millions.pdf": "c1bcbc562eb92e4c1e43440a97b15f6f312c2c653cbb125b890728129d312123",
   "requirements-api.txt": "91c99b55a85a893c1cde4a5d0aac7f908a82bc5144a1287a80537dfc2073627c",
   "requirements-ml.txt": "b356eeec008142d9cdccf95a3d95d4207443933e5598ffba384a5659458a2bbf",
   "frontend/package-lock.json": "bf338383be5c725228d1066bd5d2866d10d40014563be8d1706c128dd10d4bd3"

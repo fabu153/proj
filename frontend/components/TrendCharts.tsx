@@ -8,7 +8,7 @@ const C = { ink: "#0e1b2c", teal: "#0f7c7a", slate: "#8c9aab", amber: "#a4650a",
 const n0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const n2 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
-export default function TrendCharts({ history, upto }: { history: HistoryPoint[]; upto: string }) {
+export default function TrendCharts({ history, upto, currency = "USD" }: { history: HistoryPoint[]; upto: string; currency?: string }) {
   const data = history
     .filter((h) => h.fiscal_year_end <= upto)
     .slice(-8)
@@ -24,7 +24,7 @@ export default function TrendCharts({ history, upto }: { history: HistoryPoint[]
     <div className="chart-pair">
       <div className="sheet chart">
         <h4>Revenue and EBITDA</h4>
-        <p>USD millions, annual. EBITDA is operating income plus D&amp;A, unadjusted.</p>
+        <p>{currency} millions, annual. EBITDA is operating income plus D&amp;A, unadjusted.</p>
         <ResponsiveContainer width="100%" height={220}>
           <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={C.grid} vertical={false} />
@@ -48,8 +48,8 @@ export default function TrendCharts({ history, upto }: { history: HistoryPoint[]
             <YAxis yAxisId="r" orientation="right" tick={axis} tickLine={false} axisLine={false} width={40} tickFormatter={(v) => `${v}x`} />
             <Tooltip formatter={(v) => `${n2.format(Number(v))}x`} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line yAxisId="l" dataKey="netLev" name="Net leverage" stroke={C.ink} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
-            <Line yAxisId="r" dataKey="cover" name="EBITDA cover" stroke={C.amber} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
+            <Line yAxisId="l" dataKey="netLev" name="Net debt / EBITDA" stroke={C.ink} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
+            <Line yAxisId="r" dataKey="cover" name="EBITDA / interest" stroke={C.amber} strokeWidth={2} dot={{ r: 3 }} connectNulls={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

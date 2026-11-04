@@ -14,3 +14,6 @@ services:
       # (CREDITLENS_CORS_REGEX); add your Vercel URL here if the project has another name.
       - key: CREDITLENS_CORS_ORIGINS
         value: "http://localhost:3000"
+      # Operator-only audit log (GET /audit with header x-admin-token). Leave unset to disable the endpoint.
+      - key: CREDITLENS_ADMIN_TOKEN
+        generateValue: true
