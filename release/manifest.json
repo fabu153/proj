@@ -1,0 +1,58 @@
+{
+ "version": "1.0.0",
+ "frozen_at": "2026-11-04 19:48 UTC",
+ "frozen_from_commit": "14080f4da07a95cf09599a3b210a4ee4c13855d1",
+ "python": "3.13.18",
+ "model": {
+  "model": "stress_mlp_v1",
+  "target": "label_next_fy",
+  "label_version": "stress_v1",
+  "feature_version": "features_v1",
+  "selected_config": "lr=0.0003,wd=0.0001,pos_weight=none",
+  "n_seeds": 5,
+  "trained_at": "2026-11-04 18:08 UTC"
+ },
+ "test_metrics": {
+  "mlp_pr_auc": 0.8054597850314418,
+  "mlp_pr_auc_ci95": [
+   0.7522653344622828,
+   0.8531550311125679
+  ],
+  "xgboost_pr_auc": 0.8250541134723463
+ },
+ "files": {
+  "configs/assumptions.yaml": "ebb374a77536302cfff8a5263168ae00d6027de489bf81295137c612786728f4",
+  "configs/experiment_baselines_v1.yaml": "ee1a3a98ddc6d1418a48039a8f4dba505cf6fffb86949951f610db2f36ed6e3a",
+  "configs/experiment_mlp_v1.yaml": "98f969b6f0da942bfccaaae5641fbc123ddb95fae02d08eca7f48320cba80427",
+  "training/data/universe_v1.csv": "37e3819f17197039410a7c368a15287abaae9a29a2df4b184d9ca99e2c6e6000",
+  "training/data/panel_v1.csv": "794ccc3c358cec1b3d4b00466f5527be7d13dfcdd828ab04814abda925c49661",
+  "training/data/reports/coverage_v1.md": "e84cc5f29af38aa3286d7aa489c7adfa24df4af7f88482c79da15e371b995340",
+  "training/experiments/baselines_v1/results.json": "c4724f8405fcf75227b8f0ad0baf23dc9afcf4b3486bebc40795c6e5cf92dee5",
+  "training/experiments/mlp_v1/results.json": "009ad09bfb4890fbf55731e9e790b15718a5d9bf2c972fa8dee57bfe991f2619",
+  "backend/models/stress_mlp_v1/calibrator.json": "72d143392f09d8e168707b61a57bf4d34f7692e6c6a2d621882c053af68b1ef3",
+  "backend/models/stress_mlp_v1/metadata.json": "3685d5ed4f6defe5c6d2801fba54aa2ecfe08ca76f2504cc4392fbfdb33ff807",
+  "backend/models/stress_mlp_v1/parity.npz": "c163f5ec45d6f2cd2ed6ff078979e201d0db994a1f598bcfb2db0d80b729dbb2",
+  "backend/models/stress_mlp_v1/preprocessor.json": "9d10f021857791e82503a9ad1a50b3784b079d2a2cc5a5076cc6bd4f55cc5872",
+  "backend/models/stress_mlp_v1/training_ciks.json": "6fd124b5308704b2629128257eb31ae41f6edc22b223b0ecf53a3ba7f59a2437",
+  "backend/models/stress_mlp_v1/weights.npz": "eadaca645fb13d26d17b6d93f081a2af0e4f7a6fc65107d479f651b845e50736",
+  "backend/models/stress_mlp_v1/xray.json": "5c198ff7d73921107382f624e6f659a000002106eec4d411bed15dc40e94a46b",
+  "backend/data/curated/companyfacts_0000080424.json.gz": "8326f8e11c989f9d7799d5fdf6679278e29dd60aec24f0d5dcec88da9197eb4b",
+  "backend/data/curated/companyfacts_0001067701.json.gz": "6ed1f7eb8aa746c20f9648dbef016e66c9cf28cf4df800bb440de9b6cd3309d0",
+  "backend/data/curated/companyfacts_0001278027.json.gz": "4f47521fbf25e0253a6e03127378e1fc17628cb4b232fbfc4e2c02ccf9b02168",
+  "docs/scenario_crosscheck.xlsx": "982baaecdf40e7ffbbd6769ad7dc4a419832f1ac23cd1bc0aff7698a6077e6cd",
+  "tests/fixtures/ar_thousands.pdf": "8811c101aa4d91715d218b7ac1ba1a8345b652930a9f61a281c1d6d9930e58e6",
+  "tests/fixtures/us_10k_millions.pdf": "0ced640c9d858575217ea2305020947395aed6f113352136679920a3928d9912",
+  "requirements-api.txt": "91c99b55a85a893c1cde4a5d0aac7f908a82bc5144a1287a80537dfc2073627c",
+  "requirements-ml.txt": "b356eeec008142d9cdccf95a3d95d4207443933e5598ffba384a5659458a2bbf",
+  "frontend/package-lock.json": "bf338383be5c725228d1066bd5d2866d10d40014563be8d1706c128dd10d4bd3"
+ },
+ "reproduce": [
+  "pip install -r requirements-ml.txt && pip install torch --index-url https://download.pytorch.org/whl/cpu",
+  "python -m training.pipeline.universe --target 600          # SEC frames + submissions (needs SEC_USER_AGENT)",
+  "python -m training.features.build_panel --universe training/data/universe_v1.csv --out training/data/panel_v1.csv --report training/data/reports/coverage_v1.md",
+  "python -m training.ml.run_baselines --config configs/experiment_baselines_v1.yaml",
+  "python -m training.ml.train_mlp --config configs/experiment_mlp_v1.yaml",
+  "python -m training.ml.export_xray",
+  "python scripts/test_matrix.py"
+ ]
+}

@@ -15,3 +15,7 @@ training/data/*_log.txt
 node_modules/
 .next/
 .DS_Store
+
+# release media: the mp4 is committed, the raw recording is not
+release/*.webm
+release/_video/

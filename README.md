@@ -14,8 +14,12 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 3 | 31 leak-safe features, purged chronological split, train-only preprocessing, 4 baselines, frozen test results | ✅ |
 | 4 | PyTorch MLP (8 configs × 5 seeds), Platt calibration, paired comparison, model card, `/predict`, `/model` | ✅ |
 | 5 | Next.js analyst workspace (ledger, evidence rail, trends, neural screen, loan lab), Model X-Ray page, Excel reconciliation of 8 loan cases | ✅ |
-| 6 | Annual-report upload, source review, evidence-checked credit memo + PDF | next |
-| 7–8 | QA, polish, frozen release, defence | planned |
+| 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
+| 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
+| 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+
+**Release v1.0.0** — 150 automated tests + 5 browser tests; every blueprint test ID passes (`docs/test_matrix.md`).
+Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
 ## Week 2–3 headline results
 
@@ -88,6 +92,41 @@ configs/                    frozen assumptions + experiment configs
 docs/                       data dictionary, manual cross-check sheet
 ```
 
+## Week 6 — annual reports and the credit memo
+
+**Upload** (`/upload`, `POST /documents/upload`): text-based PDFs of U.S.-style primary statements. The parser finds
+the three statements, detects scale, currency and fiscal year-end, reads the latest two years, and cites the page and
+source line of every figure with a confidence level. With a CIK, figures are cross-checked against SEC XBRL. Analysis
+is blocked until every critical figure that is not high-confidence has been accepted, corrected or rejected. Reviewed
+figures then run through the same engines and model as SEC data. The PDF is parsed in memory and never stored; extracted
+figures expire after 24 hours or on `DELETE /documents/{id}`. Tested on two layouts (`tests/fixtures/*.pdf`, rendered
+from real reported figures); both reproduce SEC XBRL values exactly.
+
+**Memo** (`POST /memos`, PDF at `/memos/{id}/pdf`): built from a `CreditAnalysisPackage` of ~45 sourced items. Writers
+place `{{item}}` references and never type numbers; a validator flags untraceable figures, uncited claims and
+rating/PD/approval language, and flagged sentences are left out of the PDF. Analyst edits are re-checked the same way.
+Without an API key the memo is written from templates; to use a language model set on Render:
+
+| Variable | Value |
+|---|---|
+| `CREDITLENS_LLM_PROVIDER` | `anthropic` (default) or `openai` |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | your key (Render environment only, never the repo) |
+| `CREDITLENS_LLM_MODEL` | optional for Anthropic (default `claude-sonnet-5-5`); required for OpenAI |
+
+Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
+
+## Week 7–8 — quality and release
+
+- `tests/end_to_end/` drives the full journeys in Chrome and runs axe-core WCAG 2.1 AA scans
+  (`E2E_BASE_URL=http://localhost:3000 pytest tests/end_to_end`).
+- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 17 defects and their fixes.
+- Security: upload type/size/page limits, no file persistence, retention purge, rate limits, security headers,
+  `no-store` on uploads and memos, generic errors with a request reference, audit trail at `GET /audit`.
+- `release/manifest.json` freezes 24 artifacts (data, model, configs, fixtures) by SHA-256;
+  `tests/unit/test_release_manifest.py` fails if any changes. Re-freeze deliberately with
+  `python scripts/freeze_release.py <version>`.
+- `scripts/record_demo.py` re-records the captioned fallback video and the screenshots in `docs/screenshots/`.
+
 ## Deploy
 
 | Part | Host | Setup |
@@ -103,7 +142,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 82 tests
+pytest -q                                        # 150 tests
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```
