@@ -48,7 +48,7 @@ export default function ModelXRay() {
                 All models were scored once on the same held-out company-years whose features were filed {x.splits.test.as_of_min} to{" "}
                 {x.splits.test.as_of_max}, after every choice had been fixed on earlier data. Intervals resample whole companies.
               </p>
-              <div className="sheet" style={{ overflowX: "auto" }}>
+              <div className="sheet scroll-x" tabIndex={0} role="region" aria-label="Model results table">
                 <table className="ledger num">
                   <thead>
                     <tr>
@@ -125,7 +125,7 @@ export default function ModelXRay() {
                 Eight configurations fixed before training, five random seeds each, ranked on 2019–20 validation data only. The deployed
                 model averages the five seeds of {x.selected_config}.
               </p>
-              <div className="sheet" style={{ overflowX: "auto" }}>
+              <div className="sheet scroll-x" tabIndex={0} role="region" aria-label="Model results table">
                 <table className="ledger num">
                   <thead>
                     <tr>

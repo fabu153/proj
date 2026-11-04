@@ -115,9 +115,9 @@ table.ledger { width: 100%; border-collapse: collapse; font-size: 14px; }
 .risk-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 .risk-head .pct { font-family: var(--serif); font-size: 34px; line-height: 1; }
 .band { font-size: 13px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
-.band.low { background: var(--teal-soft); color: var(--teal); }
-.band.elevated { background: var(--amber-soft); color: var(--amber); }
-.band.high { background: var(--red-soft); color: var(--red); }
+.band.low { background: var(--teal-soft); color: #0a5654; }
+.band.elevated { background: var(--amber-soft); color: #7a4a06; }
+.band.high { background: var(--red-soft); color: #8f1c23; }
 .drivers { list-style: none; padding: 0; margin: 12px 0 0; }
 .drivers li { display: grid; grid-template-columns: minmax(0, 1.4fr) 90px minmax(0, 1fr); gap: 12px; align-items: center; padding: 7px 0; border-top: 1px solid var(--rule); font-size: 13.5px; }
 .drivers .bar { height: 8px; background: var(--paper); position: relative; border-radius: 2px; }
@@ -194,3 +194,6 @@ button.cite:hover { background: var(--teal); color: #fff; }
 .sentence-edit { display: block; margin: 6px 0; }
 .sentence-edit textarea { width: 100%; font: inherit; font-family: var(--sans); font-size: 14px; padding: 8px; border: 1px solid var(--rule-strong); border-radius: var(--radius-s); }
 .cite-card { border-left: 3px solid var(--teal); padding-left: 10px; }
+
+.scroll-x { overflow-x: auto; }
+.scroll-x:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

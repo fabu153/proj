@@ -57,7 +57,7 @@ export default function CreditProfile({ analysis, history, selected, onSelect }:
   const upto = history.filter((h) => h.fiscal_year_end <= analysis.fiscal_year_end).slice(-4);
   const latest = analysis.fiscal_year_end;
   return (
-    <div className="sheet" style={{ overflowX: "auto" }}>
+    <div className="sheet scroll-x" tabIndex={0} role="region" aria-label="Credit profile table">
       <table className="ledger num">
         <caption style={{ textAlign: "left", padding: "10px 12px 0", fontSize: 12.5, color: "var(--slate)" }}>
           {analysis.currency} millions, annual 10-K data. Select a row to see its formula and source filing.

@@ -67,3 +67,30 @@ def test_memo_for_curated_company_defaults_to_reporting_currency():
 
 def test_health_reports_writer():
     assert client.get("/health").json()["writer"] == "template"
+
+
+def test_security_headers_and_no_store():
+    r = client.get("/health")
+    assert r.headers["x-content-type-options"] == "nosniff" and r.headers["x-frame-options"] == "DENY"
+    assert client.get("/audit").headers["cache-control"] == "no-store"
+
+
+def test_upload_rate_limit(monkeypatch):
+    from backend.app.api import main
+    monkeypatch.setitem(main.RATE_LIMITS, "/documents/upload", (2, 3600))
+    main._hits.clear()
+    codes = [client.post("/documents/upload", files={"file": ("x.pdf", b"nope", "application/pdf")}).status_code
+             for _ in range(3)]
+    assert codes == [422, 422, 429]
+    main._hits.clear()
+
+
+def test_unexpected_errors_hide_internals(monkeypatch):
+    from backend.app.api import main
+
+    def explode(*a, **k):
+        raise RuntimeError("secret internals")
+    monkeypatch.setattr(main.risk_service, "score", explode)
+    c = TestClient(main.app, raise_server_exceptions=False)
+    r = c.post("/predict", json={"company_id": "0000000001"})
+    assert r.status_code == 500 and "secret" not in r.text and "reference" in r.json()["detail"]

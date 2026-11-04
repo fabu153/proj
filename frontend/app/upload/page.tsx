@@ -148,7 +148,7 @@ function Review({
             {doc.company_name}: {doc.pages} pages, figures in {doc.currency} {doc.scale_label}, shown below in millions. Statements found on
             pages {Object.entries(doc.statement_pages).map(([k, v]) => `${v.join(", ") || "none"} (${k === "cashflow" ? "cash flow" : k})`).join(", ")}.
           </p>
-          <div className="sheet" style={{ overflowX: "auto" }}>
+          <div className="sheet scroll-x" tabIndex={0} role="region" aria-label="Extracted figures table">
             <table className="ledger num review-table">
               <thead>
                 <tr>

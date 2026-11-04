@@ -12,6 +12,7 @@ import os
 import time
 import uuid
 from collections import defaultdict, deque
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -45,7 +46,13 @@ VERSION = "1.0.0"
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-app = FastAPI(title="CreditLens AI", version=VERSION,
+@asynccontextmanager
+async def lifespan(_app):
+    store.purge_expired()          # enforce the retention window on every start
+    yield
+
+
+app = FastAPI(title="CreditLens AI", version=VERSION, lifespan=lifespan,
               description="Decision-support credit analysis. Not a rating, not a PD, not a loan decision.")
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_origin_regex=CORS_ORIGIN_REGEX,
                    allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"])
@@ -76,14 +83,14 @@ async def observe(request: Request, call_next):
         log.exception(json.dumps({"rid": rid, "path": path, "event": "unhandled_error"}))
         return JSONResponse({"detail": f"Internal error (reference {rid})."}, status_code=500)
     response.headers["x-request-id"] = rid
+    response.headers["x-content-type-options"] = "nosniff"
+    response.headers["x-frame-options"] = "DENY"
+    response.headers["referrer-policy"] = "no-referrer"
+    if path.startswith(("/documents", "/facts", "/memos", "/audit")):
+        response.headers["cache-control"] = "no-store"     # uploaded figures and memos are never cached
     log.info(json.dumps({"rid": rid, "method": request.method, "path": path, "status": response.status_code,
                          "ms": round((time.perf_counter() - start) * 1000, 1)}))
     return response
-
-
-@app.on_event("startup")
-def _startup():
-    store.purge_expired()
 
 
 # ------------------------------------------------------------------ company registry

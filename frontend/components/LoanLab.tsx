@@ -11,7 +11,7 @@ const FIXED: Shock[] = [
   { name: "Severe", ebitda_shock: -0.35, rate_shock_bps: 400 },
 ];
 const CASE_COLORS: Record<string, string> = {
-  "Before loan": "#8c9aab",
+  "Before loan": "#5c6b7d",
   Base: "#0f7c7a",
   Downside: "#a4650a",
   Severe: "#b3262e",
@@ -75,8 +75,15 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     onParams?.({ facility: body.facility, covenants: body.covenants, existing_floating_share: body.existing_floating_share });
   }, [body, onParams]);
 
+  const fxMissing = fxNeeded && !fac.fx_rate_to_reporting;
+
   useEffect(() => {
     if (blocked) return;
+    if (fxMissing) {
+      // known to be refused by the API (currencies are never mixed); ask for the rate without a failing request
+      setError("fx");
+      return;
+    }
     let live = true;
     const t = setTimeout(async () => {
       setBusy(true);
@@ -99,7 +106,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
       live = false;
       clearTimeout(t);
     };
-  }, [body, blocked]);
+  }, [body, blocked, fxMissing]);
 
   if (blocked) {
     return <div className="notice error">Loan scenarios are blocked until the data-check failures on the right are resolved.</div>;
@@ -197,7 +204,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
       <div className="results" aria-live="polite" aria-busy={busy}>
         {error ? (
           <div className="notice">
-            {fxNeeded && !fac.fx_rate_to_reporting
+            {error === "fx"
               ? `Enter a ${reportingCurrency} per ${fac.currency} rate and its date, or switch the facility to ${reportingCurrency}. Currencies are never mixed silently.`
               : error}
           </div>
@@ -214,7 +221,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
             )}
 
             <h4>Pro forma credit metrics ({reportingCurrency} millions)</h4>
-            <div style={{ overflowX: "auto" }}>
+            <div className="scroll-x" tabIndex={0} role="region" aria-label="Pro forma credit metrics table">
               <table className="ledger num">
                 <thead>
                   <tr>
