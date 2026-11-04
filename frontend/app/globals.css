@@ -172,3 +172,25 @@ button.btn.ghost { background: transparent; color: var(--teal); }
 .ruler-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 .results .ledger td:first-child { white-space: nowrap; }
 .results .ledger td, .results .ledger th { padding: 7px 8px; }
+
+/* ------------------------------------------------------------ week 6: review + memo */
+button.link { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--teal); text-decoration: underline; cursor: pointer; }
+button.link:disabled { color: var(--slate); cursor: default; }
+.row-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 3px; }
+.review-table td { vertical-align: top; }
+.review-table tr.needs-review td { background: #fdf6ea; }
+a.btn { display: inline-block; text-decoration: none; font-size: 14px; padding: 7px 14px; border-radius: var(--radius-s); border: 1px solid var(--teal); }
+a.btn.ghost { color: var(--teal); background: transparent; }
+.memo { padding: 18px 22px; }
+.memo-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.memo-section h3 { font-family: var(--serif); font-weight: 500; font-size: 19px; margin: 16px 0 4px; }
+.memo-section p { margin: 0; font-family: var(--serif); font-size: 16.5px; line-height: 1.65; max-width: 72ch; }
+.sentence .edit-link { font-family: var(--sans); font-size: 11.5px; margin-left: 4px; display: inline-block; width: 0; overflow: hidden; vertical-align: baseline; }
+.sentence:hover .edit-link, .sentence:focus-within .edit-link { width: auto; }
+.sentence.flagged .sentence-text { background: var(--amber-soft); text-decoration: underline wavy var(--amber); text-underline-offset: 3px; }
+.sentence .issue { display: block; font-family: var(--sans); font-size: 12.5px; color: var(--amber); margin: 2px 0 6px; }
+button.cite { font-family: var(--sans); font-size: 10.5px; line-height: 1; vertical-align: super; border: 0; background: var(--teal-soft); color: var(--teal); border-radius: 3px; padding: 2px 4px; margin-left: 2px; cursor: pointer; }
+button.cite:hover { background: var(--teal); color: #fff; }
+.sentence-edit { display: block; margin: 6px 0; }
+.sentence-edit textarea { width: 100%; font: inherit; font-family: var(--sans); font-size: 14px; padding: 8px; border: 1px solid var(--rule-strong); border-radius: var(--radius-s); }
+.cite-card { border-left: 3px solid var(--teal); padding-left: 10px; }

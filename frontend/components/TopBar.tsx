@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Company } from "@/lib/api";
 
 type Props = {
-  active: "workspace" | "model";
+  active: "workspace" | "model" | "upload";
   companies?: Company[];
   companyId?: string;
   onCompany?: (id: string) => void;
@@ -22,6 +22,9 @@ export default function TopBar({ active, companies, companyId, onCompany, fiscal
       <nav aria-label="Main">
         <Link href="/" aria-current={active === "workspace" ? "page" : undefined}>
           Workspace
+        </Link>
+        <Link href="/upload" aria-current={active === "upload" ? "page" : undefined}>
+          Upload report
         </Link>
         <Link href="/model" aria-current={active === "model" ? "page" : undefined}>
           Model X-Ray

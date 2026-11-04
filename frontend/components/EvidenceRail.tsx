@@ -1,6 +1,6 @@
 "use client";
 
-import type { Analysis } from "@/lib/api";
+import type { Analysis, PackageItem } from "@/lib/api";
 import { fmt } from "@/lib/api";
 import { ROWS } from "./CreditProfile";
 
@@ -23,12 +23,49 @@ function filingUrl(cik: string, accession: string) {
   return `https://www.sec.gov/Archives/edgar/data/${parseInt(cik, 10)}/${accession.replace(/-/g, "")}/`;
 }
 
-export default function EvidenceRail({ analysis, selected }: { analysis: Analysis; selected: string }) {
+function describeSource(src: Record<string, any>): string {
+  switch (src.kind) {
+    case "filing":
+      if (src.page) return `Uploaded report, page ${src.page} (${src.method ?? "PDF"})`;
+      return src.accession ? `10-K XBRL tag ${src.tag}, filed ${src.filed}, accession ${src.accession}` : "Not reported";
+    case "formula":
+      return `Formula ${src.formula} (v${src.version})${src.note ? `; note: ${String(src.note).replace(/_/g, " ")}` : ""}`;
+    case "model":
+      return `Neural stress model${src.name ? ` ${src.name}` : ""}${src.features_as_of ? `, inputs as of ${src.features_as_of}` : ""}`;
+    case "model_evaluation":
+      return "Frozen test-window evaluation (Model X-Ray)";
+    case "scenario":
+      return `Loan engine v${src.engine_version}, ${src.case} case: EBITDA ${Math.round(src.ebitda_shock * 100)}%, rates +${src.rate_shock_bps} bp`;
+    case "assumption":
+      return "Your input in the loan lab";
+    case "data_checks":
+      return "Data-quality checks for this fiscal year";
+    default:
+      return src.detail ?? "";
+  }
+}
+
+export default function EvidenceRail({ analysis, selected, citation }: { analysis: Analysis; selected: string; citation?: PackageItem | null }) {
   const row = ROWS.flatMap((g) => g.rows).find((r) => r.key === selected);
   const metric = analysis.metrics[selected];
   const facts = Array.from(new Set(row?.facts ?? []));
   return (
     <aside className="rail" aria-label="Source evidence">
+      {citation && (
+        <div className="sheet evidence cite-card" aria-live="polite">
+          <h3>Memo citation</h3>
+          <p style={{ margin: "0 0 4px", fontSize: 14 }}>{citation.label}</p>
+          <div className="formula num">{citation.display}</div>
+          <p className="fine" style={{ margin: 0 }}>{describeSource(citation.source)}</p>
+          {citation.source.kind === "scenario" && Array.isArray(citation.source.steps) && (
+            <ol className="steps">
+              {citation.source.steps.map((st: string, i: number) => (
+                <li key={i}>{st}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
       <div className="sheet evidence">
         <h3>Why this value?</h3>
         {row && (
@@ -62,7 +99,13 @@ export default function EvidenceRail({ analysis, selected }: { analysis: Analysi
           return (
             <div className="src" key={f}>
               <strong>{FACT_LABELS[f] ?? f}</strong>
-              {ev ? (
+              {ev && ev.page ? (
+                <div className="num">
+                  {fmt(ev.value, "amount")} from the uploaded report, page {ev.page}
+                  <br />
+                  <span className="fine">{ev.extraction_method}</span>
+                </div>
+              ) : ev ? (
                 <div className="num">
                   {fmt(ev.value, "amount")} from XBRL tag <code>{ev.tag}</code>
                   <br />

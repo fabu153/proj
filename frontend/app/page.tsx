@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import CreditProfile from "@/components/CreditProfile";
 import EvidenceRail from "@/components/EvidenceRail";
 import LoanLab from "@/components/LoanLab";
+import MemoPanel, { type MemoParams } from "@/components/MemoPanel";
 import RiskScreen from "@/components/RiskScreen";
 import TopBar from "@/components/TopBar";
 import TrendCharts from "@/components/TrendCharts";
-import type { Analysis, Company, HistoryPoint } from "@/lib/api";
+import type { Analysis, Company, HistoryPoint, PackageItem } from "@/lib/api";
 import { API_URL, api } from "@/lib/api";
 
 export default function Workspace() {
@@ -18,6 +19,9 @@ export default function Workspace() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [selected, setSelected] = useState("net_leverage");
   const [error, setError] = useState<string | null>(null);
+  const [memoParams, setMemoParams] = useState<MemoParams | null>(null);
+  const [citation, setCitation] = useState<PackageItem | null>(null);
+  const onParams = useCallback((p: MemoParams) => setMemoParams(p), []);
 
   useEffect(() => {
     api
@@ -26,7 +30,9 @@ export default function Workspace() {
         const real = cs.filter((c) => !c.synthetic);
         const list = real.length ? real : cs;
         setCompanies(list);
-        const first = list[0];
+        // ?company=<id> opens a specific company, e.g. an uploaded report after review
+        const wanted = new URLSearchParams(window.location.search).get("company");
+        const first = list.find((c) => c.company_id === wanted) ?? list[0];
         setCompanyId(first.company_id);
         setFiscalYear(first.fiscal_years[first.fiscal_years.length - 1]);
       })
@@ -36,6 +42,7 @@ export default function Workspace() {
   useEffect(() => {
     if (!companyId || !fiscalYear) return;
     setAnalysis(null);
+    setCitation(null);
     Promise.all([api.analysis(companyId, fiscalYear), api.history(companyId)])
       .then(([a, h]) => {
         setAnalysis(a);
@@ -71,7 +78,9 @@ export default function Workspace() {
               <h1>{analysis.company_name}</h1>
               <p className="num">
                 Fiscal year ending {analysis.fiscal_year_end}
-                {ev ? `, from the ${ev.form} filed ${ev.filed}` : ""}. SEC XBRL data, {analysis.currency} millions.
+                {ev?.page
+                  ? `, from an uploaded annual report reviewed ${ev.filed}. ${analysis.currency} millions.`
+                  : `${ev ? `, from the ${ev.form} filed ${ev.filed}` : ""}. SEC XBRL data, ${analysis.currency} millions.`}
               </p>
             </div>
             <div className="workspace">
@@ -111,10 +120,20 @@ export default function Workspace() {
                     fiscalYear={analysis.fiscal_year_end}
                     reportingCurrency={analysis.currency}
                     blocked={!analysis.scorable}
+                    onParams={onParams}
                   />
                 </section>
+
+                <section className="block" aria-labelledby="h-memo">
+                  <h2 id="h-memo">Credit memo</h2>
+                  <p className="lede">
+                    A draft for the credit committee built from everything above, using the facility and covenants in the loan lab. Each
+                    number is inserted by the engines and cited; select a citation to see its source, or edit a sentence and it is checked again.
+                  </p>
+                  <MemoPanel companyId={analysis.company_id} fiscalYear={analysis.fiscal_year_end} params={memoParams} onCite={setCitation} />
+                </section>
               </div>
-              <EvidenceRail analysis={analysis} selected={selected} />
+              <EvidenceRail analysis={analysis} selected={selected} citation={citation} />
             </div>
           </>
         )}

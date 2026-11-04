@@ -28,9 +28,15 @@ const m1 = new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFra
 const x2 = (v: number | null) => (v === null ? "n/a" : `${v.toFixed(2)}x`);
 const amt = (v: number) => (v < 0 ? `(${m1.format(-v)})` : m1.format(v));
 
-type Props = { companyId: string; fiscalYear: string; reportingCurrency: string; blocked: boolean };
+type Props = {
+  companyId: string;
+  fiscalYear: string;
+  reportingCurrency: string;
+  blocked: boolean;
+  onParams?: (p: { facility: Facility; covenants: Covenants; existing_floating_share: number }) => void;
+};
 
-export default function LoanLab({ companyId, fiscalYear, reportingCurrency, blocked }: Props) {
+export default function LoanLab({ companyId, fiscalYear, reportingCurrency, blocked, onParams }: Props) {
   const [fac, setFac] = useState<Facility>({
     amount: 100,
     currency: reportingCurrency,
@@ -64,6 +70,10 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     }),
     [companyId, fiscalYear, fac, fxNeeded, ebitdaShock, rateBps, cov, floatShare],
   );
+
+  useEffect(() => {
+    onParams?.({ facility: body.facility, covenants: body.covenants, existing_floating_share: body.existing_floating_share });
+  }, [body, onParams]);
 
   useEffect(() => {
     if (blocked) return;

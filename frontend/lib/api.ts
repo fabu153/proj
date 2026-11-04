@@ -33,6 +33,7 @@ export type Evidence = {
   filed: string;
   period_end: string;
   extraction_method: string;
+  page?: number | null;
 };
 
 export type Driver = {
@@ -73,6 +74,7 @@ export type Analysis = {
   currency: string;
   scale: string;
   scorable: boolean;
+  source: string;
   metrics: Record<string, Metric>;
   evidence: Record<string, Evidence | null>;
   derived: Record<string, { value: number; rule: string }>;
@@ -186,4 +188,102 @@ export function fmt(v: number | null | undefined, unit: string): string {
 export const fyLabel = (fye: string) => {
   const y = +fye.slice(0, 4);
   return fye.slice(5, 7) === "01" && +fye.slice(8, 10) <= 7 ? `FY${y - 1}` : `FY${y}`;
+};
+
+// ---------------------------------------------------------------- Week 6: documents and memos
+export type Fact = {
+  id: string;
+  field: string;
+  period: "t" | "t-1";
+  value: number;
+  page: number;
+  label: string;
+  snippet: string;
+  statement: string;
+  confidence: "high" | "medium" | "low";
+  reasons: string[];
+  status: "auto_accepted" | "needs_review" | "accepted" | "corrected" | "rejected";
+  reviewed_value: number | null;
+  reviewer_note: string | null;
+};
+
+export type DocumentView = {
+  id: string;
+  company_id: string;
+  filename: string;
+  pages: number;
+  company_name: string;
+  currency: string;
+  scale_label: string;
+  fiscal_year_end: string | null;
+  fye_inferred: boolean;
+  statement_pages: Record<string, number[]>;
+  issues: string[];
+  status: "in_review" | "finalized";
+  facts: Fact[];
+  blocking: string[];
+  can_finalize: boolean;
+};
+
+export type PackageItem = { id: string; label: string; value: unknown; unit: string; display: string; source: Record<string, any> };
+export type Sentence = {
+  id: string;
+  template: string;
+  text: string;
+  refs: string[];
+  kind: "claim" | "framing" | "question";
+  status: "ok" | "flagged";
+  issues: string[];
+  edited: boolean;
+};
+export type Memo = {
+  id: string;
+  company_id: string;
+  fiscal_year_end: string;
+  created_at: string;
+  writer: string;
+  writer_note: string | null;
+  package_sha256: string;
+  currency: string;
+  package: Record<string, PackageItem>;
+  sections: { key: string; title: string; sentences: Sentence[] }[];
+  summary: { sentences: number; flagged: number; cited_items: number };
+};
+
+async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
+  return call<T>(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+export const docs = {
+  upload: async (file: File, company_name: string, cik: string): Promise<DocumentView> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("company_name", company_name);
+    fd.append("cik", cik);
+    const res = await fetch(`${API_URL}/documents/upload`, { method: "POST", body: fd });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      throw new Error(typeof b?.detail === "string" ? b.detail : `${res.status} ${res.statusText}`);
+    }
+    return res.json();
+  },
+  get: (id: string) => call<DocumentView>(`/documents/${id}`),
+  review: (factId: string, decision: "accept" | "correct" | "reject", value?: number, note?: string) =>
+    send<{ id: string; status: string }>(`/facts/${factId}/review`, "PATCH", { decision, value, note }),
+  update: (id: string, meta: { fiscal_year_end?: string; company_name?: string }) => send<DocumentView>(`/documents/${id}`, "PATCH", meta),
+  finalize: (id: string) => send<DocumentView>(`/documents/${id}/finalize`, "POST"),
+  remove: (id: string) => send<{ deleted: string }>(`/documents/${id}`, "DELETE"),
+};
+
+export const memos = {
+  config: () => call<{ writer: string; llm_configured: boolean }>("/memos/config"),
+  create: (body: {
+    company_id: string;
+    fiscal_year_end?: string;
+    facility: Facility;
+    covenants: Covenants;
+    existing_floating_share: number;
+  }) => send<Memo>("/memos", "POST", body),
+  edit: (id: string, sentenceId: string, text: string) => send<Memo>(`/memos/${id}/sentences/${sentenceId}`, "PATCH", { text }),
+  pdfUrl: (id: string) => `${API_URL}/memos/${id}/pdf`,
 };
