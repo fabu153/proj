@@ -1,7 +1,7 @@
 """Typed API contracts (Blueprint p.15). The frontend codes against these shapes."""
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +27,7 @@ class EvidenceRef(BaseModel):
     filed: str
     period_end: str
     extraction_method: str
+    page: Optional[int] = None
 
 
 class MetricOut(BaseModel):
@@ -53,6 +54,7 @@ class AnalysisResponse(BaseModel):
     currency: str = "USD"
     scale: str = "millions"
     scorable: bool
+    source: str = "SEC XBRL companyfacts"
     metrics: dict[str, MetricOut]
     evidence: dict[str, Optional[EvidenceRef]]
     warnings: list[str]
@@ -92,3 +94,27 @@ class ScenarioResponse(BaseModel):
     facility_schedule: list[dict] = []
     disclaimer: str = ("Mechanical sensitivities only; not a forecast, rating or probability of default. "
                        "Analyst review required.")
+
+
+class FactReview(BaseModel):
+    decision: Literal["accept", "correct", "reject"]
+    value: Optional[float] = Field(None, description="Corrected value in currency units (not millions)")
+    note: Optional[str] = Field(None, max_length=500)
+
+
+class DocumentMetaUpdate(BaseModel):
+    fiscal_year_end: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    company_name: Optional[str] = Field(None, max_length=120)
+
+
+class MemoRequest(BaseModel):
+    company_id: str
+    fiscal_year_end: Optional[str] = None
+    facility: Optional[Facility] = Field(None, description="Defaults to 100m in the reporting currency")
+    covenants: Optional[Covenants] = None
+    existing_floating_share: float = Field(0.0, ge=0, le=1)
+    use_llm: bool = True
+
+
+class MemoEdit(BaseModel):
+    text: str = Field(..., max_length=1000, description="Rendered sentence text; empty removes the sentence")

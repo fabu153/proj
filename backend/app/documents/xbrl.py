@@ -77,6 +77,7 @@ class SourcedFact:
     filed: str
     unit: str = "USD"
     extraction_method: str = "XBRL"
+    page: Optional[int] = None          # set for facts extracted from an uploaded PDF
 
 
 @dataclass
@@ -144,7 +145,8 @@ def build_company_years(companyfacts: dict, as_of: Optional[str] = None,
                 if end in found and found[end][0].tag != tag:
                     continue                   # a higher-priority tag already covers this period
                 found.setdefault(end, []).append(SourcedFact(
-                    fld, float(e["val"]), tag, end, e.get("start"), e["accn"], e["form"], e["filed"]))
+                    fld, float(e["val"]), tag, end, e.get("start"), e["accn"], e["form"], e["filed"],
+                    extraction_method=e.get("extraction_method", "XBRL"), page=e.get("page")))
         per_field[fld] = found
 
     # Fiscal-year ends are defined by duration facts from income statement (revenue or operating income)

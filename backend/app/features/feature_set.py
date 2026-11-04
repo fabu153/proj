@@ -118,3 +118,20 @@ def build_features(panel: pd.DataFrame) -> pd.DataFrame:
     keep = ["cik", "company_name", "sic", "size_quintile", "fiscal_year_end", "as_of_date", "scorable",
             "critical_coverage", "stress_t", "label_next_fy", "label_onset", "label_available_date"]
     return pd.concat([p[keep], f[FEATURES]], axis=1)
+
+
+# Plain-language names for memos and the UI (frontend/lib/labels.ts mirrors these).
+FEATURE_LABELS: dict[str, str] = {
+    "ebitda_margin": "EBITDA margin", "operating_margin": "operating margin", "net_margin": "net margin",
+    "roa": "return on assets", "cfo_margin": "operating cash flow margin", "cfo_to_assets": "operating cash flow to assets",
+    "fcf_margin": "free cash flow margin", "capex_intensity": "capex to revenue", "gross_leverage": "gross debt to EBITDA",
+    "net_leverage": "net debt to EBITDA", "debt_to_assets": "debt to assets", "liabilities_to_assets": "liabilities to assets",
+    "equity_to_assets": "equity to assets", "cfo_to_debt": "operating cash flow to debt", "fcf_to_debt": "free cash flow to debt",
+    "ebit_interest_cover": "EBIT interest cover", "ebitda_interest_cover": "EBITDA interest cover",
+    "implied_cost_of_debt": "interest cost of debt", "current_ratio": "current ratio", "cash_to_assets": "cash to assets",
+    "cash_to_current_liabilities": "cash to current liabilities", "short_term_debt_share": "share of debt due within a year",
+    "log_assets": "company size", "revenue_growth": "revenue growth", "d_ebitda_margin": "change in EBITDA margin",
+    "d_debt_to_assets": "change in debt to assets", "debt_growth": "debt growth",
+    "d_cfo_to_assets": "change in cash flow to assets", "ebitda_nonpositive": "zero or negative EBITDA",
+    "no_debt": "having no debt", "stress_conditions_t": "stress tests already failed this year",
+}
