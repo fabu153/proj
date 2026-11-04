@@ -72,3 +72,9 @@ def test_cors_allows_vercel_frontend_only():
                                                 "Access-Control-Request-Method": "GET"})
     assert ok.headers.get("access-control-allow-origin") == "https://creditlens-git-main-fabu153.vercel.app"
     assert "access-control-allow-origin" not in bad.headers
+
+
+def test_cors_allows_proj_vercel_deployments():
+    for origin in ("https://proj-two-bay.vercel.app", "https://proj-git-main-fabu153s-projects.vercel.app"):
+        r = client.options("/companies", headers={"Origin": origin, "Access-Control-Request-Method": "GET"})
+        assert r.headers.get("access-control-allow-origin") == origin
