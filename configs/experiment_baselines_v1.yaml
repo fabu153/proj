@@ -1,0 +1,52 @@
+# Week 3 baseline experiment — FROZEN before fitting any model.
+# Split dates are by filing date of year-t features (as_of_date). Purge rules in training/ml/splits.py.
+experiment: baselines_v1
+panel: training/data/panel_v1.csv
+feature_version: features_v1
+label_version: stress_v1
+
+targets:
+  primary: label_next_fy      # stress in t+1 (Blueprint p.07 recommended target)
+  secondary: label_onset      # not stressed in t, stressed in t+1 — harder, more useful for monitoring
+
+split:
+  val_start: "2019-01-01"     # val = features filed 2019-2020 (includes COVID-year outcomes)
+  test_start: "2021-01-01"    # test = features filed 2021-2025, labels observed by 2026
+  test_end: "2026-01-01"
+
+row_filters:
+  require_scorable: true
+  min_critical_coverage: 0.57  # at least 4 of the 7 critical fields present
+  min_revenue_usd_m: 50        # Week-2 gate decision: lending population = operating companies.
+                               # Pre-revenue firms (mostly biotech) are "stressed" by construction
+                               # (losses + negative CFO), which is not the credit signal we target.
+                               # Uses year-t revenue only, so it cannot leak the outcome.
+
+preprocessing:
+  winsor_lower_q: 0.01
+  winsor_upper_q: 0.99
+  impute: train_median_plus_mask
+  scale: train_standardize
+
+models:
+  no_skill: {}
+  rule_score: {}               # P(label | count of stress conditions in year t), fitted on train
+  logistic:
+    C_grid: [0.01, 0.1, 1.0, 10.0]
+    class_weight: null         # unweighted to keep probabilities interpretable; calibration in Week 4
+  xgboost:
+    max_depth_grid: [2, 3, 4]
+    min_child_weight_grid: [1, 5]
+    learning_rate: 0.05
+    n_estimators_max: 1000
+    early_stopping_rounds: 50
+    subsample: 0.8
+    colsample_bytree: 0.8
+    seed: 20261104
+
+selection_metric: val_pr_auc     # hyperparameters chosen on validation only; test touched once
+threshold_rule: val_max_f1       # operating threshold fixed on validation, then applied to test
+bootstrap:
+  resamples: 1000
+  cluster: cik                   # resample companies, not rows (rows of one firm are correlated)
+  seed: 7

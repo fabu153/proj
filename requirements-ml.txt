@@ -1,0 +1,8 @@
+-r requirements-api.txt
+numpy>=2.0
+pandas>=2.2
+scikit-learn>=1.5
+xgboost>=2.1
+matplotlib>=3.9
+pytest>=8
+# Week 4: torch (CPU) — install separately: pip install torch --index-url https://download.pytorch.org/whl/cpu

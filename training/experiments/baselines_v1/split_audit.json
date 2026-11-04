@@ -1,0 +1,30 @@
+{
+ "train": {
+  "rows": 1626,
+  "companies": 310,
+  "positives": 262,
+  "prevalence": 0.21493027071369974,
+  "as_of_min": "2009-11-25",
+  "as_of_max": "2018-12-20",
+  "label_available_max": "2018-12-20"
+ },
+ "val": {
+  "rows": 497,
+  "companies": 229,
+  "positives": 84,
+  "prevalence": 0.2159383033419023,
+  "as_of_min": "2019-01-23",
+  "as_of_max": "2020-12-07",
+  "label_available_max": "2020-12-17"
+ },
+ "test": {
+  "rows": 1307,
+  "companies": 304,
+  "positives": 322,
+  "prevalence": 0.2965009208103131,
+  "as_of_min": "2021-01-07",
+  "as_of_max": "2025-11-21",
+  "label_available_max": "2026-11-04"
+ },
+ "excluded_rows": 1005
+}

@@ -1,0 +1,51 @@
+# CreditLens AI — assumptions frozen at kickoff (Blueprint p.26)
+# Any change here must bump `version` and be recorded in docs/CHANGELOG.md.
+# These are declared research assumptions, NOT a bank credit policy.
+version: "1.0.0"
+frozen_on: "2026-11-04"
+
+delivery:
+  weeks: 8
+  team: solo
+
+reporting_basis:
+  universe: "U.S. listed non-financial issuers (exclude banks, insurers, REITs)"
+  gaap: "US-GAAP"
+  frequency: "annual (12-month fiscal periods only)"
+
+stress_label:            # Blueprint p.07 — pre-registered before training
+  horizon: "next fiscal year (t+1)"
+  min_conditions: 2      # stress = 1 if at least 2 of 3 hold
+  ebit_interest_cover_below: 1.5
+  gross_debt_to_ebitda_above: 5.0
+  debt_with_nonpositive_ebitda_counts_as_high_leverage: true
+  cfo_below: 0.0
+  secondary_target: "onset (not stressed in t, stressed in t+1)"
+
+sample_facility:         # Blueprint p.09
+  amount: 100.0
+  currency: "EUR"
+  scale: "millions"
+  coupon: 0.06
+  tenor_years: 5
+  structure: "bullet"
+  use_of_proceeds: "capex"
+  proceeds_spent_at_close: true
+
+stress_cases:
+  base:            { ebitda_shock: 0.00,  rate_shock_bps: 0   }
+  downside:        { ebitda_shock: -0.20, rate_shock_bps: 200 }
+  severe_downside: { ebitda_shock: -0.35, rate_shock_bps: 400 }
+
+population:                # Week-2 data gate decision (made before any model was fitted)
+  universe: "600 non-financial SEC filers, survivorship-aware sample from 2011/15/19/22 assets frames"
+  model_rows: "year-t revenue >= USD 50m, scorable, >= 4 of 7 critical fields"
+
+validation:
+  split: "chronological by filing acceptance date, with purge gap"
+  primary_metric: "PR-AUC"
+  secondary_metrics: ["ROC-AUC", "Brier", "log loss", "calibration curve"]
+
+memo:
+  use: "analyst support only; never an automatic loan decision"
+  numeric_tolerance: 0.005   # relative tolerance for memo-vs-engine number checks

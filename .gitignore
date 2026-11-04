@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# raw SEC cache is re-downloadable (access_log.jsonl records every request); panels are committed
+training/data/raw/
+training/data/*_log.txt
+
+node_modules/
+.next/
+.DS_Store

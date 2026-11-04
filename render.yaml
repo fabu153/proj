@@ -1,0 +1,14 @@
+# Render Blueprint — connect the GitHub repo in Render ("New > Blueprint") and every push to
+# main that passes CI is deployed automatically.
+services:
+  - type: web
+    name: creditlens-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeployTrigger: checksPass   # deploy only after the GitHub Actions CI run is green
+    healthCheckPath: /health
+    envVars:
+      - key: CREDITLENS_CORS_ORIGINS
+        value: "http://localhost:3000"

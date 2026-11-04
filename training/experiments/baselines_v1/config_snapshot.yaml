@@ -1,0 +1,50 @@
+experiment: baselines_v1
+panel: training/data/panel_v1.csv
+feature_version: features_v1
+label_version: stress_v1
+targets:
+  primary: label_next_fy
+  secondary: label_onset
+split:
+  val_start: '2019-01-01'
+  test_start: '2021-01-01'
+  test_end: '2026-01-01'
+row_filters:
+  require_scorable: true
+  min_critical_coverage: 0.57
+  min_revenue_usd_m: 50
+preprocessing:
+  winsor_lower_q: 0.01
+  winsor_upper_q: 0.99
+  impute: train_median_plus_mask
+  scale: train_standardize
+models:
+  no_skill: {}
+  rule_score: {}
+  logistic:
+    C_grid:
+    - 0.01
+    - 0.1
+    - 1.0
+    - 10.0
+    class_weight: null
+  xgboost:
+    max_depth_grid:
+    - 2
+    - 3
+    - 4
+    min_child_weight_grid:
+    - 1
+    - 5
+    learning_rate: 0.05
+    n_estimators_max: 1000
+    early_stopping_rounds: 50
+    subsample: 0.8
+    colsample_bytree: 0.8
+    seed: 20261104
+selection_metric: val_pr_auc
+threshold_rule: val_max_f1
+bootstrap:
+  resamples: 1000
+  cluster: cik
+  seed: 7

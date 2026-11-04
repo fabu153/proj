@@ -1,0 +1,585 @@
+{
+ "provenance": {
+  "run_at": "2026-11-04 17:33 UTC",
+  "panel_sha256": "794ccc3c358cec1b3d4b00466f5527be7d13dfcdd828ab04814abda925c49661",
+  "python": "3.13.18",
+  "sklearn": "1.9.1",
+  "xgboost": "3.4.1",
+  "features": [
+   "ebitda_margin",
+   "operating_margin",
+   "net_margin",
+   "roa",
+   "cfo_margin",
+   "cfo_to_assets",
+   "fcf_margin",
+   "capex_intensity",
+   "gross_leverage",
+   "net_leverage",
+   "debt_to_assets",
+   "liabilities_to_assets",
+   "equity_to_assets",
+   "cfo_to_debt",
+   "fcf_to_debt",
+   "ebit_interest_cover",
+   "ebitda_interest_cover",
+   "implied_cost_of_debt",
+   "current_ratio",
+   "cash_to_assets",
+   "cash_to_current_liabilities",
+   "short_term_debt_share",
+   "log_assets",
+   "revenue_growth",
+   "d_ebitda_margin",
+   "d_debt_to_assets",
+   "debt_growth",
+   "d_cfo_to_assets",
+   "ebitda_nonpositive",
+   "no_debt",
+   "stress_conditions_t"
+  ]
+ },
+ "results": {
+  "label_next_fy": {
+   "no_skill": {
+    "val": {
+     "n": 389,
+     "positives": 84,
+     "prevalence": 0.2159383033419023,
+     "pr_auc": 0.2159383033419023,
+     "roc_auc": 0.5,
+     "brier": 0.1693099686215024,
+     "log_loss": 0.5217219322856848
+    },
+    "test": {
+     "n": 1086,
+     "positives": 322,
+     "prevalence": 0.2965009208103131,
+     "pr_auc": 0.2965009208103131,
+     "roc_auc": 0.5,
+     "brier": 0.21524189572613367,
+     "log_loss": 0.6260874911008568
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.21493027071369974,
+     "tp": 322,
+     "fp": 764,
+     "fn": 0,
+     "tn": 0,
+     "precision": 0.2965009208103131,
+     "recall_sensitivity": 1.0,
+     "flag_rate": 1.0
+    },
+    "fit": {
+     "train_base_rate": 0.21493027071369974
+    }
+   },
+   "rule_score": {
+    "val": {
+     "n": 389,
+     "positives": 84,
+     "prevalence": 0.2159383033419023,
+     "pr_auc": 0.6920626520349705,
+     "roc_auc": 0.8826893052302889,
+     "brier": 0.0891246251937582,
+     "log_loss": 0.3051393972639093
+    },
+    "test": {
+     "n": 1086,
+     "positives": 322,
+     "prevalence": 0.2965009208103131,
+     "pr_auc": 0.7157359626335804,
+     "roc_auc": 0.8702034080192516,
+     "brier": 0.11610003300866631,
+     "log_loss": 0.3779855378479344
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.73125,
+     "tp": 226,
+     "fp": 73,
+     "fn": 96,
+     "tn": 691,
+     "precision": 0.7558528428093646,
+     "recall_sensitivity": 0.7018633540372671,
+     "flag_rate": 0.27532228360957645
+    },
+    "fit": {
+     "P(label | conditions met in t; -1=unknown)": {
+      "-1.0": 0.0,
+      "0.0": 0.052132701421800945,
+      "1.0": 0.3815028901734104,
+      "2.0": 0.73125,
+      "3.0": 0.8536585365853658
+     }
+    },
+    "test_bootstrap": {
+     "pr_auc_ci95": [
+      0.6556042473580628,
+      0.7726849464752547
+     ],
+     "roc_auc_ci95": [
+      0.8426941874973299,
+      0.8956292017733156
+     ],
+     "resamples_used": 1000
+    }
+   },
+   "logistic": {
+    "val": {
+     "n": 389,
+     "positives": 84,
+     "prevalence": 0.2159383033419023,
+     "pr_auc": 0.8103374800606178,
+     "roc_auc": 0.9093286494925839,
+     "brier": 0.08308845932012573,
+     "log_loss": 0.2864945549665844
+    },
+    "test": {
+     "n": 1086,
+     "positives": 322,
+     "prevalence": 0.2965009208103131,
+     "pr_auc": 0.8129153976636131,
+     "roc_auc": 0.903458424116289,
+     "brier": 0.11424432982044697,
+     "log_loss": 0.36095924241213134
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.37653392579099026,
+     "tp": 228,
+     "fp": 77,
+     "fn": 94,
+     "tn": 687,
+     "precision": 0.7475409836065574,
+     "recall_sensitivity": 0.7080745341614907,
+     "flag_rate": 0.28084714548802947
+    },
+    "fit": {
+     "C": 0.01,
+     "val_pr_auc": 0.8103374800606178,
+     "top_coefficients": {
+      "stress_conditions_t": 0.5105190417045911,
+      "net_leverage": 0.256713593933382,
+      "cfo_to_assets": -0.21688099721511822,
+      "roa": -0.19495911754124287,
+      "ebitda_nonpositive": 0.17258194269650193,
+      "net_margin": -0.16530213126031262,
+      "gross_leverage": 0.16323988338961803,
+      "operating_margin": -0.15015669836743184,
+      "fcf_margin": -0.1346980622343401,
+      "debt_to_assets": 0.1182662976061477,
+      "cfo_to_assets__missing": 0.11442457021769116,
+      "d_ebitda_margin": 0.1140186454063683
+     }
+    },
+    "test_bootstrap": {
+     "pr_auc_ci95": [
+      0.7581620771753538,
+      0.8613190878345032
+     ],
+     "roc_auc_ci95": [
+      0.8792561289673261,
+      0.9251816048180882
+     ],
+     "resamples_used": 1000
+    }
+   },
+   "xgboost": {
+    "val": {
+     "n": 389,
+     "positives": 84,
+     "prevalence": 0.2159383033419023,
+     "pr_auc": 0.8340771508259925,
+     "roc_auc": 0.9212334113973459,
+     "brier": 0.07892964780330658,
+     "log_loss": 0.274616539478302
+    },
+    "test": {
+     "n": 1086,
+     "positives": 322,
+     "prevalence": 0.2965009208103131,
+     "pr_auc": 0.8250541134723463,
+     "roc_auc": 0.9060254138076809,
+     "brier": 0.10885663330554962,
+     "log_loss": 0.3522210717201233
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.5082851052284241,
+     "tp": 224,
+     "fp": 69,
+     "fn": 98,
+     "tn": 695,
+     "precision": 0.764505119453925,
+     "recall_sensitivity": 0.6956521739130435,
+     "flag_rate": 0.26979742173112337
+    },
+    "fit": {
+     "max_depth": 2,
+     "min_child_weight": 5,
+     "best_iteration": 71,
+     "val_pr_auc": 0.8340771508259925,
+     "top_gain": {
+      "ebit_interest_cover": 95.66984558105469,
+      "stress_conditions_t": 87.96163940429688,
+      "ebitda_interest_cover": 24.25470542907715,
+      "net_margin": 14.232179641723633,
+      "cfo_margin__missing": 10.393049240112305,
+      "cfo_to_assets": 9.25291919708252,
+      "roa": 9.106109619140625,
+      "fcf_margin": 9.020965576171875,
+      "cfo_margin": 7.315112590789795,
+      "fcf_margin__missing": 7.243796348571777,
+      "gross_leverage": 7.124731540679932,
+      "fcf_to_debt": 6.445028305053711
+     }
+    },
+    "test_bootstrap": {
+     "pr_auc_ci95": [
+      0.771502739342203,
+      0.8700063613540886
+     ],
+     "roc_auc_ci95": [
+      0.8808980191480748,
+      0.9280353184160813
+     ],
+     "resamples_used": 1000
+    }
+   },
+   "_segment_stability": {
+    "model": "xgboost",
+    "year": [
+     {
+      "year": "2021",
+      "n": 244,
+      "positives": 72,
+      "pr_auc": 0.800313744661377
+     },
+     {
+      "year": "2022",
+      "n": 218,
+      "positives": 75,
+      "pr_auc": 0.8182084465790438
+     },
+     {
+      "year": "2023",
+      "n": 217,
+      "positives": 62,
+      "pr_auc": 0.7686220459763402
+     },
+     {
+      "year": "2024",
+      "n": 194,
+      "positives": 57,
+      "pr_auc": 0.8667514165814073
+     },
+     {
+      "year": "2025",
+      "n": 213,
+      "positives": 56,
+      "pr_auc": 0.8832640064467456
+     }
+    ],
+    "size_quintile": [
+     {
+      "size_quintile": "1",
+      "n": 69,
+      "positives": 39,
+      "pr_auc": 0.9268562724830692
+     },
+     {
+      "size_quintile": "2",
+      "n": 114,
+      "positives": 50,
+      "pr_auc": 0.9047376072958098
+     },
+     {
+      "size_quintile": "3",
+      "n": 262,
+      "positives": 74,
+      "pr_auc": 0.8867971802890597
+     },
+     {
+      "size_quintile": "4",
+      "n": 304,
+      "positives": 91,
+      "pr_auc": 0.7006840715266652
+     },
+     {
+      "size_quintile": "5",
+      "n": 337,
+      "positives": 68,
+      "pr_auc": 0.7494439598394719
+     }
+    ]
+   }
+  },
+  "label_onset": {
+   "no_skill": {
+    "val": {
+     "n": 295,
+     "positives": 18,
+     "prevalence": 0.061016949152542375,
+     "pr_auc": 0.061016949152542375,
+     "roc_auc": 0.5,
+     "brier": 0.05744631668640264,
+     "log_loss": 0.2309411127188298
+    },
+    "test": {
+     "n": 727,
+     "positives": 73,
+     "prevalence": 0.10041265474552957,
+     "pr_auc": 0.10041265474552957,
+     "roc_auc": 0.5,
+     "brier": 0.09106161400953842,
+     "log_loss": 0.3308539735978326
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.07336343115124154,
+     "tp": 73,
+     "fp": 654,
+     "fn": 0,
+     "tn": 0,
+     "precision": 0.10041265474552957,
+     "recall_sensitivity": 1.0,
+     "flag_rate": 1.0
+    },
+    "fit": {
+     "train_base_rate": 0.07336343115124154
+    }
+   },
+   "rule_score": {
+    "val": {
+     "n": 295,
+     "positives": 18,
+     "prevalence": 0.061016949152542375,
+     "pr_auc": 0.09782082324455206,
+     "roc_auc": 0.6143200962695546,
+     "brier": 0.058288778949829825,
+     "log_loss": 0.22611118383049647
+    },
+    "test": {
+     "n": 727,
+     "positives": 73,
+     "prevalence": 0.10041265474552957,
+     "pr_auc": 0.20570556424412578,
+     "roc_auc": 0.6755686816639437,
+     "brier": 0.08195082472674017,
+     "log_loss": 0.2929118124685681
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.32,
+     "tp": 33,
+     "fp": 66,
+     "fn": 40,
+     "tn": 588,
+     "precision": 0.3333333333333333,
+     "recall_sensitivity": 0.4520547945205479,
+     "flag_rate": 0.1361760660247593
+    },
+    "fit": {
+     "P(label | conditions met in t; -1=unknown)": {
+      "0.0": 0.05055487053020962,
+      "1.0": 0.32
+     }
+    },
+    "test_bootstrap": {
+     "pr_auc_ci95": [
+      0.14428380099432733,
+      0.2886030666031473
+     ],
+     "roc_auc_ci95": [
+      0.6205445337529776,
+      0.738437720347973
+     ],
+     "resamples_used": 1000
+    }
+   },
+   "logistic": {
+    "val": {
+     "n": 295,
+     "positives": 18,
+     "prevalence": 0.061016949152542375,
+     "pr_auc": 0.18722584642336723,
+     "roc_auc": 0.7076815082230246,
+     "brier": 0.06086289498956894,
+     "log_loss": 0.27178034879834384
+    },
+    "test": {
+     "n": 727,
+     "positives": 73,
+     "prevalence": 0.10041265474552957,
+     "pr_auc": 0.23261773722856635,
+     "roc_auc": 0.7550793850278581,
+     "brier": 0.09433127758251199,
+     "log_loss": 0.3373044691299639
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.2796194740605024,
+     "tp": 17,
+     "fp": 56,
+     "fn": 56,
+     "tn": 598,
+     "precision": 0.2328767123287671,
+     "recall_sensitivity": 0.2328767123287671,
+     "flag_rate": 0.10041265474552957
+    },
+    "fit": {
+     "C": 10.0,
+     "val_pr_auc": 0.18722584642336723,
+     "top_coefficients": {
+      "current_ratio__missing": -1.7447612870815778,
+      "debt_to_assets__missing": -1.580913044737545,
+      "cfo_to_assets__missing": 1.5268707077618182,
+      "cfo_to_debt": -1.4545183975800238,
+      "cash_to_assets__missing": 1.4361901308457765,
+      "net_leverage__missing": 1.3783242221925114,
+      "ebitda_interest_cover__missing": -1.2872613262869077,
+      "roa": -1.1858552040878858,
+      "cfo_to_assets": -1.1748237892498912,
+      "ebit_interest_cover": -1.0573460354466295,
+      "ebitda_margin__missing": -1.037169579285367,
+      "ebitda_nonpositive__missing": -1.037169579285367
+     }
+    },
+    "test_bootstrap": {
+     "pr_auc_ci95": [
+      0.16463533749709625,
+      0.3394301304453807
+     ],
+     "roc_auc_ci95": [
+      0.6863531715332222,
+      0.8185551301684533
+     ],
+     "resamples_used": 1000
+    }
+   },
+   "xgboost": {
+    "val": {
+     "n": 295,
+     "positives": 18,
+     "prevalence": 0.061016949152542375,
+     "pr_auc": 0.3142017409354225,
+     "roc_auc": 0.7804853590052147,
+     "brier": 0.053453680127859116,
+     "log_loss": 0.20697414875030518
+    },
+    "test": {
+     "n": 727,
+     "positives": 73,
+     "prevalence": 0.10041265474552957,
+     "pr_auc": 0.34595410949993866,
+     "roc_auc": 0.7979242595618113,
+     "brier": 0.08178859204053879,
+     "log_loss": 0.28262773156166077
+    },
+    "test_at_val_threshold": {
+     "threshold": 0.1640268713235855,
+     "tp": 29,
+     "fp": 43,
+     "fn": 44,
+     "tn": 611,
+     "precision": 0.4027777777777778,
+     "recall_sensitivity": 0.3972602739726027,
+     "flag_rate": 0.09903713892709766
+    },
+    "fit": {
+     "max_depth": 3,
+     "min_child_weight": 5,
+     "best_iteration": 16,
+     "val_pr_auc": 0.3142017409354225,
+     "top_gain": {
+      "stress_conditions_t": 24.6621150970459,
+      "ebit_interest_cover": 13.568305015563965,
+      "cfo_to_debt": 12.648604393005371,
+      "roa": 11.40516471862793,
+      "gross_leverage": 8.357117652893066,
+      "implied_cost_of_debt": 7.045080184936523,
+      "cfo_to_assets": 6.979365348815918,
+      "revenue_growth": 6.644502639770508,
+      "ebitda_interest_cover": 6.430333137512207,
+      "d_ebitda_margin": 5.94451379776001,
+      "fcf_to_debt": 5.774587631225586,
+      "d_debt_to_assets": 5.3257904052734375
+     }
+    },
+    "test_bootstrap": {
+     "pr_auc_ci95": [
+      0.2570083844692113,
+      0.470557776932293
+     ],
+     "roc_auc_ci95": [
+      0.7355045085905528,
+      0.8575838037320567
+     ],
+     "resamples_used": 1000
+    }
+   },
+   "_segment_stability": {
+    "model": "xgboost",
+    "year": [
+     {
+      "year": "2021",
+      "n": 154,
+      "positives": 18,
+      "pr_auc": 0.290190338879712
+     },
+     {
+      "year": "2022",
+      "n": 139,
+      "positives": 20,
+      "pr_auc": 0.5270636794275676
+     },
+     {
+      "year": "2023",
+      "n": 151,
+      "positives": 18,
+      "pr_auc": 0.43740315586525375
+     },
+     {
+      "year": "2024",
+      "n": 133,
+      "positives": 9,
+      "pr_auc": 0.30928635432667695
+     },
+     {
+      "year": "2025",
+      "n": 150,
+      "positives": 8,
+      "pr_auc": 0.20697890430862567
+     }
+    ],
+    "size_quintile": [
+     {
+      "size_quintile": "1",
+      "n": 29,
+      "positives": 6,
+      "pr_auc": 0.6861640211640211
+     },
+     {
+      "size_quintile": "2",
+      "n": 55,
+      "positives": 5,
+      "pr_auc": 0.6190476190476191
+     },
+     {
+      "size_quintile": "3",
+      "n": 179,
+      "positives": 12,
+      "pr_auc": 0.47654081491427885
+     },
+     {
+      "size_quintile": "4",
+      "n": 203,
+      "positives": 29,
+      "pr_auc": 0.3569185672569374
+     },
+     {
+      "size_quintile": "5",
+      "n": 261,
+      "positives": 21,
+      "pr_auc": 0.24932734848804622
+     }
+    ]
+   }
+  }
+ }
+}
