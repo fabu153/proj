@@ -5,4 +5,5 @@ scikit-learn>=1.5
 xgboost>=2.1
 matplotlib>=3.9
 pytest>=8
-# Week 4: torch (CPU) — install separately: pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Training the MLP needs torch (CPU): pip install torch --index-url https://download.pytorch.org/whl/cpu
+# The API does NOT need torch — it runs the exported weights in numpy.

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from backend.app.documents.xbrl import HELPER_FIELDS, TAG_REGISTRY
 from backend.app.labels import stress_label as sl
-from training.features.feature_set import FEATURE_DICTIONARY, FEATURE_VERSION
+from backend.app.features.feature_set import FEATURE_DICTIONARY, FEATURE_VERSION
 
 
 def main(out: str = "docs/data_dictionary.md") -> None:

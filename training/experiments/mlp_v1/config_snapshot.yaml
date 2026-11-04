@@ -1,0 +1,63 @@
+experiment: mlp_v1
+baseline_experiment: baselines_v1
+base_config: configs/experiment_baselines_v1.yaml
+targets:
+- label_next_fy
+- label_onset
+deploy_target: label_next_fy
+architecture:
+  input: 31 standardized features + 31 missingness indicators (2F = 62)
+  hidden:
+  - 128
+  - 64
+  - 32
+  block1: Linear(62,128) -> ReLU -> LayerNorm -> Dropout(0.25)
+  block2: Linear(128,64) -> ReLU -> Dropout(0.20)
+  block3: Linear(64,32) -> ReLU
+  output: Linear(32,1) logit; sigmoid at inference
+training:
+  loss: BCEWithLogitsLoss
+  optimizer: AdamW
+  batch_size: 128
+  max_epochs: 300
+  patience: 25
+  early_stop_holdout: 0.15
+  seeds:
+  - 11
+  - 22
+  - 33
+  - 44
+  - 55
+  search:
+    lr:
+    - 0.001
+    - 0.0003
+    weight_decay:
+    - 0.0001
+    - 0.01
+    pos_weight:
+    - none
+    - balanced
+deployed_model: mean logit of the 5 seeds of the selected configuration
+calibration:
+  method: platt
+  fit_on: val
+risk_bands:
+  low:
+  - 0.0
+  - 0.15
+  elevated:
+  - 0.15
+  - 0.4
+  high:
+  - 0.4
+  - 1.0
+inference_gate:
+  require_scorable: true
+  min_revenue_usd_m: 50
+  min_critical_coverage: 0.57
+  max_missing_features: 12
+comparison:
+  paired_bootstrap_resamples: 1000
+  cluster: cik
+  seed: 7

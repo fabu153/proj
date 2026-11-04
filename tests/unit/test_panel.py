@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from training.features.build_panel import panel_rows
+from backend.app.features.panel import panel_rows
 
 CF = json.loads((Path(__file__).parents[1] / "fixtures" / "demo_companyfacts.json").read_text())
 

@@ -1,0 +1,336 @@
+{
+ "leaderboard": [
+  {
+   "model": "MLP ensemble (deployed)",
+   "test_pr_auc": 0.8054597850314418,
+   "ci95": [
+    0.7522653344622828,
+    0.8531550311125679
+   ],
+   "test_roc_auc": 0.9036697993561185,
+   "test_brier": 0.11341140326426628
+  },
+  {
+   "model": "XGBoost",
+   "test_pr_auc": 0.8250541134723463,
+   "ci95": [
+    0.771502739342203,
+    0.8700063613540886
+   ],
+   "test_roc_auc": 0.9060254138076809,
+   "test_brier": 0.10885663330554962
+  },
+  {
+   "model": "Logistic regression",
+   "test_pr_auc": 0.8129153976636131,
+   "ci95": [
+    0.7581620771753538,
+    0.8613190878345032
+   ],
+   "test_roc_auc": 0.903458424116289,
+   "test_brier": 0.11424432982044697
+  },
+  {
+   "model": "Rule score (year-t conditions)",
+   "test_pr_auc": 0.7157359626335804,
+   "ci95": [
+    0.6556042473580628,
+    0.7726849464752547
+   ],
+   "test_roc_auc": 0.8702034080192516,
+   "test_brier": 0.11610003300866631
+  },
+  {
+   "model": "No-skill base rate",
+   "test_pr_auc": 0.2965009208103131,
+   "ci95": null,
+   "test_roc_auc": 0.5,
+   "test_brier": 0.21524189572613367
+  }
+ ],
+ "paired_vs_baselines": {
+  "mlp_minus_xgboost": {
+   "mean_diff": -0.019557542345440042,
+   "ci95": [
+    -0.04357708213681887,
+    0.0062222919738278756
+   ],
+   "share_a_better": 0.061
+  },
+  "xgboost_test_pr_auc": 0.8250541134723463,
+  "mlp_minus_logistic": {
+   "mean_diff": -0.0075493444137407755,
+   "ci95": [
+    -0.024350914230995908,
+    0.010359618668334859
+   ],
+   "share_a_better": 0.181
+  },
+  "logistic_test_pr_auc": 0.8129153976636131,
+  "mlp_minus_rule_score": {
+   "mean_diff": 0.08963094196860971,
+   "ci95": [
+    0.06110227307616655,
+    0.11971174435842881
+   ],
+   "share_a_better": 1.0
+  },
+  "rule_score_test_pr_auc": 0.7157359626335804
+ },
+ "calibration_test": [
+  {
+   "bin": 0,
+   "mean_pred": 0.008053473774512019,
+   "observed": 0.0,
+   "n": 109
+  },
+  {
+   "bin": 1,
+   "mean_pred": 0.014758435113375218,
+   "observed": 0.01834862385321101,
+   "n": 109
+  },
+  {
+   "bin": 2,
+   "mean_pred": 0.023844341688866302,
+   "observed": 0.05555555555555555,
+   "n": 108
+  },
+  {
+   "bin": 3,
+   "mean_pred": 0.03710652679380448,
+   "observed": 0.045871559633027525,
+   "n": 109
+  },
+  {
+   "bin": 4,
+   "mean_pred": 0.061839090404659014,
+   "observed": 0.10185185185185185,
+   "n": 108
+  },
+  {
+   "bin": 5,
+   "mean_pred": 0.11748703406812053,
+   "observed": 0.1743119266055046,
+   "n": 109
+  },
+  {
+   "bin": 6,
+   "mean_pred": 0.28352176528006784,
+   "observed": 0.4074074074074074,
+   "n": 108
+  },
+  {
+   "bin": 7,
+   "mean_pred": 0.558305421052052,
+   "observed": 0.5137614678899083,
+   "n": 109
+  },
+  {
+   "bin": 8,
+   "mean_pred": 0.7380357806250983,
+   "observed": 0.7592592592592593,
+   "n": 108
+  },
+  {
+   "bin": 9,
+   "mean_pred": 0.8242450296151442,
+   "observed": 0.8899082568807339,
+   "n": 109
+  }
+ ],
+ "search": [
+  {
+   "config": "lr=0.001,wd=0.0001,pos_weight=none",
+   "val_pr_auc_mean": 0.7777508142307213,
+   "val_pr_auc_min": 0.7564951192164658,
+   "val_pr_auc_max": 0.8043588856968791,
+   "best_epochs": [
+    32,
+    13,
+    12,
+    34,
+    21
+   ]
+  },
+  {
+   "config": "lr=0.001,wd=0.0001,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7649514252193571,
+   "val_pr_auc_min": 0.7450234719989515,
+   "val_pr_auc_max": 0.7954700200530002,
+   "best_epochs": [
+    32,
+    14,
+    26,
+    31,
+    52
+   ]
+  },
+  {
+   "config": "lr=0.001,wd=0.01,pos_weight=none",
+   "val_pr_auc_mean": 0.7778889676913454,
+   "val_pr_auc_min": 0.7550412751668739,
+   "val_pr_auc_max": 0.8049928579228552,
+   "best_epochs": [
+    32,
+    13,
+    12,
+    34,
+    24
+   ]
+  },
+  {
+   "config": "lr=0.001,wd=0.01,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7708231954175004,
+   "val_pr_auc_min": 0.7481839821040439,
+   "val_pr_auc_max": 0.7935513845339116,
+   "best_epochs": [
+    32,
+    10,
+    26,
+    41,
+    42
+   ]
+  },
+  {
+   "config": "lr=0.0003,wd=0.0001,pos_weight=none",
+   "val_pr_auc_mean": 0.7821734651868935,
+   "val_pr_auc_min": 0.7712543905893601,
+   "val_pr_auc_max": 0.793609545200457,
+   "best_epochs": [
+    63,
+    49,
+    53,
+    33,
+    62
+   ]
+  },
+  {
+   "config": "lr=0.0003,wd=0.0001,pos_weight=balanced",
+   "val_pr_auc_mean": 0.773841779444418,
+   "val_pr_auc_min": 0.7638043793712856,
+   "val_pr_auc_max": 0.7884212919878987,
+   "best_epochs": [
+    64,
+    50,
+    41,
+    31,
+    71
+   ]
+  },
+  {
+   "config": "lr=0.0003,wd=0.01,pos_weight=none",
+   "val_pr_auc_mean": 0.7801913450577302,
+   "val_pr_auc_min": 0.7729436888607447,
+   "val_pr_auc_max": 0.790397355463198,
+   "best_epochs": [
+    63,
+    49,
+    54,
+    31,
+    62
+   ]
+  },
+  {
+   "config": "lr=0.0003,wd=0.01,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7731242010906053,
+   "val_pr_auc_min": 0.7584946992577406,
+   "val_pr_auc_max": 0.7903269697994748,
+   "best_epochs": [
+    64,
+    50,
+    41,
+    30,
+    71
+   ]
+  }
+ ],
+ "selected_config": "lr=0.0003,wd=0.0001,pos_weight=none",
+ "per_seed_test_pr_auc": {
+  "mean": 0.7941769218842821,
+  "min": 0.7894623375313773,
+  "max": 0.8016905687082866
+ },
+ "permutation_importance_val": {
+  "stress_conditions_t": 0.02128402523102091,
+  "operating_margin": 0.01889291684275467,
+  "net_margin": 0.011615964303285842,
+  "ebitda_nonpositive": 0.010359941829893415,
+  "roa": 0.007495814368950149,
+  "cfo_to_assets": 0.0038043842125996983,
+  "gross_leverage": 0.0021579686629299875,
+  "cash_to_assets": 0.0021445596467143833,
+  "debt_to_assets": 0.0015518643256976273,
+  "fcf_margin": 0.0015359843135936747,
+  "d_debt_to_assets": 0.0015343225816575544,
+  "implied_cost_of_debt": 0.0007154895311117348,
+  "capex_intensity": 0.00023691602559989812,
+  "no_debt": 0.00022573879759433258,
+  "ebit_interest_cover": -0.00018441495787857587,
+  "cfo_margin": -0.0004950935360160446,
+  "revenue_growth": -0.000732360299251611,
+  "short_term_debt_share": -0.0008680067516360302,
+  "cfo_to_debt": -0.0009493618231933177,
+  "fcf_to_debt": -0.000990622443156619,
+  "cash_to_current_liabilities": -0.0014634703218977085,
+  "log_assets": -0.0025351996708922408,
+  "ebitda_interest_cover": -0.0026130759604407806,
+  "d_cfo_to_assets": -0.0029214834881815532,
+  "d_ebitda_margin": -0.0032056949943650047,
+  "current_ratio": -0.004602033033143727,
+  "equity_to_assets": -0.005841124081789384,
+  "ebitda_margin": -0.005990061674513258,
+  "liabilities_to_assets": -0.00613717487637897,
+  "debt_growth": -0.007041431744428084,
+  "net_leverage": -0.011630989498635901
+ },
+ "threshold_test": {
+  "threshold": 0.44648106515671243,
+  "tp": 229,
+  "fp": 84,
+  "fn": 93,
+  "tn": 680,
+  "precision": 0.731629392971246,
+  "recall_sensitivity": 0.7111801242236024,
+  "flag_rate": 0.2882136279926335
+ },
+ "splits": {
+  "train": {
+   "rows": 1626,
+   "companies": 310,
+   "positives": 262,
+   "prevalence": 0.21493027071369974,
+   "as_of_min": "2009-11-25",
+   "as_of_max": "2018-12-20",
+   "label_available_max": "2018-12-20"
+  },
+  "val": {
+   "rows": 497,
+   "companies": 229,
+   "positives": 84,
+   "prevalence": 0.2159383033419023,
+   "as_of_min": "2019-01-23",
+   "as_of_max": "2020-12-07",
+   "label_available_max": "2020-12-17"
+  },
+  "test": {
+   "rows": 1307,
+   "companies": 304,
+   "positives": 322,
+   "prevalence": 0.2965009208103131,
+   "as_of_min": "2021-01-07",
+   "as_of_max": "2025-11-21",
+   "label_available_max": "2026-11-04"
+  },
+  "excluded_rows": 1005
+ },
+ "limitations": [
+  "Target is an accounting-stress proxy (2 of 3: EBIT cover < 1.5x, debt/EBITDA > 5x, CFO < 0), not default.",
+  "The MLP does not beat XGBoost on test (paired difference CI includes zero, point estimate lower); it is deployed to meet the deep-learning objective, with XGBoost reported as the benchmark.",
+  "Stress is persistent: current-year stress conditions are the strongest single driver.",
+  "Test prevalence (29.7%) exceeds training prevalence (21.5%); calibration was fitted on 2019-20 validation data and may understate risk in later regimes.",
+  "Drivers are occlusion attributions (association), not causal effects.",
+  "U.S. non-financial SEC filers with revenue >= USD 50m only; not valid for other populations.",
+  "EBITDA is unadjusted (operating income + D&A); interest may be cash interest where P&L tag absent."
+ ]
+}

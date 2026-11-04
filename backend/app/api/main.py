@@ -16,9 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ..documents.xbrl import CompanyYear, build_company_years, engine_inputs
 from ..finance.metrics import compute_all
-from ..scenarios.loan import DEFAULT_CASES, Baseline, FXBlocked, run_scenario
-from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, EvidenceRef, MetricOut,
-                           ScenarioRequest, ScenarioResponse)
+from ..models import risk as risk_service
+from ..models.inference import ARTIFACT_DIR
+from ..scenarios.loan import DEFAULT_CASES, Baseline, FXBlocked, amortization_schedule, run_scenario
+from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, EvidenceRef, HistoryPoint,
+                           MetricOut, PredictRequest, ScenarioRequest, ScenarioResponse)
 
 REPO = Path(__file__).resolve().parents[3]
 CURATED_DIR = Path(os.environ.get("CREDITLENS_CURATED", REPO / "backend" / "data" / "curated"))
@@ -94,7 +96,53 @@ def analyses(req: AnalysisRequest):
                                   accession=f.accession, form=f.form, filed=f.filed, period_end=f.period_end,
                                   extraction_method=f.extraction_method) if f else None)
                   for k, f in cy.facts.items()},
-        warnings=cy.warnings, hard_failures=cy.hard_failures)
+        derived={k: {"value": v / SCALE, "rule": r} for k, (v, r) in cy.derived.items()},
+        warnings=cy.warnings, hard_failures=cy.hard_failures,
+        risk_model=risk_service.score(_cf(req.company_id), cy.fiscal_year_end, req.as_of))
+
+
+def _cf(company_id: str) -> dict:
+    cf = _companyfacts().get(company_id)
+    if cf is None:
+        raise HTTPException(404, f"Unknown company_id {company_id}")
+    return cf
+
+
+@app.post("/predict")
+def predict(req: PredictRequest):
+    cy, _ = _pick(_years(req.company_id, req.as_of), req.fiscal_year_end)
+    return {"company_id": req.company_id, "fiscal_year_end": cy.fiscal_year_end,
+            **risk_service.score(_cf(req.company_id), cy.fiscal_year_end, req.as_of)}
+
+
+@app.get("/model")
+def model_card():
+    """Model X-Ray: metadata, evaluation exhibits and limitations of the deployed network."""
+    out = {}
+    for name in ("metadata", "xray"):
+        p = ARTIFACT_DIR / f"{name}.json"
+        out[name] = json.loads(p.read_text()) if p.exists() else None
+    if out["metadata"] is None:
+        raise HTTPException(404, "No model artifact deployed")
+    return out
+
+
+@app.get("/companies/{company_id}/history", response_model=list[HistoryPoint])
+def history(company_id: str):
+    years = _years(company_id)
+    out, prev = [], None
+    for cy in years:
+        v = _scaled(engine_inputs(cy))
+        m = compute_all(v, prev)
+        out.append(HistoryPoint(
+            fiscal_year_end=cy.fiscal_year_end, filed=cy.available_as_of, scorable=cy.scorable,
+            values={k: v.get(k) for k in ("revenue", "operating_income", "net_income", "interest_expense",
+                                          "operating_cash_flow", "capital_expenditures", "cash", "total_assets")},
+            metrics={k: m[k].value for k in ("ebitda", "gross_debt", "net_debt", "fcf_simple", "ebitda_margin",
+                                             "net_leverage", "gross_leverage", "ebit_interest_cover",
+                                             "ebitda_interest_cover", "current_ratio", "revenue_growth")}))
+        prev = v
+    return out
 
 
 @app.post("/scenarios", response_model=ScenarioResponse)
@@ -119,4 +167,5 @@ def scenarios(req: ScenarioRequest):
         results = [run_scenario(base, req.facility, s, req.covenants) for s in (req.shocks or DEFAULT_CASES)]
     except FXBlocked as e:
         raise HTTPException(422, str(e))
-    return ScenarioResponse(baseline=base.model_dump(), results=results)
+    sched = amortization_schedule(req.facility) if req.facility else []
+    return ScenarioResponse(baseline=base.model_dump(), results=results, facility_schedule=sched)

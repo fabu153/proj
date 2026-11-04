@@ -24,10 +24,10 @@ import yaml
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score
 
-from training.features.feature_set import FEATURE_VERSION, FEATURES, build_features
+from backend.app.features.feature_set import FEATURE_VERSION, FEATURES, build_features
 from training.ml.evaluate import (cluster_bootstrap, max_f1_threshold, plot_pr_and_calibration, point_metrics,
                                   threshold_metrics)
-from training.ml.preprocess import Preprocessor
+from backend.app.features.preprocess import Preprocessor
 from training.ml.splits import SplitSpec, assign_splits, audit_splits
 
 

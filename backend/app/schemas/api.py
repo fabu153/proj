@@ -57,10 +57,23 @@ class AnalysisResponse(BaseModel):
     evidence: dict[str, Optional[EvidenceRef]]
     warnings: list[str]
     hard_failures: list[str]
-    risk_model: dict = Field(default_factory=lambda: {
-        "status": "not_trained",
-        "message": "Neural stress model not yet trained (Week 4). No probability shown."})
+    derived: dict[str, dict] = Field(default_factory=dict, description="values filled by logged rules R1-R4")
+    risk_model: dict = Field(default_factory=dict)
     review_required: bool = True
+
+
+class PredictRequest(BaseModel):
+    company_id: str
+    fiscal_year_end: Optional[str] = None
+    as_of: Optional[str] = None
+
+
+class HistoryPoint(BaseModel):
+    fiscal_year_end: str
+    filed: Optional[str]
+    scorable: bool
+    values: dict[str, Optional[float]]
+    metrics: dict[str, Optional[float]]
 
 
 class ScenarioRequest(BaseModel):
@@ -76,5 +89,6 @@ class ScenarioRequest(BaseModel):
 class ScenarioResponse(BaseModel):
     baseline: dict
     results: list[ScenarioResult]
+    facility_schedule: list[dict] = []
     disclaimer: str = ("Mechanical sensitivities only; not a forecast, rating or probability of default. "
                        "Analyst review required.")

@@ -1,0 +1,139 @@
+{
+ "model": "stress_mlp_v1",
+ "target": "label_next_fy",
+ "label_version": "stress_v1",
+ "feature_version": "features_v1",
+ "features": [
+  "ebitda_margin",
+  "operating_margin",
+  "net_margin",
+  "roa",
+  "cfo_margin",
+  "cfo_to_assets",
+  "fcf_margin",
+  "capex_intensity",
+  "gross_leverage",
+  "net_leverage",
+  "debt_to_assets",
+  "liabilities_to_assets",
+  "equity_to_assets",
+  "cfo_to_debt",
+  "fcf_to_debt",
+  "ebit_interest_cover",
+  "ebitda_interest_cover",
+  "implied_cost_of_debt",
+  "current_ratio",
+  "cash_to_assets",
+  "cash_to_current_liabilities",
+  "short_term_debt_share",
+  "log_assets",
+  "revenue_growth",
+  "d_ebitda_margin",
+  "d_debt_to_assets",
+  "debt_growth",
+  "d_cfo_to_assets",
+  "ebitda_nonpositive",
+  "no_debt",
+  "stress_conditions_t"
+ ],
+ "architecture": {
+  "input": "31 standardized features + 31 missingness indicators (2F = 62)",
+  "hidden": [
+   128,
+   64,
+   32
+  ],
+  "block1": "Linear(62,128) -> ReLU -> LayerNorm -> Dropout(0.25)",
+  "block2": "Linear(128,64) -> ReLU -> Dropout(0.20)",
+  "block3": "Linear(64,32) -> ReLU",
+  "output": "Linear(32,1) logit; sigmoid at inference"
+ },
+ "selected_config": "lr=0.0003,wd=0.0001,pos_weight=none",
+ "n_seeds": 5,
+ "trained_at": "2026-11-04 18:08 UTC",
+ "data_windows": {
+  "train_features_filed": [
+   "2009-11-25",
+   "2018-12-20"
+  ],
+  "val_features_filed": [
+   "2019-01-23",
+   "2020-12-07"
+  ],
+  "test_features_filed": [
+   "2021-01-07",
+   "2025-11-21"
+  ]
+ },
+ "rows": {
+  "train": 1219,
+  "val": 389,
+  "test": 1086
+ },
+ "test_metrics_calibrated": {
+  "n": 1086,
+  "positives": 322,
+  "prevalence": 0.2965009208103131,
+  "pr_auc": 0.8054597850314418,
+  "roc_auc": 0.9036697993561185,
+  "brier": 0.11341140326426628,
+  "log_loss": 0.3619086578940127
+ },
+ "test_bootstrap": {
+  "pr_auc_ci95": [
+   0.7522653344622828,
+   0.8531550311125679
+  ],
+  "roc_auc_ci95": [
+   0.8801217882263579,
+   0.9243728128254947
+  ],
+  "resamples_used": 1000
+ },
+ "xgboost_test_pr_auc": 0.8250541134723463,
+ "paired_mlp_minus_xgboost": {
+  "mean_diff": -0.019557542345440042,
+  "ci95": [
+   -0.04357708213681887,
+   0.0062222919738278756
+  ],
+  "share_a_better": 0.061
+ },
+ "risk_bands": {
+  "low": [
+   0.0,
+   0.15
+  ],
+  "elevated": [
+   0.15,
+   0.4
+  ],
+  "high": [
+   0.4,
+   1.0
+  ]
+ },
+ "inference_gate": {
+  "require_scorable": true,
+  "min_revenue_usd_m": 50,
+  "min_critical_coverage": 0.57,
+  "max_missing_features": 12
+ },
+ "top_permutation_importance": {
+  "stress_conditions_t": 0.02128402523102091,
+  "operating_margin": 0.01889291684275467,
+  "net_margin": 0.011615964303285842,
+  "ebitda_nonpositive": 0.010359941829893415,
+  "roa": 0.007495814368950149,
+  "cfo_to_assets": 0.0038043842125996983,
+  "gross_leverage": 0.0021579686629299875,
+  "cash_to_assets": 0.0021445596467143833
+ },
+ "intended_use": "Screening indicator of next-fiscal-year accounting stress for U.S. non-financial issuers with revenue >= USD 50m. Decision support only; analyst review required.",
+ "not_for": [
+  "probability of default",
+  "credit rating",
+  "regulatory capital",
+  "automatic loan decisions"
+ ]
+}

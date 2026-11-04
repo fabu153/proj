@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from training.features.build_panel import panel_rows
-from training.features.feature_set import FEATURES, build_features
-from training.ml.preprocess import Preprocessor
+from backend.app.features.panel import panel_rows
+from backend.app.features.feature_set import FEATURES, build_features
+from backend.app.features.preprocess import Preprocessor
 from training.ml.splits import SplitSpec, assign_splits
 
 CF = json.loads((Path(__file__).parents[1] / "fixtures" / "demo_companyfacts.json").read_text())
