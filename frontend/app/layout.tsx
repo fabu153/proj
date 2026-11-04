@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Newsreader, Public_Sans } from "next/font/google";
+// Fonts are bundled with the app (no download at build time, so builds can't fail on a Google Fonts hiccup).
+import "@fontsource-variable/newsreader";
+import "@fontsource-variable/public-sans";
 import "./globals.css";
-
-const newsreader = Newsreader({ subsets: ["latin"], variable: "--font-newsreader", weight: ["400", "500"] });
-const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-public-sans", weight: ["400", "600"] });
 
 export const metadata: Metadata = {
   title: "CreditLens",
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${publicSans.variable}`}>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );

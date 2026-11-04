@@ -16,8 +16,8 @@
   --focus: #2f8fe0;
   --radius-s: 3px;
   --radius-m: 6px;
-  --serif: var(--font-newsreader), Georgia, serif;
-  --sans: var(--font-public-sans), system-ui, sans-serif;
+  --serif: "Newsreader Variable", Georgia, serif;
+  --sans: "Public Sans Variable", system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }
