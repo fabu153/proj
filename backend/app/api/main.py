@@ -25,11 +25,14 @@ from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, Ev
 REPO = Path(__file__).resolve().parents[3]
 CURATED_DIR = Path(os.environ.get("CREDITLENS_CURATED", REPO / "backend" / "data" / "curated"))
 CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "http://localhost:3000").split(",")]
+# Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
+CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://creditlens[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
 
 app = FastAPI(title="CreditLens AI", version="0.2.0",
               description="Decision-support credit analysis. Not a rating, not a PD, not a loan decision.")
-app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_origin_regex=CORS_ORIGIN_REGEX,
+                   allow_methods=["GET", "POST"], allow_headers=["*"])
 
 
 @lru_cache

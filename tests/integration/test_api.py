@@ -63,3 +63,12 @@ def test_scenario_returns_facility_schedule():
     r = client.post("/scenarios", json={"baseline_override": {"currency": "EUR", "ebitda": 100, "gross_debt": 300,
                                                              "cash": 50, "interest_expense": 20}}).json()
     assert len(r["facility_schedule"]) == 5 and r["facility_schedule"][-1]["closing"] == 0
+
+
+def test_cors_allows_vercel_frontend_only():
+    ok = client.options("/companies", headers={"Origin": "https://creditlens-git-main-fabu153.vercel.app",
+                                               "Access-Control-Request-Method": "GET"})
+    bad = client.options("/companies", headers={"Origin": "https://evil.example.com",
+                                                "Access-Control-Request-Method": "GET"})
+    assert ok.headers.get("access-control-allow-origin") == "https://creditlens-git-main-fabu153.vercel.app"
+    assert "access-control-allow-origin" not in bad.headers

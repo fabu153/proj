@@ -12,8 +12,10 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 1 | Metric dictionary, EUR 100m loan/stress engine, XBRL normalizer, API, tests | ✅ |
 | 2 | 600-company survivorship-aware universe, 5,850 company-year panel, coverage report + label audit, data dictionary, frames cross-check | ✅ |
 | 3 | 31 leak-safe features, purged chronological split, train-only preprocessing, 4 baselines, frozen test results | ✅ |
-| 4 | PyTorch MLP, calibration, model card, `/predict` | next |
-| 5–8 | Dashboard + loan lab UI, PDF/memo, QA, defence | planned |
+| 4 | PyTorch MLP (8 configs × 5 seeds), Platt calibration, paired comparison, model card, `/predict`, `/model` | ✅ |
+| 5 | Next.js analyst workspace (ledger, evidence rail, trends, neural screen, loan lab), Model X-Ray page, Excel reconciliation of 8 loan cases | ✅ |
+| 6 | Annual-report upload, source review, evidence-checked credit memo + PDF | next |
+| 7–8 | QA, polish, frozen release, defence | planned |
 
 ## Week 2–3 headline results
 
@@ -33,7 +35,34 @@ facts. Split by filing date with purge: train 2009–2018, validation 2019–202
 
 Onset of stress (firms not stressed in year t, test prevalence 10.0%): XGBoost PR-AUC 0.346 vs rule 0.206 —
 the harder, more useful monitoring target. Full report: `training/experiments/baselines_v1/report.md`.
-The Week 4 neural model must beat these on validation before any claim is made.
+
+## Week 4 — neural model
+
+| next-FY stress, same test rows | PR-AUC (95% CI) | ROC-AUC | Brier |
+|---|---|---|---|
+| **MLP ensemble, calibrated (deployed)** | 0.805 (0.752–0.853) | 0.904 | 0.113 |
+| XGBoost | 0.825 (0.772–0.870) | 0.906 | 0.109 |
+| logistic regression | 0.813 (0.758–0.861) | 0.903 | 0.114 |
+| rule score | 0.716 (0.656–0.773) | 0.870 | 0.116 |
+
+Paired, company-clustered bootstrap: MLP − XGBoost = −0.020 (95% CI −0.044 to +0.006), i.e. not reliably
+different; MLP − rule = +0.090 (+0.061 to +0.120). The network is deployed because the course requires deep
+learning; XGBoost is shown beside it as the benchmark, and the model card says so. Report:
+`training/experiments/mlp_v1/report.md`; card: `training/model_card/stress_mlp_v1.md`.
+
+The API runs the network in **numpy** from exported weights (parity with PyTorch tested to 1e-6), so the
+deployed image needs no PyTorch. Scores are withheld for company-years outside the model's population or with
+too many missing inputs (test M04).
+
+## Week 5 — analyst workspace
+
+`frontend/` (Next.js 15): company and fiscal-year picker; a ledger of 12 credit metrics over 4 years where every
+row opens its formula, inputs and source 10-K accession; trend charts; the neural screen with drivers; the loan
+lab (facility, FX, use of proceeds, coupon, amortization, stress sliders, covenants) with covenant headroom rulers
+and an audit trail of every step; and a Model X-Ray page. All numbers come from the API.
+
+`docs/scenario_crosscheck.xlsx` recomputes 8 loan cases with independent Excel formulas (LibreOffice-recalculated);
+`tests/unit/test_scenario_crosscheck.py` requires the engine to match it to 1e-9.
 
 ## Repository map
 
@@ -46,6 +75,9 @@ backend/app/
   labels/stress_label.py    pre-registered 2-of-3 stress label
   api/main.py               FastAPI: /companies /analyses /scenarios
 backend/data/curated/       real demo issuers: Procter & Gamble, United Rentals, B&G Foods
+backend/models/stress_mlp_v1 deployed network: weights, preprocessor, calibrator, X-Ray exhibits
+backend/app/features/       panel row, features, preprocessing shared by training and the API
+frontend/                   Next.js analyst workspace and Model X-Ray
 training/
   pipeline/                 universe, coverage report, data dictionary, cross-check
   features/                 panel builder, feature set
@@ -56,13 +88,24 @@ configs/                    frozen assumptions + experiment configs
 docs/                       data dictionary, manual cross-check sheet
 ```
 
+## Deploy
+
+| Part | Host | Setup |
+|---|---|---|
+| API | Render (`render.yaml`) | Blueprint from the repo; deploys after CI passes |
+| Web | Vercel | Import the repo, **Root Directory = `frontend`**, project name `creditlens`, env `NEXT_PUBLIC_API_URL=<Render URL>` |
+
+The API accepts browser calls from `https://creditlens*.vercel.app` (production and previews). If the Vercel
+project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
+
 ## Run locally
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 61 tests
+pytest -q                                        # 82 tests
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
+cd frontend && npm install && npm run dev        # http://localhost:3000
 ```
 
 Reproduce the data and experiment (≈15 min, hits SEC EDGAR politely):

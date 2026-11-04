@@ -7,3 +7,4 @@ matplotlib>=3.9
 pytest>=8
 # Training the MLP needs torch (CPU): pip install torch --index-url https://download.pytorch.org/whl/cpu
 # The API does NOT need torch — it runs the exported weights in numpy.
+openpyxl>=3.1

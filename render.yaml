@@ -10,5 +10,7 @@ services:
     autoDeployTrigger: checksPass   # deploy only after the GitHub Actions CI run is green
     healthCheckPath: /health
     envVars:
+      # Extra exact origins, comma-separated. Vercel URLs starting with "creditlens" are allowed by default
+      # (CREDITLENS_CORS_REGEX); add your Vercel URL here if the project has another name.
       - key: CREDITLENS_CORS_ORIGINS
         value: "http://localhost:3000"
