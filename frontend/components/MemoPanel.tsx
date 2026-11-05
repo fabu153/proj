@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { LabState } from "./LoanLab";
+import type { Citation } from "./EvidenceRail";
 import type { Memo, PackageItem, Sentence } from "@/lib/api";
 import { memos } from "@/lib/api";
 
@@ -10,7 +11,7 @@ type Props = {
   fiscalYear: string;
   lab: LabState | null;
   blocked: boolean;
-  onCite: (item: PackageItem) => void;
+  onCite: (c: Citation) => void;
   onMemo?: (snapshotId: string | null) => void;
 };
 
@@ -108,6 +109,7 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
               : "All sentences passed the evidence checks."}
             {memo.writer_note ? ` ${memo.writer_note}.` : ""}
           </p>
+          <MemoHeader memo={memo} />
           {memo.sections.map((sec) =>
             sec.sentences.length ? (
               <section key={sec.key} className="memo-section">
@@ -139,6 +141,57 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
   );
 }
 
+function MemoHeader({ memo }: { memo: Memo }) {
+  const pk = memo.package;
+  const d = (k: string) => pk[k]?.display ?? "not set";
+  const flagged = memo.summary.flagged;
+  return (
+    <dl className="memo-header">
+      <dt>Borrower</dt>
+      <dd>{d("meta.company")}</dd>
+      <dt>Fiscal year</dt>
+      <dd>ending {d("meta.fye")}</dd>
+      <dt>Proposed facility</dt>
+      <dd>{pk["facility.amount"] ? `${d("facility.amount")} ${d("facility.tenor")} ${d("facility.structure")} at ${d("facility.coupon")}` : "none entered"}</dd>
+      <dt>Purpose</dt>
+      <dd>{d("facility.use")}</dd>
+      <dt>Analyst review</dt>
+      <dd>
+        Draft, not yet reviewed by an analyst.{" "}
+        {flagged ? `${flagged} sentence${flagged > 1 ? "s" : ""} failed the checks.` : "All sentences passed the evidence and consistency checks."}
+      </dd>
+    </dl>
+  );
+}
+
+const PH = /\{\{\s*([a-z0-9_.]+)\s*\}\}/g;
+
+/** The sentence with every inserted figure clickable: clicking opens its source trail in the rail. */
+function Linked({ s, memo, onCite }: { s: Sentence; memo: Memo; onCite: (c: Citation) => void }) {
+  if (!s.template || s.edited) return <>{s.text}</>;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of s.template.matchAll(PH)) {
+    const it = memo.package[m[1]];
+    parts.push(s.template.slice(last, m.index));
+    parts.push(
+      it && it.unit !== "text" ? (
+        <button key={m.index} type="button" className={`num-link ${it.source.trail ? "has-trail" : ""}`} onClick={() => onCite({ item: it, statement: s.text })}
+          title={it.source.trail ? "Open the source trail" : "Open the source"}>
+          {it.display}
+        </button>
+      ) : it ? (
+        it.display
+      ) : (
+        m[0]
+      ),
+    );
+    last = (m.index ?? 0) + m[0].length;
+  }
+  parts.push(s.template.slice(last));
+  return <>{parts}</>;
+}
+
 function SentenceView({
   first, s, order, memo, onCite, onSave,
 }: {
@@ -146,7 +199,7 @@ function SentenceView({
   s: Sentence;
   order: string[];
   memo: Memo;
-  onCite: (i: PackageItem) => void;
+  onCite: (c: Citation) => void;
   onSave: (t: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
@@ -179,9 +232,11 @@ function SentenceView({
   return (
     <span className={`sentence ${s.status === "flagged" ? "flagged" : ""}`}>
       {!first && " "}
-      <span className="sentence-text" onDoubleClick={() => setEditing(true)}>{s.text}</span>
+      <span className="sentence-text" onDoubleClick={() => setEditing(true)}>
+        <Linked s={s} memo={memo} onCite={onCite} />
+      </span>
       {s.refs.map((r) => (
-        <button key={r} type="button" className="cite" onClick={() => onCite(memo.package[r])} title={memo.package[r]?.label}>
+        <button key={r} type="button" className="cite" onClick={() => onCite({ item: memo.package[r], statement: s.text })} title={memo.package[r]?.label}>
           {order.indexOf(r) + 1}
         </button>
       ))}

@@ -48,6 +48,106 @@ def _source_text(it: dict) -> str:
     return s.get("detail", k or "")
 
 
+def _header_block(memo: dict, small, body) -> list:
+    """Borrower / fiscal year / proposed facility / purpose / analyst-review status, before any prose."""
+    pk = memo["package"]
+    d = lambda k: pk[k]["display"] if k in pk else "not set"     # noqa: E731
+    facility = (f"{d('facility.amount')} {d('facility.tenor')} {d('facility.structure')} at {d('facility.coupon')}"
+                if "facility.amount" in pk else "none entered")
+    s = memo.get("summary", {})
+    flagged, edited = s.get("flagged", 0), sum(x.get("edited", False) for sec in memo["sections"] for x in sec["sentences"])
+    status = ("Draft, not yet reviewed by an analyst. "
+              + (f"{flagged} sentence{'s' if flagged != 1 else ''} failed the checks and {'are' if flagged != 1 else 'is'} "
+                 "excluded below." if flagged else "All sentences passed the evidence and consistency checks.")
+              + (f" {edited} sentence{'s' if edited != 1 else ''} edited by the analyst." if edited else ""))
+    snap = (memo.get("snapshot") or {}).get("id")
+    rows = [("Borrower", d("meta.company")), ("Fiscal year", f"ending {d('meta.fye')} ({d('meta.source')})"),
+            ("Proposed facility", facility), ("Purpose", d("facility.use") if "facility.use" in pk else "not set"),
+            ("Analyst review", status),
+            ("Prepared", f"{memo['created_at']} · writer {memo['writer']}" + (f" · snapshot {snap}" if snap else ""))]
+    t = Table([[Paragraph(f"<b>{escape(a)}</b>", small), Paragraph(escape(b), small)] for a, b in rows],
+              colWidths=[34 * mm, 136 * mm])
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, INK), ("LINEBELOW", (0, 0), (-1, -2), 0.25, colors.HexColor("#d4dae1")),
+                           ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#f5f6f4")),
+                           ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 3),
+                           ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+    return [Spacer(1, 4), t]
+
+
+def _stress_table(pk: dict, small) -> list:
+    """Before loan / base / downside / severe / your case side by side, from the cited package items."""
+    cases = [c for c in ("base", "downside", "severe", "custom") if f"scen.{c}.net_leverage" in pk]
+    if not cases:
+        return []
+    names = {"base": "Base", "downside": "Downside", "severe": "Severe", "custom": "Your case"}
+    d = lambda k: pk[k]["display"] if k in pk and pk[k]["value"] is not None else "n/a"   # noqa: E731
+    strip = lambda x: x.replace(f"{pk['meta.company'].get('ccy', '')}", "")                # noqa: E731
+
+    def hr(c, item):
+        if f"scen.{c}.{item}" not in pk:
+            return "—"
+        v = pk[f"scen.{c}.{item}"]["value"]
+        return "n/a" if v is None else (f"{v:.2f}x" if v >= 0 else f"breach {-v:.2f}x")
+    rows = [["", "Before loan"] + [names[c] for c in cases],
+            ["Assumptions", "reported"] + [d(f"scen.{c}.assumptions").replace("no EBITDA or rate shock", "no shock") for c in cases],
+            ["EBITDA", d("metric.ebitda.t")] + [d(f"scen.{c}.ebitda") for c in cases],
+            ["Gross debt", d("metric.gross_debt.t")] + [d(f"scen.{c}.gross_debt") for c in cases],
+            ["Net debt", d("metric.net_debt.t")] + [d(f"scen.{c}.net_debt") for c in cases],
+            ["Net debt / EBITDA", d("metric.net_leverage.t")] + [d(f"scen.{c}.net_leverage") for c in cases],
+            ["EBITDA / interest", d("metric.ebitda_interest_cover.t")] + [d(f"scen.{c}.ebitda_interest_cover") for c in cases]]
+    if any(f"scen.{c}.headroom_lev" in pk for c in cases):
+        rows.append(["Headroom: max net debt / EBITDA", "—"] + [hr(c, "headroom_lev") for c in cases])
+    if any(f"scen.{c}.headroom_cov" in pk for c in cases):
+        rows.append(["Headroom: min EBITDA / interest", "—"] + [hr(c, "headroom_cov") for c in cases])
+    rows = [[Paragraph(f"<font color='#b3262e'><b>{escape(str(x))}</b></font>" if str(x).startswith("breach")
+                       else escape(strip(str(x))), small) for x in r] for r in rows]
+    w = 170 * mm
+    t = Table(rows, colWidths=[42 * mm] + [(w - 42 * mm) / (len(cases) + 1)] * (len(cases) + 1), repeatRows=1)
+    style = [("LINEBELOW", (0, 0), (-1, 0), 0.6, INK), ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#d4dae1")),
+             ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]
+    t.setStyle(TableStyle(style))
+    return [Spacer(1, 4), t, Spacer(1, 2),
+            Paragraph("Headroom is the distance to the covenant limit; a breach shows the shortfall.", small)]
+
+
+def _trails(memo: dict, pk: dict, h2, small, num) -> list:
+    """E2: filing -> normalized fact -> calculation -> memo statement, for the four headline figures."""
+    keys = [k for k in ("metric.ebitda.t", "metric.net_debt.t", "metric.net_leverage.t", "metric.ebitda_interest_cover.t")
+            if k in pk and pk[k]["source"].get("trail")]
+    if not keys:
+        return []
+    out = [Paragraph("Source trail for headline figures", h2),
+           Paragraph("Each figure from the filing to the memo: where it was reported, the normalized fact (with any rule "
+                     "applied), the calculation, and the first memo sentence that cites it.", small)]
+    sentences = [(x, sec["title"]) for sec in memo["sections"] for x in sec["sentences"] if x["status"] == "ok"]
+    for k in keys:
+        it, tr = pk[k], pk[k]["source"]["trail"]
+        filing = []
+        for f in tr["facts"]:
+            src = f["source"]
+            if src.get("kind") == "sec" and not src.get("derived") and f.get("as_filed"):
+                where = f"{f['as_filed']['value']:,.0f} USD, tag {src['tag']}, {src['form']} filed {src['filed']}, accession {src['accession']}"
+            elif src.get("kind") == "sec":
+                where = f"derived by rule from accession {src['accession']}"
+            elif src.get("kind") == "upload":
+                where = f"uploaded report p.{src['page']}"
+            else:
+                where = "not reported"
+            norm = "n/a" if f["normalized"] is None else f"{f['normalized']:,.1f}m"
+            rule = f" (rule {f['rule'].replace('_', ' ')})" if f.get("rule") else ""
+            filing.append(f"{f['label']}: {where} → {norm}{rule}")
+        calc = [f"{st['label']} = {st['expression']}" for st in tr["steps"]]
+        stmt = next(((x["text"], t) for x, t in sentences if k in x["refs"]), None)
+        rows = [["Filing → normalized", "<br/>".join(escape(x) for x in filing)],
+                ["Calculation", "<br/>".join(escape(x) for x in calc)],
+                ["Memo statement", f"“{escape(stmt[0])}” ({escape(stmt[1])}, [{num(k)}])" if stmt else "not cited in the memo"]]
+        t = Table([[Paragraph(f"<b>{a}</b>", small), Paragraph(b, small)] for a, b in rows], colWidths=[34 * mm, 136 * mm])
+        t.setStyle(TableStyle([("LINEABOVE", (0, 0), (-1, 0), 0.6, INK), ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#d4dae1")),
+                               ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 2)]))
+        out += [Spacer(1, 4), Paragraph(f"<b>{escape(it['label'])}: {escape(it['display'])}</b>", small), t]
+    return out
+
+
 def _assumptions(snap: dict, h2, small) -> list:
     """The complete inputs of the analysis snapshot, so the PDF can be reproduced in the loan lab (WF-02)."""
     i = snap["inputs"]
@@ -118,12 +218,14 @@ def render_pdf(memo: dict) -> bytes:
             cited.append(ref)
         return cited.index(ref) + 1
 
-    flow = [Paragraph(f"Credit memo: {escape(pk['meta.company']['display'])}", h1),
-            Paragraph(f"Fiscal year ending {escape(memo['fiscal_year_end'])} · generated {escape(memo['created_at'])} · "
-                      f"writer {escape(memo['writer'])}", small),
-            Spacer(1, 4),
-            Paragraph("ANALYST REVIEW REQUIRED — decision support only; not a rating, not a probability of default, "
-                      "not a lending decision.", banner), Spacer(1, 6)]
+    flow = [Paragraph(f"Credit memo: {escape(pk['meta.company']['display'])}", h1)]
+    flow += _header_block(memo, small, body)
+    flow += [Spacer(1, 6),
+             Paragraph("ANALYST REVIEW REQUIRED — decision support only; not a rating, not a probability of default, "
+                       "not a lending decision.", banner),
+             Paragraph(f"Amounts in {escape(memo.get('currency', 'USD'))} millions unless stated. Every number is inserted from the "
+                       "deterministic engines and cited in brackets; the appendix gives each source.", small),
+             Spacer(1, 4)]
     excluded = []
     for sec in memo["sections"]:
         ok = [s for s in sec["sentences"] if s["status"] == "ok"]
@@ -137,10 +239,14 @@ def render_pdf(memo: dict) -> bytes:
             marks = f"<super><font size=6.5 color='#0f7c7a'>[{_ranges(nums)}]</font></super>" if nums else ""
             para.append(escape(s["text"]) + marks + ("<font size=7 color='#56677a'> (edited)</font>" if s["edited"] else ""))
         flow.append(Paragraph(" ".join(para), body))
+        if sec["key"] == "stress":
+            flow += _stress_table(pk, small)
 
     snap = memo.get("snapshot")
     if snap and snap.get("inputs"):
         flow += _assumptions(snap, h2, small)
+
+    flow += _trails(memo, pk, h2, small, num)
 
     flow.append(Paragraph("Evidence appendix", h2))
     rows = [["#", "Item", "Value", "Source"]]

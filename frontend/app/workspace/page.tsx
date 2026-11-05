@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ApiStatus from "@/components/ApiStatus";
 import CreditProfile from "@/components/CreditProfile";
-import EvidenceRail from "@/components/EvidenceRail";
+import EvidenceRail, { type Citation } from "@/components/EvidenceRail";
 import LoanLab, { type LabState } from "@/components/LoanLab";
 import MemoPanel from "@/components/MemoPanel";
 import Progress, { type StepKey, type StepState } from "@/components/Progress";
 import RiskScreen from "@/components/RiskScreen";
 import TopBar from "@/components/TopBar";
 import TrendCharts from "@/components/TrendCharts";
-import type { Analysis, Company, HistoryPoint, PackageItem } from "@/lib/api";
+import type { Analysis, Company, HistoryPoint } from "@/lib/api";
 import { api } from "@/lib/api";
 import { useApiReady } from "@/lib/useApi";
 
@@ -25,7 +25,7 @@ export default function Workspace() {
   const [error, setError] = useState<string | null>(null);
   const [lab, setLab] = useState<LabState | null>(null);
   const [memoSnapshot, setMemoSnapshot] = useState<string | null>(null);
-  const [citation, setCitation] = useState<PackageItem | null>(null);
+  const [citation, setCitation] = useState<Citation | null>(null);
   const [reload, setReload] = useState(0);
   const onLab = useCallback((s: LabState) => setLab(s), []);
 

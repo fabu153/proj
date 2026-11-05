@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.3.0 — Stage E (finished result) and Stage F (stress heatmap)
+
+No frozen artifact changed: the release manifest remains at 1.2.0 and its 27 hashes still verify.
+
+### E1 Credit memo
+- **Layout:** the PDF and the on-screen memo open with Borrower, Fiscal year, Proposed facility, Purpose and
+  Analyst-review status. A four-sentence executive assessment follows, then compact sections: financial profile,
+  key strengths, key risks, neural stress screen, stress cases (with a before-loan / base / downside / severe /
+  your-case table), covenant headroom (signed, with breaches shown as shortfalls), diligence questions,
+  assumptions with the snapshot id, source trails and the evidence appendix.
+- **Semantic checks** on every sentence, in addition to number reconciliation:
+  - direction words must match the sign of the change, including "rises to / falls to" against the pre-loan figure;
+  - negative covenant headroom must be called a breach, and positive headroom must not be;
+  - undefined ratios cannot be cited;
+  - one sentence cannot pair one stress case's assumptions with another case's results.
+  The template writer passes all of them; the language-model writer remains optional and is held to the same checks.
+
+### E2 Source trails
+- Clicking a figure in the memo opens its trail for EBITDA, net debt, net debt / EBITDA and EBITDA / interest:
+  filing (SEC accession with an EDGAR link, or uploaded-report page) → normalized fact in USD millions with any
+  rule (R1–R7) → calculation with the actual numbers → the memo sentence that cites it. The PDF prints the same
+  four trails.
+
+### E3 Presentation
+- The demo script follows the roadmap's three-minute flow: P&G financials → network vs XGBoost → EUR 100m with an
+  explicit dated FX rate → matched memo and PDF → one replay reveal. The captioned backup video, screenshots and
+  sample memos are regenerated.
+
+### F Stress heatmap
+- `POST /scenarios/grid` runs the existing Python engine once per cell: EBITDA −50% to +10% by rates 0 to +500 bp,
+  42 runs. The loan lab shows net debt / EBITDA, EBITDA / interest or covenant headroom, colours breached and
+  tight cells, and clicking a cell loads it into "your case".
+
+### Acceptance IDs
+- Renamed to match the roadmap's checklist: ML-02 = replay held-out with no leakage; OUT-01 = demo borrowers
+  reconcile to the 10-Ks (new test pinning each borrower's key figures); OUT-02 = memo drilldowns. The earlier
+  "sliders never change the score" check is now C3.
+
+### Fixes
+- The grey "n/a" in the credit profile failed contrast on the selected-row tint (2.5:1, now 4.6:1).
+
 ## 1.2.0 — Stage C (deep-learning evidence) and Stage D (Historical Model Replay)
 
 Reason for the new release: two new frozen artifacts, both derived from the unchanged model. The first is the

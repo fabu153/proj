@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Covenants, Facility, ScenarioResponse, ScenarioResult, Shock, UseOfProceeds } from "@/lib/api";
 import { api } from "@/lib/api";
 import Ruler from "./Ruler";
+import StressHeatmap from "./StressHeatmap";
 
 const FIXED: Shock[] = [
   { name: "Base", ebitda_shock: 0, rate_shock_bps: 0 },
@@ -63,16 +64,18 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
   const [busy, setBusy] = useState(false);
 
   const fxNeeded = fac.currency !== reportingCurrency;
+  // stable identity: the heatmap depends on the facility, not on "your case" sliders
+  const facility = useMemo(() => ({ ...fac, fx_rate_to_reporting: fxNeeded ? fac.fx_rate_to_reporting : null }), [fac, fxNeeded]);
   const body = useMemo(
     () => ({
       company_id: companyId,
       fiscal_year_end: fiscalYear,
-      facility: { ...fac, fx_rate_to_reporting: fxNeeded ? fac.fx_rate_to_reporting : null },
+      facility,
       shocks: [...FIXED, { name: "Your case", ebitda_shock: ebitdaShock, rate_shock_bps: rateBps }],
       covenants: cov,
       existing_floating_share: floatShare,
     }),
-    [companyId, fiscalYear, fac, fxNeeded, ebitdaShock, rateBps, cov, floatShare],
+    [companyId, fiscalYear, facility, ebitdaShock, rateBps, cov, floatShare],
   );
 
   const params: LabParams = useMemo(
@@ -304,6 +307,20 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
                 )}
               </>
             )}
+
+            <StressHeatmap
+              companyId={companyId}
+              fiscalYear={fiscalYear}
+              facility={facility}
+              covenants={cov}
+              floatShare={floatShare}
+              disabled={blocked || fxMissing}
+              current={{ ebitda: ebitdaShock, bps: rateBps }}
+              onPick={(e, r) => {
+                setEbitdaShock(e);
+                setRateBps(r);
+              }}
+            />
 
             <details style={{ marginTop: 14 }}>
               <summary style={{ cursor: "pointer", fontSize: 14, fontWeight: 600 }}>Facility repayment schedule ({fac.currency} millions)</summary>

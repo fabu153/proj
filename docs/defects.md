@@ -41,6 +41,8 @@ blueprint's risk table: **High** = could show a wrong number or block the demo; 
 | DF-33 | v1.2 replay tests | Medium | The stress-label function returned "not stressed" for numpy inputs that met two conditions | `x is True` is false for `np.bool_` | Conditions return plain `bool`; the training panel was unaffected (4,322 rows re-checked). `test_stress_label_accepts_numpy_values` |
 | DF-34 | v1.2 X-Ray review | Low | The calibration chart's observed line stopped at 50% | Two lines with separate data arrays on one numeric axis | Both series in one data array |
 | DF-35 | v1.2 X-Ray review | Low | Data-window counts (1,626 / 497 / 1,307) did not match the evaluated rows (1,219 / 389 / 1,086) | The panel's window counts were shown next to metrics on gated rows | The X-Ray shows the scored rows and says which gate applies |
+| DF-36 | v1.3 axe scan | Medium | "n/a" in the credit profile below 4.5:1 on the selected-row tint | Light grey text token | Darker token (4.6:1). `test_f_heatmap_cell_populates_the_loan_lab` scans that page |
+| DF-37 | v1.3 memo review | Medium | A sentence could cite reconciled numbers yet say the wrong thing: "revenue grew" on a decline, negative headroom described as headroom, one case's assumptions with another's results | The validator checked numbers, not meaning | Semantic checks in the validator. `test_memo_semantics.py` |
 
 ## Known limitations (accepted, documented, not defects)
 

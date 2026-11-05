@@ -31,8 +31,9 @@ from ..memos.writer import llm_status
 from ..models import risk as risk_service
 from ..models.inference import ARTIFACT_DIR
 from ..scenarios.snapshot import credit_baseline, make_snapshot
-from ..scenarios.loan import DEFAULT_CASES, Baseline, Facility, FXBlocked, ScenarioInputError, amortization_schedule, run_scenario
-from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, DocumentMetaUpdate, EvidenceRef, FactEntry,
+from ..scenarios.loan import (DEFAULT_CASES, ENGINE_VERSION, Baseline, Covenants, Facility, FXBlocked, ScenarioInputError, Shock,
+                               amortization_schedule, run_scenario)
+from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, DocumentMetaUpdate, EvidenceRef, FactEntry, GridRequest,
                            FactReview, HistoryPoint, MemoEdit, MemoRequest, MetricOut, PredictRequest, ScenarioRequest,
                            ScenarioResponse)
 
@@ -42,7 +43,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -301,6 +302,39 @@ def scenarios(req: ScenarioRequest):
         raise HTTPException(422, str(e))
     sched = amortization_schedule(req.facility) if req.facility else []
     return ScenarioResponse(baseline=base.model_dump(), results=results, facility_schedule=sched, snapshot=snap)
+
+
+@app.post("/scenarios/grid")
+def scenario_grid(req: GridRequest):
+    """Stage F: every cell is one call of the same Python scenario engine as the loan lab (run_scenario).
+    Nothing is interpolated or recomputed in the browser."""
+    base, cy = _baseline(req.company_id, req.fiscal_year_end, req.existing_floating_share)
+    if any(not -1.0 <= e <= 1.0 for e in req.ebitda_shocks) or any(not -500 <= r <= 1000 for r in req.rate_shocks_bps):
+        raise HTTPException(422, "Shocks outside the engine's range (EBITDA -100% to +100%, rates -500 to +1,000 bp)")
+    rows = []
+    for r in req.rate_shocks_bps:
+        row = []
+        for e in req.ebitda_shocks:
+            try:
+                res = run_scenario(base, req.facility, Shock(name=f"grid {e:+.0%} / {r:+.0f}bp", ebitda_shock=e,
+                                                             rate_shock_bps=r), req.covenants)
+            except FXBlocked as err:
+                raise HTTPException(422, str(err))
+            except ScenarioInputError as err:
+                row.append({"ebitda_shock": e, "rate_shock_bps": r, "error": str(err)})
+                continue
+            h = res.covenant_headroom
+            row.append({"ebitda_shock": e, "rate_shock_bps": r, "net_leverage": res.net_leverage,
+                        "ebitda_interest_cover": res.ebitda_interest_cover,
+                        "headroom_lev": h.get("max_net_leverage"), "headroom_cov": h.get("min_ebitda_interest_cover"),
+                        "breach": any(v is not None and v < 0 for v in h.values())
+                        or "COVENANT_BREACH" in " ".join(res.flags).upper()
+                        or bool(req.covenants and req.covenants.max_net_leverage is not None and res.net_leverage is None),
+                        "flags": res.flags})
+        rows.append(row)
+    return {"company_id": req.company_id, "fiscal_year_end": cy.fiscal_year_end, "currency": base.currency,
+            "engine_version": ENGINE_VERSION, "ebitda_shocks": req.ebitda_shocks, "rate_shocks_bps": req.rate_shocks_bps,
+            "covenants": (req.covenants or Covenants()).model_dump(), "cells": rows}
 
 
 # ------------------------------------------------------------------ documents (Week 6)

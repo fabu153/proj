@@ -13,6 +13,7 @@ from typing import Any, Optional
 
 from ..documents.xbrl import build_company_years, engine_inputs
 from ..finance.metrics import compute_all
+from .trail import HEADLINE, build_trail
 from ..models import risk as risk_service
 from ..scenarios.loan import Covenants, Facility, Shock, UseOfProceeds, run_scenario
 from ..scenarios.snapshot import FIXED_CASES, case_key, credit_baseline, make_snapshot
@@ -33,6 +34,12 @@ METRIC_LABELS = {"ebitda": ("EBITDA (approx.)", "amount"), "ebitda_margin": ("EB
 USE_TEXT = {"capex": "capital expenditure", "acquisition": "an acquisition", "refinancing": "refinancing existing debt",
             "retained_cash": "general liquidity (held as cash)"}
 CASE_LABELS = {"base": "Base", "downside": "Downside", "severe": "Severe", "custom": "Your"}
+
+
+def fy_label(fye: str) -> str:
+    """Same rule as the UI: a 52/53-week year ending in the first week of January belongs to the prior year."""
+    y = int(fye[:4])
+    return f"FY{y - 1}" if fye[5:7] == "01" and int(fye[8:10]) <= 7 else f"FY{y}"
 
 
 def fmt(value: Any, unit: str, ccy: str = "USD") -> str:
@@ -112,14 +119,16 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
             if fact:
                 src.update(tag=fact.tag, accession=fact.accession, filed=fact.filed, page=fact.page,
                            method=fact.extraction_method)
-            pk.add(f"fact.{f}.{tag}", f"{FACT_LABELS[f]} ({year.fiscal_year_end[:4]})", vals.get(f), "amount", src)
+            pk.add(f"fact.{f}.{tag}", f"{FACT_LABELS[f]} ({fy_label(year.fiscal_year_end)})", vals.get(f), "amount", src)
         prior_vals = v_p if tag == "t" else None
         m = compute_all(vals, prior_vals, cash_basis=year.cash_basis)
         for k, (label, unit) in METRIC_LABELS.items():
             r = m[k]
-            pk.add(f"metric.{k}.{tag}", f"{label} ({year.fiscal_year_end[:4]})", r.value, unit,
-                   {"kind": "formula", "formula": r.formula, "version": r.formula_version, "status": r.status.value,
-                    "note": r.reason, "fiscal_year_end": year.fiscal_year_end})
+            src = {"kind": "formula", "formula": r.formula, "version": r.formula_version, "status": r.status.value,
+                   "note": r.reason, "fiscal_year_end": year.fiscal_year_end}
+            if tag == "t" and k in HEADLINE:      # E2: filing -> normalized fact -> calculation
+                src["trail"] = build_trail(companyfacts, year, vals, m, k, ccy)
+            pk.add(f"metric.{k}.{tag}", f"{label} ({fy_label(year.fiscal_year_end)})", r.value, unit, src)
     if pk.has("metric.revenue_growth.t"):
         pk.add("metric.revenue_growth.abs", "Size of revenue change", abs(pk.val("metric.revenue_growth.t")), "pct",
                {"kind": "formula", "formula": "|revenue_t / revenue_t-1 - 1|", "version": "1.0.0"})

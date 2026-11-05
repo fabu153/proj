@@ -62,7 +62,7 @@ def test_e01_issuer_to_memo_pdf(page):
     page.wait_for_selector("text=EBITDA shock -30%", timeout=15000)
     # memo, citation, PDF
     page.wait_for_selector("text=Current · snapshot", timeout=15000)
-    # ML-02: the deterministic loan stress never changes the neural score
+    # C3: the deterministic loan stress never changes the neural score
     score = page.inner_text(".risk-head .pct")
     page.locator("input[type=range]").first.fill("-50")
     page.wait_for_selector("text=Current · snapshot", timeout=15000)
@@ -72,7 +72,14 @@ def test_e01_issuer_to_memo_pdf(page):
     page.click("text=Draft credit memo")
     page.wait_for_selector(".memo-section", timeout=60000)
     assert "All sentences passed the evidence checks" in page.inner_text(".memo")
-    assert "EUR 100m" in page.inner_text(".memo-section >> nth=0")
+    assert "EUR 100m" in page.inner_text(".memo-header")
+    # E2 / OUT-02: clicking a headline figure opens its source trail, down to the SEC accession
+    page.locator("button.num-link.has-trail").first.click()
+    page.wait_for_selector("text=Source trail", timeout=5000)
+    trail = page.inner_text(".trail")
+    for step in ("1 · FILING", "2 · NORMALIZED FACT", "3 · CALCULATION", "4 · MEMO STATEMENT"):
+        assert step in trail.upper(), step
+    assert page.locator(".trail a[href*='sec.gov/Archives']").count() >= 1
     lab_snap = page.inner_text(".ok-tag code")
     assert lab_snap in page.inner_text(".memo")                      # WF-02: memo carries the table's snapshot
     # WF-02: change an input -> the memo is outdated and its PDF is withdrawn until regenerated
@@ -81,7 +88,7 @@ def test_e01_issuer_to_memo_pdf(page):
     assert page.locator("text=Download PDF").count() == 0
     page.click("text=Regenerate now")
     page.wait_for_selector("text=Download PDF", timeout=60000)
-    assert "EUR 150m" in page.inner_text(".memo-section >> nth=0")
+    assert "EUR 150m" in page.inner_text(".memo-header")
     assert page.locator(".progress li.done").count() == 5
     page.locator("button.cite").first.click()
     page.wait_for_selector("text=Memo citation")
@@ -89,6 +96,23 @@ def test_e01_issuer_to_memo_pdf(page):
         page.click("text=Download PDF")
     path = dl.value.path()
     assert Path(path).read_bytes()[:5] == b"%PDF-"
+    assert page.errors == []
+
+
+def test_f_heatmap_cell_populates_the_loan_lab(page):
+    page.goto(BASE + "/workspace?company=0001278027", wait_until="networkidle")
+    page.wait_for_selector("table.heat button.cell", timeout=90000)
+    assert page.locator("table.heat button.cell").count() == 42
+    assert page.locator("table.heat button.cell.breach").count() >= 1
+    page.locator("table.heat tbody tr").nth(3).locator("button.cell").nth(1).click()       # +300 bp, EBITDA -40%
+    page.wait_for_selector("text=EBITDA shock -40%", timeout=15000)
+    assert "-40%" in page.inner_text(".controls") and "+300 bp" in page.inner_text(".controls")
+    assert page.locator("table.heat button.cell.active").count() == 1
+    page.click(".seg button:has-text('EBITDA / interest')")
+    assert "x" in page.locator("table.heat button.cell").first.inner_text()
+    page.add_script_tag(path=str(AXE))
+    res = _axe(page)
+    assert res == [], res
     assert page.errors == []
 
 
@@ -150,7 +174,7 @@ def test_data01_unlabelled_report_needs_confirmation(page):
     assert page.errors == []
 
 
-def test_out01_replay_hides_outcome_until_revealed(page):
+def test_ml02_replay_hides_outcome_until_revealed(page):
     """Stage D: nothing about the next year is requested or shown before 'Reveal next-year outcome'."""
     urls = []
     page.on("request", lambda r: urls.append(r.url))

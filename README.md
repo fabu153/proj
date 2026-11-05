@@ -17,10 +17,11 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
 | 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| v1.3 | Stage E finished memo (header block, compact sections, semantic sentence checks), source trails for four headline figures, three-minute demo; Stage F stress heatmap from the Python engine | ✅ |
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.2.0** — 199 automated tests + 9 browser tests, 208 passed, 0 failed (`docs/test_matrix.md`).
+**Release v1.3.0** — 222 automated tests + 10 browser tests, 232 passed, 0 failed (`docs/test_matrix.md`).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -120,6 +121,16 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
+## v1.3 — Stages E and F
+
+- **Memo.** It opens with borrower, fiscal year, facility, purpose and review status. It has compact sections
+  including a stress-case table and signed covenant headroom. Every sentence is checked for direction, headroom
+  sign, undefined ratios and mixed stress cases, on top of number reconciliation.
+- **Source trails.** Click EBITDA, net debt, net debt / EBITDA or EBITDA / interest in the memo to see the SEC
+  accession or report page, the normalized fact, the calculation and the sentence. The PDF prints the same trails.
+- **Stress heatmap.** `POST /scenarios/grid` runs `run_scenario` once per cell (EBITDA −50% to +10% by rates 0 to
+  +500 bp). Click a cell to load it into the loan lab.
+
 ## v1.2 — Stages C and D
 
 - **Model X-Ray (`/model`).** Three layers: what the network learned (target, input groups, architecture, data
@@ -155,7 +166,7 @@ Only the package (labels, formatted values, source descriptions) is sent to the 
 
 - `tests/end_to_end/` drives the full journeys in Chrome and runs axe-core WCAG 2.1 AA scans
   (`E2E_BASE_URL=http://localhost:3000 pytest tests/end_to_end`).
-- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 35 defects and their fixes.
+- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 37 defects and their fixes.
 - Security: upload type/size/page limits, no file persistence, retention purge, rate limits, security headers,
   `no-store` on uploads and memos, generic errors with a request reference, operator-only audit trail at `GET /audit`.
 - `release/manifest.json` freezes 27 artifacts (data, model, configs, fixtures) by SHA-256;
@@ -178,7 +189,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 199 tests (+9 browser tests with E2E_BASE_URL)
+pytest -q                                        # 222 tests (+10 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

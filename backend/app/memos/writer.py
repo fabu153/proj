@@ -16,13 +16,14 @@ import httpx
 from .package import Package
 
 SECTIONS = [
-    ("executive", "Executive view"),
-    ("profile", "Business and financial profile"),
-    ("strengths", "Credit strengths"),
+    ("executive", "Executive assessment"),
+    ("profile", "Financial profile"),
+    ("strengths", "Key strengths"),
     ("risks", "Key risks"),
-    ("model", "Risk model"),
-    ("loan", "Proposed facility and stress cases"),
-    ("considerations", "Credit considerations and diligence questions"),
+    ("model", "Neural stress screen"),
+    ("stress", "Stress cases"),
+    ("covenants", "Covenant headroom"),
+    ("considerations", "Diligence questions"),
 ]
 
 
@@ -37,14 +38,26 @@ class TemplateWriter:
         h, v = pk.has, pk.val
         out: dict[str, list[dict]] = {k: [] for k, _ in SECTIONS}
 
-        # executive
-        if h("facility.amount"):
-            out["executive"].append(S("{{meta.company}} is assessed for a {{facility.amount}} {{facility.tenor}} "
-                                      "{{facility.structure}} facility at an all-in coupon of {{facility.coupon}}, "
-                                      "to fund {{facility.use}}."))
-        out["executive"].append(S("This memo summarises the financial profile for the fiscal year ending {{meta.fye}} "
-                                  "from {{meta.source}}, a neural stress screen and mechanical stress tests."))
-        out["executive"].append(S("It supports analyst judgement and makes no lending decision.", "framing"))
+        # executive: the assessment in four sentences; facility terms are in the PDF header block
+        if h("scen.base.net_leverage") and h("metric.net_leverage.t"):
+            out["executive"].append(S("After the facility, net debt / EBITDA would be {{scen.base.net_leverage}}, against "
+                                      "{{metric.net_leverage.t}} before it, with EBITDA / interest at "
+                                      "{{scen.base.ebitda_interest_cover}}."))
+        elif h("metric.net_leverage.t"):
+            out["executive"].append(S("Net debt / EBITDA is {{metric.net_leverage.t}} for the fiscal year ending {{meta.fye}}."))
+        if v("risk.status") == "scored":
+            out["executive"].append(S("The next-FY accounting-stress screen is {{risk.probability}}, in the {{risk.band}} band."))
+        elif h("risk.gate"):
+            out["executive"].append(S("The next-FY accounting-stress screen was withheld: {{risk.gate}}."))
+        if h("covenant.max_net_leverage") and h("scen.downside.headroom_lev"):
+            if v("scen.downside.headroom_lev") < 0:
+                out["executive"].append(S("The downside case breaches the maximum net debt / EBITDA covenant of "
+                                          "{{covenant.max_net_leverage}} by {{scen.downside.headroom_lev_shortfall}}."))
+            else:
+                out["executive"].append(S("The maximum net debt / EBITDA covenant of {{covenant.max_net_leverage}} holds in "
+                                          "the downside case, with headroom of {{scen.downside.headroom_lev}}."))
+        out["executive"].append(S("Figures come from {{meta.source}}; the memo supports analyst judgement and makes no "
+                                  "lending decision.", "claim"))
 
         # profile
         if h("fact.revenue.t"):
@@ -130,37 +143,52 @@ class TemplateWriter:
         else:
             out["model"].append(S("No stress screen is available for this company-year.", "framing"))
 
-        # loan
+        # stress cases
         if h("scen.base.net_leverage"):
-            out["loan"].append(S("After the facility, gross debt rises to {{scen.base.gross_debt}} and net debt / "
-                                 "EBITDA moves to {{scen.base.net_leverage}}, with EBITDA / interest at "
-                                 "{{scen.base.ebitda_interest_cover}}."))
-            out["loan"].append(S("In the downside case ({{scen.downside.assumptions}}) net debt / EBITDA reaches "
-                                 "{{scen.downside.net_leverage}} and EBITDA / interest falls to "
-                                 "{{scen.downside.ebitda_interest_cover}}."))
-            out["loan"].append(S("In the severe case ({{scen.severe.assumptions}}) net debt / EBITDA reaches "
-                                 "{{scen.severe.net_leverage}} and EBITDA / interest {{scen.severe.ebitda_interest_cover}}."))
+            gd_new, gd_old = v("scen.base.gross_debt"), v("metric.gross_debt.t")
+            verb = "rises to" if gd_old is None or gd_new > gd_old else "stays at" if gd_new == gd_old else "falls to"
+            out["stress"].append(S("In the base case gross debt " + verb + " {{scen.base.gross_debt}} and net debt / "
+                                   "EBITDA is {{scen.base.net_leverage}}, with EBITDA / interest at "
+                                   "{{scen.base.ebitda_interest_cover}}."))
+            out["stress"].append(S("In the downside case ({{scen.downside.assumptions}}) net debt / EBITDA reaches "
+                                   "{{scen.downside.net_leverage}} and EBITDA / interest is "
+                                   "{{scen.downside.ebitda_interest_cover}}."))
+            out["stress"].append(S("In the severe case ({{scen.severe.assumptions}}) net debt / EBITDA reaches "
+                                   "{{scen.severe.net_leverage}} and EBITDA / interest is {{scen.severe.ebitda_interest_cover}}."))
             if h("scen.custom.net_leverage"):
-                out["loan"].append(S("In the analyst's own case ({{scen.custom.assumptions}}) net debt / EBITDA is "
-                                     "{{scen.custom.net_leverage}} and EBITDA / interest {{scen.custom.ebitda_interest_cover}}."))
-            for cov, item, what in (("covenant.max_net_leverage", "headroom_lev", "a maximum net debt / EBITDA"),
-                                    ("covenant.min_cover", "headroom_cov", "a minimum EBITDA / interest")):
-                if not (h(cov) and h(f"scen.downside.{item}") and h(f"scen.base.{item}")):
-                    continue
-                base_breach, down_breach = v(f"scen.base.{item}") < 0, v(f"scen.downside.{item}") < 0
-                lead = "Against " + what + " of {{" + cov + "}}, "
-                if base_breach:
-                    out["loan"].append(S(lead + "the covenant is breached even in the base case, by {{scen.base." + item +
-                                         "_shortfall}}, widening to {{scen.downside." + item + "_shortfall}} in the downside."))
-                elif down_breach:
-                    out["loan"].append(S(lead + "headroom is {{scen.base." + item + "}} in the base case, but the downside "
-                                         "breaches it by {{scen.downside." + item + "_shortfall}}."))
-                else:
-                    out["loan"].append(S(lead + "headroom is {{scen.base." + item + "}} in the base case and {{scen.downside."
-                                         + item + "}} in the downside."))
-            out["loan"].append(S("Proceeds spent on capex or acquisitions are assumed to add no EBITDA.", "framing"))
+                out["stress"].append(S("In the analyst's own case ({{scen.custom.assumptions}}) net debt / EBITDA is "
+                                       "{{scen.custom.net_leverage}} and EBITDA / interest is "
+                                       "{{scen.custom.ebitda_interest_cover}}."))
+            out["stress"].append(S("Proceeds spent on capex or acquisitions are assumed to add no EBITDA.", "framing"))
         elif h("scen.unavailable"):
-            out["loan"].append(S("Stress cases could not be run because these inputs are missing: {{scen.unavailable}}."))
+            out["stress"].append(S("Stress cases could not be run because these inputs are missing: {{scen.unavailable}}."))
+
+        # covenant headroom: base, downside and the analyst's own case, signed correctly
+        any_cov = False
+        for cov, item, what in (("covenant.max_net_leverage", "headroom_lev", "a maximum net debt / EBITDA"),
+                                ("covenant.min_cover", "headroom_cov", "a minimum EBITDA / interest")):
+            if not (h(cov) and h(f"scen.downside.{item}") and h(f"scen.base.{item}")):
+                continue
+            any_cov = True
+            base_breach, down_breach = v(f"scen.base.{item}") < 0, v(f"scen.downside.{item}") < 0
+            lead = "Against " + what + " of {{" + cov + "}}, "
+            if base_breach:
+                out["covenants"].append(S(lead + "the covenant is breached even in the base case, by {{scen.base." + item +
+                                          "_shortfall}}, and by {{scen.downside." + item + "_shortfall}} in the downside."))
+            elif down_breach:
+                out["covenants"].append(S(lead + "headroom is {{scen.base." + item + "}} in the base case, but the "
+                                          "downside breaches it by {{scen.downside." + item + "_shortfall}}."))
+            else:
+                out["covenants"].append(S(lead + "headroom is {{scen.base." + item + "}} in the base case and "
+                                          "{{scen.downside." + item + "}} in the downside."))
+            if h(f"scen.custom.{item}"):
+                if v(f"scen.custom.{item}") < 0:
+                    out["covenants"].append(S("In the analyst's own case the covenant is breached by {{scen.custom." + item +
+                                              "_shortfall}}."))
+                else:
+                    out["covenants"].append(S("In the analyst's own case headroom is {{scen.custom." + item + "}}."))
+        if not any_cov and h("scen.base.net_leverage"):
+            out["covenants"].append(S("No covenants were set in the loan lab, so headroom was not tested.", "framing"))
 
         # considerations
         if h("covenant.max_net_leverage"):
@@ -185,7 +213,10 @@ Rules — they are checked automatically and violations are rejected:
    "guarantee", "approve". The model output is an "accounting-stress screen", not a default probability.
 4. Plain, precise analyst prose. Each sentence is one claim. No adjectives without a cited number.
 5. Return ONLY JSON: {"sections":[{"key":"...","sentences":[{"text":"...","kind":"claim|framing|question"}]}]}
-   using exactly these section keys in order: executive, profile, strengths, risks, model, loan, considerations.
+   using exactly these section keys in order: executive, profile, strengths, risks, model, stress, covenants,
+   considerations.
+6. Describe changes in the direction the numbers show; a negative covenant headroom is a breach (cite the
+   *_shortfall item); never describe one stress case with another case's assumptions.
    kind "claim" sentences must contain at least one placeholder.
 
 ITEMS (id | label | formatted value | source kind):

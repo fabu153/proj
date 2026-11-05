@@ -132,6 +132,25 @@ export type ScenarioResult = {
 
 export type Snapshot = { id: string; inputs: Record<string, any> };
 
+export type GridCell = {
+  ebitda_shock: number;
+  rate_shock_bps: number;
+  net_leverage?: number | null;
+  ebitda_interest_cover?: number | null;
+  headroom_lev?: number | null;
+  headroom_cov?: number | null;
+  breach?: boolean;
+  error?: string;
+};
+export type Grid = {
+  currency: string;
+  engine_version: string;
+  ebitda_shocks: number[];
+  rate_shocks_bps: number[];
+  covenants: Covenants;
+  cells: GridCell[][];
+};
+
 export type ScenarioResponse = {
   baseline: Record<string, number | string>;
   results: ScenarioResult[];
@@ -235,6 +254,8 @@ export const api = {
     existing_floating_share: number;
   }) => call<ScenarioResponse>("/scenarios", { method: "POST", body: JSON.stringify(body), retries: 1 }),
   model: () => call<{ metadata: any; xray: any }>("/model"),
+  grid: (body: { company_id: string; fiscal_year_end?: string; facility: Facility; covenants: Covenants; existing_floating_share: number }) =>
+    call<Grid>("/scenarios/grid", { method: "POST", body: JSON.stringify(body), retries: 1 }),
 };
 
 // ---------------------------------------------------------------- formatting

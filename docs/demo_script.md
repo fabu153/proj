@@ -1,30 +1,34 @@
-# Demo script — 3 minutes (Blueprint p.24)
+# Demo script — 3 minutes (roadmap Stage E3)
 
-Fallback: `release/creditlens_demo.mp4` (1:45, captioned, recorded from this exact flow). If the live site
-misbehaves for more than ten seconds, switch to the video and keep talking over it.
+Fallback: `release/creditlens_demo.mp4` (captioned, recorded from this exact flow by `scripts/record_demo.py`). If the
+live site misbehaves for more than ten seconds, switch to the video and keep talking over it.
 
-## Pre-flight (10 minutes before)
+## Pre-flight (10 minutes before, in a fresh browser window)
 
-1. Open `https://creditlens-api-mgcf.onrender.com/health` — wait until it says `"status":"ok"` (wakes the free
-   Render instance; first call can take ~60 s).
-2. Open three tabs: the start page (`/`), the Model X-Ray (`/model`), and the upload page (`/upload`).
-3. On the start page, open **United Rentals** once so its data is cached.
-4. Have `tests/fixtures/ar_thousands.pdf` on the desktop for the upload step.
+1. Open `https://creditlens-api-mgcf.onrender.com/health` and wait for `"status":"ok"`. The free Render instance
+   sleeps; the first call can take about a minute. The site itself also shows a wake-up message with "Try again".
+2. Open the start page (`/`), the Model X-Ray (`/model`) and the replay (`/replay`) in three tabs.
+3. On the start page, open **Procter & Gamble** once so its data is cached.
+4. Look up the day's EUR/USD rate from a public source and note it with today's date. The video uses an
+   illustrative 1.08; if FX would distract, keep the facility in USD.
 5. Have the video open in a player, paused at 0:00.
 
 ## Run of show
 
 | Time | Do | Say (point demonstrated) |
 |---|---|---|
-| 0:00–0:25 | Start page → **Explore a sample company** → **United Rentals**. Point at the progress steps. | "CreditLens screens a borrower for a USD 100m facility. Everything here comes from the company's SEC 10-K filings — no typing, no copy-paste. The steps at the top track the file from company to committee memo." *(real data enters)* |
-| 0:25–0:55 | Click **Net debt / EBITDA** in the ledger. Point at the right rail, then at the D&A source. | "1.94x. Here's the formula, its inputs, and the exact 10-K accession for each input. We reconciled the three sample companies against the original 10-Ks: United Rentals reports rental-fleet depreciation inside cost of revenue, so a rule adds it back — EBITDA is 7,081, not 4,411. Every figure on screen has this trail." *(traceable sources, deterministic formulas)* |
-| 0:55–1:25 | Scroll to **Neural screen** (1.8%, low). Switch to the Model X-Ray tab. | "A PyTorch network trained on 1,626 company-years filed 2009–18 estimates next-year accounting stress. Tested once on 2021–25 filings: PR-AUC 0.805 against 0.825 for XGBoost — statistically level, and we say so. It clearly beats the simple rule." *(real deep learning, honest evaluation)* |
-| 1:25–2:05 | Back to the workspace → **Loan lab**. EBITDA slider to −20%, rate shock to +200 bp. Then set the max net debt / EBITDA covenant to 2.25x. Point at the covenant ruler and the steps list. | "Add the facility, stress it. EBITDA down 20%, rates up 200 bp: net debt / EBITDA rises to 2.45x — inside a 3.5x covenant. Tighten the covenant to 2.25x and the same stress breaches it. Every step of the arithmetic is listed — and it reconciles exactly to an independent Excel model." *(real loan computations)* |
-| 2:05–2:35 | **Draft credit memo**. Click a citation number. Change the facility amount: point at "Outdated — regenerate", click it. Edit a sentence to add "margins will reach 45%". | "The memo writer can't type numbers — it places references; the engines fill them in. Click a citation and you get its source. The memo, the table and the PDF share one snapshot id, so if I change the loan the memo is marked outdated until I regenerate. If I invent a figure, it's flagged and kept out of the PDF." *(evidence-constrained generative AI)* |
-| 2:35–3:00 | **Download PDF**, then close. | "Committee-ready PDF with every assumption, the snapshot id and an evidence appendix. It's decision support: no rating, no default probability, analyst review required. Limitations are on the Model X-Ray page." *(decision-support positioning)* |
+| 0:00–0:30 | Start page → **Explore a sample company** → **Procter & Gamble**. Click **Net debt / EBITDA** in the ledger. | "CreditLens screens a borrower for a new facility. Every figure comes from the company's 10-K filings through a versioned formula: net debt over EBITDA is 1.06x, and the rail shows the inputs and the SEC accession. Amber means qualified: P&G only tags cash including restricted cash, so net debt is flagged rather than presented as clean." *(source-backed financials)* |
+| 0:30–1:10 | Scroll to **Neural screen** (1.0%, low). Switch to the **Model X-Ray** tab: architecture, then *How it performed*, then *Where it fails*. | "A trained PyTorch network, 62 inputs, three hidden layers, five seeds averaged, reads the same annual report and gives a 1% chance of accounting stress next year. It was tested once on 2021–25 filings it never saw: PR-AUC 0.805 against 0.825 for XGBoost. XGBoost's point estimate is higher, and the difference is within the margin of error; we report that. It clearly beats a simple rule. Its weakness: it catches stress that persists, but only 15 of 96 new onsets." *(real deep learning, honest evaluation)* |
+| 1:10–1:50 | Back to the workspace → **Loan lab**. Currency **EUR**: point at the refusal. Enter the rate and its date. EBITDA slider −30%, rate shock +200 bp. Point at the covenant ruler, then the heatmap. | "A EUR 100 million facility against dollar statements: the engine refuses to mix currencies until I give a dated rate. With EBITDA down 30% and rates up 200 bp, net debt over EBITDA is 1.52x, far inside a 3.5x covenant; for P&G this loan is small. The heatmap runs the same Python engine 42 times; click a cell to load it." *(real loan computations)* |
+| 1:50–2:25 | **Draft credit memo**. Point at the header block, click a figure (underlined) to open its source trail. Change the amount: point at **Outdated — regenerate**, click it. **Download PDF**. | "The memo opens with borrower, facility, purpose and review status. The writer cannot type numbers; the engines insert them. Click a figure and you get filing, normalized fact, calculation and the sentence that uses it. The memo shares the loan lab's snapshot id, so if I change the loan it is marked outdated until regenerated. The PDF prints every assumption and the snapshot id." *(evidence-constrained generative AI)* |
+| 2:25–3:00 | **Model replay** tab → Example 3 (**Jazz Pharmaceuticals**, FY2021). Read the forecast, then **Reveal next-year outcome**. | "This is what the network said when Jazz's 2021 annual report was filed, before anyone knew what came next: 76%, high. Reveal: accounting stress followed, and among held-out companies scored in that range 75% did. The same page has a false alarm and a miss, because we show its mistakes too. Decision support, not a decision." *(genuine out-of-sample performance)* |
 
-Optional (+40 s, if time allows): Upload page → `ar_thousands.pdf` with CIK `1278027` → accept the flagged
-net-interest line → **Analyse reviewed figures** → same 11.59x leverage as the SEC data, now cited to report pages.
+Optional (+40 s): Upload page → `tests/fixtures/ar_thousands.pdf` with CIK `1278027` → accept the flagged
+net-interest line → **Analyse reviewed figures** → the same 11.59x as the SEC data, now cited to report pages.
+
+**Quality gate before presenting:** run `E2E_BASE_URL=<site> E2E_API_URL=<api> pytest tests/end_to_end` from a fresh
+browser session. All browser tests must pass, including the start-to-PDF journey, the stale-memo check, the replay
+reveal and the accessibility scans.
 
 ## Questions to prepare for (answers with our numbers)
 
@@ -51,6 +55,15 @@ numbered references, and a validator rejects any figure it cannot trace.
 **Why did prevalence rise in the test window?** 21.5% in training vs 29.7% in test — a harder post-2021 regime (rates,
 inflation). Calibration was fitted on 2019–20, so the model somewhat understates risk later; shown on the calibration
 chart.
+
+**Does the slider change the neural score?** No. The network predicts from the filed accounts; the loan lab reworks
+financing mechanically. Recomputing all 31 inputs for a hypothetical company has not been validated, so the score
+is shown separately and a browser test checks it never moves.
+
+**How do you know the replay isn't cherry-picked or leaked?** The cases are chosen by a fixed rule in the code.
+The forecasts are the frozen test predictions; re-running the frozen network reproduces the recorded PR-AUC to the
+last digit. Every case was filed in the test window, within four months of year-end, and its outcome was published
+about a year later. The outcome is only fetched when you click "Reveal".
 
 **How good is the data?** Period selection agrees with SEC's own aggregates on 99.4–99.7% of 2,560 like-for-like
 comparisons; the three sample issuers were also reconciled line by line against their original 10-Ks

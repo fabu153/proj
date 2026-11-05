@@ -3,6 +3,7 @@
 import type { Analysis, PackageItem } from "@/lib/api";
 import { fmt } from "@/lib/api";
 import { ROWS } from "./CreditProfile";
+import SourceTrail from "./SourceTrail";
 
 const FACT_LABELS: Record<string, string> = {
   revenue: "Revenue",
@@ -47,7 +48,10 @@ function describeSource(src: Record<string, any>): string {
   }
 }
 
-export default function EvidenceRail({ analysis, selected, citation }: { analysis: Analysis; selected: string; citation?: PackageItem | null }) {
+export type Citation = { item: PackageItem; statement: string | null };
+
+export default function EvidenceRail({ analysis, selected, citation: cite }: { analysis: Analysis; selected: string; citation?: Citation | null }) {
+  const citation = cite?.item;
   const row = ROWS.flatMap((g) => g.rows).find((r) => r.key === selected);
   const metric = analysis.metrics[selected];
   const facts = Array.from(new Set(row?.facts ?? []));
@@ -55,10 +59,17 @@ export default function EvidenceRail({ analysis, selected, citation }: { analysi
     <aside className="rail" aria-label="Source evidence">
       {citation && (
         <div className="sheet evidence cite-card" aria-live="polite">
-          <h3>Memo citation</h3>
+          <h3>{citation.source.trail ? "Source trail" : "Memo citation"}</h3>
           <p style={{ margin: "0 0 4px", fontSize: 14 }}>{citation.label}</p>
           <div className="formula num">{citation.display}</div>
-          <p className="fine" style={{ margin: 0 }}>{describeSource(citation.source)}</p>
+          {citation.source.trail ? (
+            <SourceTrail trail={citation.source.trail} statement={cite?.statement} />
+          ) : (
+            <>
+              <p className="fine" style={{ margin: 0 }}>{describeSource(citation.source)}</p>
+              {cite?.statement && <blockquote className="fine">{cite.statement}</blockquote>}
+            </>
+          )}
           {citation.source.kind === "scenario" && Array.isArray(citation.source.steps) && (
             <ol className="steps">
               {citation.source.steps.map((st: string, i: number) => (

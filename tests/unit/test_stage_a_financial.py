@@ -14,6 +14,7 @@ from backend.app.scenarios.loan import (Baseline, Facility, ScenarioInputError, 
                                         run_scenario)
 
 CURATED = Path(__file__).parents[2] / "backend" / "data" / "curated"
+ROOT_DOCS = Path(__file__).parents[2] / "docs"
 SMALL = Baseline(currency="EUR", ebitda=40, gross_debt=100, cash=10, interest_expense=5)
 
 
@@ -133,3 +134,33 @@ def test_model_scores_unchanged_by_credit_basis(cik, p):
     cf = _cf(cik)
     y = build_company_years(cf)[-1]
     assert risk.score(cf, y.fiscal_year_end)["probability"] == pytest.approx(p, abs=5e-7)
+
+
+# ------------------------------------------------------------------ OUT-01 three demo borrowers vs original 10-Ks
+# USD millions as printed in the original 10-K (docs/manual_cross_check.md: accession, statement, page per line)
+TEN_K = {
+    "0000080424": {"fye": "2026-06-30", "revenue": 87032, "operating_income": 19748, "interest_expense": 877,
+                   "depreciation_amortization": 3160, "operating_cash_flow": 19556, "capital_expenditures": 4409,
+                   "cash": 9942, "long_term_debt": 22842, "total_assets": 126521, "ebitda": 22908},
+    "0001067701": {"fye": "2025-12-31", "revenue": 16099, "operating_income": 3973, "interest_expense": 716,
+                   "depreciation_amortization": 3108, "operating_cash_flow": 5190, "cash": 459,
+                   "long_term_debt": 12652, "total_assets": 29866, "ebitda": 7081, "gross_debt": 14229},
+    "0001278027": {"fye": "2026-01-03", "revenue": 1828.687, "operating_income": 97.147, "interest_expense": 149.631,
+                   "depreciation_amortization": 66.223, "operating_cash_flow": 101.396, "capital_expenditures": 30.647,
+                   "cash": 56.293, "long_term_debt": 1945.576, "total_assets": 2834.795, "gross_debt": 1950.076},
+}
+
+
+@pytest.mark.parametrize("cik", list(TEN_K))
+def test_out01_demo_borrowers_reconcile_to_original_10k(cik):
+    ref = TEN_K[cik]
+    y = build_company_years(_cf(cik))[-1]
+    assert y.fiscal_year_end == ref["fye"]
+    v = {k: (x / 1e6 if x is not None else None) for k, x in engine_inputs(y).items()}
+    m = compute_all(v, cash_basis=y.cash_basis)
+    for k, want in ref.items():
+        if k == "fye":
+            continue
+        got = m[k].value if k in ("ebitda", "gross_debt") else v[k]
+        assert got == pytest.approx(want, abs=0.0005), k
+    assert (ROOT_DOCS / "manual_cross_check.md").read_text().count("accession") >= 3

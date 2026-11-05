@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-04 23:01 UTC by `scripts/test_matrix.py`: 208 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-05 07:44 UTC by `scripts/test_matrix.py`: 232 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -19,18 +19,20 @@ _Generated 2026-11-04 23:01 UTC by `scripts/test_matrix.py`: 208 passed, 0 faile
 | G01 | Narrative numeric claims | All reconcile to package | 10 | ✅ pass |
 | G02 | References / source links | Every claim resolves | 5 | ✅ pass |
 | E01 | Complete demo user journey | PDF exported without manual intervention | 3 | ✅ pass |
-| FIN-01 | Refinancing interest (v1.1) | New-loan interest never erased; conflicts refused | 7 | ✅ pass |
-| FIN-02 | Restricted cash (v1.1) | Unrestricted cash or qualified net debt | 4 | ✅ pass |
-| FIN-03 | Currency / scope gating (v1.1) | Non-USD neural score withheld, ratios kept | 1 | ✅ pass |
-| DATA-01 | Review completeness and dates (v1.1) | Missing / invalid inputs block analysis | 15 | ✅ pass |
-| A5 | 10-K reconciliation rules R5-R7 (v1.1) | Credit basis matches the 10-K; model basis frozen | 7 | ✅ pass |
-| WF-01 | Start page to memo (v1.1) | Guided journey with progress and wake-up states | 1 | ✅ pass |
-| WF-02 | Shared analysis snapshot (v1.1) | Table, memo and PDF share one snapshot id | 7 | ✅ pass |
-| HYG | Upload privacy hygiene (v1.1) | Uploads unlisted; audit operator-only | 2 | ✅ pass |
-| ML-01 | Model X-Ray evidence (v1.2) | Every headline claim served from frozen artifacts; XGBoost lead shown | 2 | ✅ pass |
-| ML-02 | Neural score vs loan stress (v1.2) | Sliders never change the neural score | 2 | ✅ pass |
-| OUT-01 | Replay hides the future (v1.2) | No outcome in the forecast until revealed | 3 | ✅ pass |
-| OUT-02 | Replay is genuine and frozen (v1.2) | Forecasts equal saved held-out predictions; date-consistent | 5 | ✅ pass |
+| FIN-01 | Refinance cannot erase new-loan interest | Regression example and API test | 7 | ✅ pass |
+| FIN-02 | Restricted cash handled explicitly | Source reconciliation and ratio test | 4 | ✅ pass |
+| FIN-03 | Non-USD upload not scored by USD-trained model | Gated model test | 1 | ✅ pass |
+| DATA-01 | Missing/rejected critical figures, impossible dates | Upload and API tests | 15 | ✅ pass |
+| WF-01 | Sample company -> memo -> PDF first try | Browser smoke test | 1 | ✅ pass |
+| WF-02 | Changed loan -> memo stale -> regenerate | Browser/API test | 8 | ✅ pass |
+| ML-01 | Model X-Ray matches frozen metadata, honest benchmarks | Metadata consistency test | 2 | ✅ pass |
+| ML-02 | Replay from held-out rows, no future leakage | Date/split invariant test | 8 | ✅ pass |
+| OUT-01 | Three demo borrowers reconcile to original filings | Manual cross-check + test | 10 | ✅ pass |
+| OUT-02 | Key memo numbers trace to statements and inputs | Four citation drilldowns | 6 | ✅ pass |
+| E1 | Memo semantic checks and structure | Direction, signed headroom, undefined ratios, case mixing | 9 | ✅ pass |
+| C3 | Neural score separate from loan stress | Sliders never change the score | 2 | ✅ pass |
+| F | Stress heatmap from the Python engine | One engine call per cell, matches loan table | 5 | ✅ pass |
+| HYG | Upload privacy hygiene | Uploads unlisted; audit operator-only | 2 | ✅ pass |
 | A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 5 | ✅ pass |
 | SEC | Security controls | Validation, limits, headers, deletion | 6 | ✅ pass |
 

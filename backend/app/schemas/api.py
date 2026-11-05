@@ -93,6 +93,18 @@ class ScenarioRequest(BaseModel):
     covenants: Optional[Covenants] = None
 
 
+class GridRequest(BaseModel):
+    """Stage F heatmap: the loan lab's facility and covenants, stressed over a grid of EBITDA and rate shocks."""
+    company_id: str
+    fiscal_year_end: Optional[str] = None
+    existing_floating_share: float = Field(0.0, ge=0, le=1)
+    facility: Optional[Facility] = None
+    covenants: Optional[Covenants] = None
+    ebitda_shocks: list[float] = Field(default_factory=lambda: [-0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1],
+                                       min_length=1, max_length=13)
+    rate_shocks_bps: list[float] = Field(default_factory=lambda: [0, 100, 200, 300, 400, 500], min_length=1, max_length=11)
+
+
 class ScenarioResponse(BaseModel):
     baseline: dict
     results: list[ScenarioResult]

@@ -1,9 +1,9 @@
 """Stages C and D (v1.2): Model X-Ray evidence and Historical Model Replay.
 
-ML-01  the Model X-Ray serves every headline claim from frozen artifacts, XGBoost's higher point estimate included
-ML-02  the neural score is separate from the deterministic loan stress tests (sliders never change it)
-OUT-01 the replay forecast reveals nothing about the future until the outcome is requested
-OUT-02 replay forecasts equal the frozen held-out predictions; cases are genuinely held-out and date-consistent
+ML-01  the Model X-Ray matches the frozen metadata and honest benchmarks (XGBoost's higher point estimate included)
+ML-02  replay predictions come from held-out test rows with no future leakage: forecasts equal the frozen saved
+       predictions, cases are date-consistent, and the forecast reveals nothing until the outcome is requested
+C3     the neural score is separate from the deterministic loan stress tests (sliders never change it)
 """
 import gzip
 import json
@@ -42,8 +42,8 @@ def keys(obj):
             yield from keys(v)
 
 
-# ------------------------------------------------------------------ OUT-02 frozen predictions
-def test_out02_saved_predictions_reproduce_the_frozen_evaluation():
+# ------------------------------------------------------------------ ML-02 frozen held-out predictions
+def test_ml02_saved_predictions_reproduce_the_frozen_evaluation():
     ref = META["test_metrics_calibrated"]
     y, p = PRED["y"].astype(int), PRED["mlp"]
     assert len(PRED) == ref["n"] and int(y.sum()) == ref["positives"] and set(PRED["split"]) == {"test"}
@@ -53,7 +53,7 @@ def test_out02_saved_predictions_reproduce_the_frozen_evaluation():
     assert average_precision_score(y, PRED["xgboost"]) == pytest.approx(META["xgboost_test_pr_auc"], abs=1e-12)
 
 
-def test_out02_replay_forecasts_equal_frozen_model_and_saved_predictions():
+def test_ml02_replay_forecasts_equal_frozen_model_and_saved_predictions():
     from training.ml.run_baselines import load_dataset
     df = load_dataset(yaml.safe_load((ROOT / "configs/experiment_baselines_v1.yaml").read_text()))
     model = StressModel.load()
@@ -69,7 +69,7 @@ def test_out02_replay_forecasts_equal_frozen_model_and_saved_predictions():
         assert c["outcome"]["label"] == int(saved["y"])
 
 
-def test_out02_cases_are_held_out_and_date_consistent():
+def test_ml02_cases_are_held_out_and_date_consistent():
     lo, hi = (date.fromisoformat(x) for x in META["data_windows"]["test_features_filed"])
     panel = pd.read_csv(ROOT / "training/data/panel_v1.csv", dtype={"cik": str}).set_index(["cik", "fiscal_year_end"])
     for c in DATA["cases"]:
@@ -87,7 +87,7 @@ def test_out02_cases_are_held_out_and_date_consistent():
         assert rebuilt.label == o["label"] == int(panel.loc[(k["cik"], k["fiscal_year_end"]), "label_next_fy"])
 
 
-def test_out02_three_examples_cover_warning_false_alarm_and_miss():
+def test_ml02_three_examples_cover_warning_false_alarm_and_miss():
     ex = sorted((c for c in DATA["cases"] if c["example"]), key=lambda c: c["example"])
     assert [c["example"] for c in ex] == [1, 2, 3]
     assert {c["category"] for c in ex} == {"correct_warning", "false_alarm", "missed"}
@@ -114,7 +114,7 @@ def _same(a, b, path="$"):
         assert a == b, path
 
 
-def test_out02_replay_export_is_reproducible(tmp_path, monkeypatch):
+def test_ml02_replay_export_is_reproducible(tmp_path, monkeypatch):
     from training.ml import export_replay
     monkeypatch.setattr(export_replay, "PRED_CSV", tmp_path / "pred.csv")
     monkeypatch.setattr(export_replay, "REPLAY", tmp_path / "replay.json")
@@ -131,8 +131,8 @@ def test_out02_replay_export_is_reproducible(tmp_path, monkeypatch):
     pd.testing.assert_frame_equal(new, PRED, check_exact=False, rtol=1e-12, atol=1e-15)
 
 
-# ------------------------------------------------------------------ OUT-01 no future in the forecast
-def test_out01_forecast_endpoints_carry_no_outcome():
+# ------------------------------------------------------------------ ML-02 no future in the forecast
+def test_ml02_forecast_endpoints_carry_no_outcome():
     ov = client.get("/replay").json()
     assert ov["split"] == "test" and ov["verification"]["all_checks_passed"] and len(ov["cases"]) == len(DATA["cases"])
     assert not FUTURE_KEYS & set(keys(ov))
@@ -145,7 +145,7 @@ def test_out01_forecast_endpoints_carry_no_outcome():
         assert o["label"] == c["outcome"]["label"] and o["category"] == c["category"]
 
 
-def test_out01_list_order_does_not_reveal_outcomes():
+def test_ml02_list_order_does_not_reveal_outcomes():
     names = [c["company_name"].lower() for c in client.get("/replay").json()["cases"]]
     assert names == sorted(names)
 
@@ -178,7 +178,7 @@ def test_ml01_feature_groups_cover_every_model_input_once():
     assert names == META["features"] and len(names) == 31
 
 
-# ------------------------------------------------------------------ ML-02 neural score vs loan stress tests
+# ------------------------------------------------------------------ C3 neural score vs loan stress tests
 @pytest.fixture
 def real_issuers(monkeypatch):
     data = {}
@@ -189,7 +189,7 @@ def real_issuers(monkeypatch):
     monkeypatch.setattr(main, "_curated", lambda: data)
 
 
-def test_ml02_loan_stress_never_changes_the_neural_score(real_issuers):
+def test_c3_loan_stress_never_changes_the_neural_score(real_issuers):
     before = client.post("/analyses", json={"company_id": "0001278027"}).json()["risk_model"]["probability"]
     s = client.post("/scenarios", json={"company_id": "0001278027",
                                         "facility": {"amount": 500, "currency": "USD"},
