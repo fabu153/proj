@@ -18,9 +18,17 @@ export default function ApiStatus({ state, onRetry }: { state: ApiState; onRetry
   return (
     <div className="notice calm" role="status" aria-live="polite">
       <span className="spinner" aria-hidden="true" /> Connecting to the analysis service
-      {state.elapsed >= 4
+      {state.elapsed >= 3
         ? ` (${state.elapsed}s). The free hosting sleeps when idle, so the first visit can take up to a minute.`
         : "…"}
+      {state.elapsed >= 25 && (
+        <>
+          {" "}
+          <button type="button" className="link" onClick={onRetry}>
+            Try again now
+          </button>
+        </>
+      )}
     </div>
   );
 }

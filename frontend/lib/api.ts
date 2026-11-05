@@ -229,13 +229,13 @@ export async function waitForApi(onProgress?: (elapsedS: number, attempt: number
   for (let attempt = 1; ; attempt++) {
     onProgress?.(Math.round((Date.now() - start) / 1000), attempt);
     try {
-      await call<{ status: string }>("/health", { retries: 0, timeoutMs: 20000 });
+      await call<{ status: string }>(`/health?t=${Date.now()}`, { retries: 0, timeoutMs: 15000 });
       return;
     } catch (e) {
       if (Date.now() - start > budgetMs) {
         throw new ApiError(`The analysis service at ${API_URL} did not wake up within ${Math.round(budgetMs / 1000)} seconds (${(e as Error).message}).`, null);
       }
-      await sleep(3000);
+      await sleep(2000);
     }
   }
 }

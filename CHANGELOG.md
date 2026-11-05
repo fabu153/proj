@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1 — Wake-up fix
+
+- The start page could sit on "Connecting to the analysis service…" indefinitely if the browser paused its timers
+  (background tab, sleeping laptop). Elapsed time and a 75 s deadline now run on their own clock, "Try again now"
+  appears from 25 s, and the page always ends in either the company list or a clear message.
+- `.github/workflows/keep-warm.yml` pings the API every 10 minutes from 06:00 to 22:00 UTC so it is rarely asleep;
+  run it manually before a demo, or disable it to let the API sleep.
+
 ## 1.3.0 — Stage E (finished result) and Stage F (stress heatmap)
 
 No frozen artifact changed: the release manifest remains at 1.2.0 and its 27 hashes still verify.

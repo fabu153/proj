@@ -43,6 +43,7 @@ blueprint's risk table: **High** = could show a wrong number or block the demo; 
 | DF-35 | v1.2 X-Ray review | Low | Data-window counts (1,626 / 497 / 1,307) did not match the evaluated rows (1,219 / 389 / 1,086) | The panel's window counts were shown next to metrics on gated rows | The X-Ray shows the scored rows and says which gate applies |
 | DF-36 | v1.3 axe scan | Medium | "n/a" in the credit profile below 4.5:1 on the selected-row tint | Light grey text token | Darker token (4.6:1). `test_f_heatmap_cell_populates_the_loan_lab` scans that page |
 | DF-37 | v1.3 memo review | Medium | A sentence could cite reconciled numbers yet say the wrong thing: "revenue grew" on a decline, negative headroom described as headroom, one case's assumptions with another's results | The validator checked numbers, not meaning | Semantic checks in the validator. `test_memo_semantics.py` |
+| DF-38 | Live use (v1.3) | Medium | Start page stayed on "Connecting to the analysis service…" for over 3 minutes, with no elapsed time and no "Try again" | The counter and the request timeout depended on browser timers that pause in a background or sleeping tab; a stalled first request left the page waiting | Separate one-second clock with a hard 75 s deadline, "Try again now" from 25 s, cache-busting health checks; a keep-warm workflow pings the API every 10 minutes in the daytime. Verified against a never-answering server and a real Render cold start (recovered in 26 s) |
 
 ## Known limitations (accepted, documented, not defects)
 
