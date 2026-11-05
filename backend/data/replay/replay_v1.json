@@ -1,0 +1,1700 @@
+{
+ "version": "replay_v1",
+ "model": "stress_mlp_v1",
+ "target": "label_next_fy",
+ "label_version": "stress_v1",
+ "split": "test",
+ "test_window": [
+  "2021-01-07",
+  "2025-11-21"
+ ],
+ "selection_rule": "* held-out test rows only (split == \"test\"), revenue >= USD 1bn (recognisable issuers), one row per company;\n  * date-consistent: the year-t 10-K was filed 20-130 days after year-end (the original annual report, not a later\n    comparative column) and the outcome came from the next annual report 300-430 days later;\n  * correct warning = stressed next year, score >= 40% (high band), at most one stress condition in year t;\n    false alarm = not stressed, score >= 40%; missed = stressed, score < 15% (low band);\n    correct all-clear = not stressed, score < 15%;\n  * within each category the most confident cases come first (highest score; lowest for missed / all-clear);\n    the first three categories' top cases are the three predefined examples.",
+ "provenance": {
+  "panel_sha256": "794ccc3c358cec1b3d4b00466f5527be7d13dfcdd828ab04814abda925c49661",
+  "weights_sha256": "eadaca645fb13d26d17b6d93f081a2af0e4f7a6fc65107d479f651b845e50736",
+  "calibrator_sha256": "72d143392f09d8e168707b61a57bf4d34f7692e6c6a2d621882c053af68b1ef3",
+  "predictions_csv": "training/experiments/mlp_v1/test_predictions_label_next_fy.csv"
+ },
+ "verification": {
+  "recomputed": {
+   "n": 1086,
+   "positives": 322,
+   "pr_auc": 0.8054597850314418,
+   "roc_auc": 0.9036697993561185,
+   "brier": 0.11341140349634507
+  },
+  "frozen": {
+   "n": 1086,
+   "positives": 322,
+   "pr_auc": 0.8054597850314418,
+   "roc_auc": 0.9036697993561185,
+   "brier": 0.11341140326426628
+  },
+  "confusion_at_val_threshold": {
+   "tp": 229,
+   "fp": 84,
+   "fn": 93,
+   "tn": 680
+  },
+  "checks": {
+   "rows": true,
+   "pr_auc": true,
+   "roc_auc": true,
+   "brier": true,
+   "confusion_at_val_threshold": true
+  }
+ },
+ "error_analysis": {
+  "threshold": 0.44648106515671243,
+  "threshold_rule": "maximises F1 on 2019-20 validation data; fixed before the test",
+  "confusion": {
+   "tp": 229,
+   "fp": 84,
+   "fn": 93,
+   "tn": 680
+  },
+  "by_band": [
+   {
+    "band": "low",
+    "from": 0.0,
+    "to": 0.15,
+    "n": 634,
+    "stressed": 42,
+    "observed_rate": 0.06624605678233439,
+    "mean_prediction": 0.04035797091767024
+   },
+   {
+    "band": "elevated",
+    "from": 0.15,
+    "to": 0.4,
+    "n": 120,
+    "stressed": 41,
+    "observed_rate": 0.3416666666666667,
+    "mean_prediction": 0.25979384887268214
+   },
+   {
+    "band": "high",
+    "from": 0.4,
+    "to": 1.0,
+    "n": 332,
+    "stressed": 239,
+    "observed_rate": 0.7198795180722891,
+    "mean_prediction": 0.7013704979045753
+   }
+  ],
+  "stressed_next_year": {
+   "already_stressed_in_t": {
+    "n": 226,
+    "caught": 214
+   },
+   "new_stress_onset": {
+    "n": 96,
+    "caught": 15
+   }
+  },
+  "false_alarms": {
+   "n": 84,
+   "already_stressed_in_t": 66
+  }
+ },
+ "score_deciles": [
+  {
+   "from": 0.00337434653638628,
+   "to": 0.011168776352686977,
+   "n": 109,
+   "observed_rate": 0.0
+  },
+  {
+   "from": 0.011168776352686977,
+   "to": 0.01843053335496927,
+   "n": 108,
+   "observed_rate": 0.018518518518518517
+  },
+  {
+   "from": 0.01843053335496927,
+   "to": 0.03071206217769291,
+   "n": 109,
+   "observed_rate": 0.05504587155963303
+  },
+  {
+   "from": 0.03071206217769291,
+   "to": 0.04686594310883615,
+   "n": 108,
+   "observed_rate": 0.046296296296296294
+  },
+  {
+   "from": 0.04686594310883615,
+   "to": 0.077955552843125,
+   "n": 109,
+   "observed_rate": 0.10091743119266056
+  },
+  {
+   "from": 0.077955552843125,
+   "to": 0.17741979705280606,
+   "n": 109,
+   "observed_rate": 0.1743119266055046
+  },
+  {
+   "from": 0.17741979705280606,
+   "to": 0.41539639843024306,
+   "n": 108,
+   "observed_rate": 0.4074074074074074
+  },
+  {
+   "from": 0.41539639843024306,
+   "to": 0.6738676935676319,
+   "n": 108,
+   "observed_rate": 0.5185185185185185
+  },
+  {
+   "from": 0.6738676935676319,
+   "to": 0.7841482227793228,
+   "n": 109,
+   "observed_rate": 0.7522935779816514
+  },
+  {
+   "from": 0.7841482227793228,
+   "to": 0.8815181851418613,
+   "n": 109,
+   "observed_rate": 0.8899082568807339
+  }
+ ],
+ "cases": [
+  {
+   "id": "0001142750-2023-12-31",
+   "category": "missed",
+   "rank_in_category": 2,
+   "known": {
+    "split": "test",
+    "company_name": "AMN HEALTHCARE SERVICES, INC.",
+    "cik": "0001142750",
+    "fiscal_year_end": "2023-12-31",
+    "features_as_of": "2024-02-22",
+    "filed_days_after_year_end": 53,
+    "next_fiscal_year_end": "2024-12-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 3789.254,
+     "ebitda": 499.356,
+     "ebitda_margin": 0.1317821397034878,
+     "operating_income": 338.429,
+     "interest_expense": 54.14,
+     "gross_debt": 844.688,
+     "cash": 32.935,
+     "operating_cash_flow": 372.165,
+     "ebit_interest_cover": 6.250997414111562,
+     "gross_debt_to_ebitda": 1.6915547224825576,
+     "revenue_growth": -0.2773070554439411
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 6.250997414111562,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 1.6915547224825576,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 372.165,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.01933410085962177,
+     "logit": -4.1247319355107175,
+     "band": "low",
+     "xgboost_probability": 0.03016372
+    },
+    "drivers": [
+     {
+      "feature": "revenue_growth",
+      "description": "revenue_t / revenue_t-1 - 1",
+      "unit": "pct",
+      "value": -0.2773070554439411,
+      "logit_contribution": 0.5103436212674239
+     },
+     {
+      "feature": "cfo_to_assets",
+      "description": "operating cash flow / total assets",
+      "unit": "pct",
+      "value": 0.12726226356640044,
+      "logit_contribution": -0.3820458484320275
+     },
+     {
+      "feature": "d_cfo_to_assets",
+      "description": "change in CFO / assets",
+      "unit": "pp",
+      "value": -0.09907207045325295,
+      "logit_contribution": 0.2852936039404934
+     },
+     {
+      "feature": "log_assets",
+      "description": "ln(total assets, USD m)",
+      "unit": "log",
+      "value": 7.9808425587141425,
+      "logit_contribution": -0.14155179463008505
+     }
+    ]
+   },
+   "outcome": {
+    "label": 1,
+    "label_available_date": "2025-02-21",
+    "fiscal_year_end": "2024-12-31",
+    "metrics_usd_m": {
+     "revenue": 2983.781,
+     "ebitda": 71.106,
+     "ebitda_margin": 0.0238308374508718,
+     "operating_income": -102.673,
+     "interest_expense": 69.901,
+     "gross_debt": 845.872,
+     "cash": 10.649,
+     "operating_cash_flow": 320.418,
+     "ebit_interest_cover": -1.4688344944993634,
+     "gross_debt_to_ebitda": 11.895930019970185,
+     "revenue_growth": -0.2125676980218269
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": true,
+      "value": -1.4688344944993634,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 11.895930019970185,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 320.418,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Miss",
+    "verdict": "The network gave only 2%, yet stress followed. Among held-out companies scored in the same range, 6% became stressed. Stress that starts from healthy accounts in the filing year is the network's main blind spot.",
+    "same_range_observed_rate": 0.05504587155963303,
+    "same_range": {
+     "from": 0.01843053335496927,
+     "to": 0.03071206217769291,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001278027-2022-01-01",
+   "category": "correct_warning",
+   "rank_in_category": 3,
+   "known": {
+    "split": "test",
+    "company_name": "B&G FOODS,\u00a0INC.",
+    "cik": "0001278027",
+    "fiscal_year_end": "2022-01-01",
+    "features_as_of": "2022-03-01",
+    "filed_days_after_year_end": 59,
+    "next_fiscal_year_end": "2022-12-31",
+    "company_in_training_data": false,
+    "metrics_usd_m": {
+     "revenue": 2056.264,
+     "ebitda": 278.967,
+     "ebitda_margin": 0.1356669182556325,
+     "operating_income": 196.079,
+     "interest_expense": 102.491,
+     "gross_debt": 2267.759,
+     "cash": 33.69,
+     "operating_cash_flow": 93.878,
+     "ebit_interest_cover": 1.91313383614171,
+     "gross_debt_to_ebitda": 8.12912996877767,
+     "revenue_growth": 0.0448979094053638
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 1.91313383614171,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 8.12912996877767,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 93.878,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.5785512461540989,
+     "logit": 0.5364259581576413,
+     "band": "high",
+     "xgboost_probability": 0.54229164
+    },
+    "drivers": [
+     {
+      "feature": "net_leverage",
+      "description": "net debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 8.00836299634007,
+      "logit_contribution": 1.2017156655764896
+     },
+     {
+      "feature": "stress_conditions_t",
+      "description": "number of the 3 stress conditions met in year t (unknown = 0, masked)",
+      "unit": "count",
+      "value": 1.0,
+      "logit_contribution": 1.1938626687012062
+     },
+     {
+      "feature": "gross_leverage",
+      "description": "gross debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 8.12912996877767,
+      "logit_contribution": 0.896906413370139
+     },
+     {
+      "feature": "debt_to_assets",
+      "description": "gross debt / total assets",
+      "unit": "pct",
+      "value": 0.5923292007799308,
+      "logit_contribution": 0.6839492245527873
+     }
+    ]
+   },
+   "outcome": {
+    "label": 1,
+    "label_available_date": "2023-02-28",
+    "fiscal_year_end": "2022-12-31",
+    "metrics_usd_m": {
+     "revenue": 2163.0,
+     "ebitda": 179.156,
+     "ebitda_margin": 0.0828275543226999,
+     "operating_income": 98.628,
+     "interest_expense": 119.119,
+     "gross_debt": 2389.049,
+     "cash": 45.442,
+     "operating_cash_flow": 5.963,
+     "ebit_interest_cover": 0.8279787439451305,
+     "gross_debt_to_ebitda": 13.335020875661435,
+     "revenue_growth": 0.0519077316920395
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": true,
+      "value": 0.8279787439451305,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 13.335020875661435,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 5.963,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Well-calibrated warning",
+    "verdict": "The network gave 58% and stress followed. Among held-out companies scored in the same range, 52% became stressed, so a score this high was borne out.",
+    "same_range_observed_rate": 0.5185185185185185,
+    "same_range": {
+     "from": 0.41539639843024306,
+     "to": 0.6738676935676319,
+     "n": 108
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001766363-2021-12-31",
+   "category": "false_alarm",
+   "rank_in_category": 1,
+   "known": {
+    "split": "test",
+    "company_name": "Endeavor Group Holdings, Inc.",
+    "cik": "0001766363",
+    "fiscal_year_end": "2021-12-31",
+    "features_as_of": "2022-03-16",
+    "filed_days_after_year_end": 75,
+    "next_fiscal_year_end": "2022-12-31",
+    "company_in_training_data": false,
+    "metrics_usd_m": {
+     "revenue": 5077.713,
+     "ebitda": 260.643,
+     "ebitda_margin": 0.0513307861235954,
+     "operating_income": -22.24,
+     "interest_expense": 268.677,
+     "gross_debt": 5713.736,
+     "cash": 1560.995,
+     "operating_cash_flow": 333.599,
+     "ebit_interest_cover": -0.08277597263628816,
+     "gross_debt_to_ebitda": 21.9216936576083,
+     "revenue_growth": 0.4596401631278883
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 1,
+     "coverage_weak": {
+      "met": true,
+      "value": -0.08277597263628816,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 21.9216936576083,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 333.599,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.8378023578313304,
+     "logit": 1.9920938526977714,
+     "band": "high",
+     "xgboost_probability": 0.71280223
+    },
+    "drivers": [
+     {
+      "feature": "net_leverage",
+      "description": "net debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 15.932678030869813,
+      "logit_contribution": 0.6392549353500916
+     },
+     {
+      "feature": "stress_conditions_t",
+      "description": "number of the 3 stress conditions met in year t (unknown = 0, masked)",
+      "unit": "count",
+      "value": 2.0,
+      "logit_contribution": 0.5651788592445
+     },
+     {
+      "feature": "gross_leverage",
+      "description": "gross debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 21.9216936576083,
+      "logit_contribution": 0.4622583329244845
+     },
+     {
+      "feature": "log_assets",
+      "description": "ln(total assets, USD m)",
+      "unit": "log",
+      "value": 9.344391866824093,
+      "logit_contribution": -0.1430018670324802
+     }
+    ]
+   },
+   "outcome": {
+    "label": 0,
+    "label_available_date": "2023-02-28",
+    "fiscal_year_end": "2022-12-31",
+    "metrics_usd_m": {
+     "revenue": 5268.137,
+     "ebitda": 843.808,
+     "ebitda_margin": 0.1601719924899447,
+     "operating_income": 577.033,
+     "interest_expense": 282.255,
+     "gross_debt": 5168.546,
+     "cash": 767.828,
+     "operating_cash_flow": 502.934,
+     "ebit_interest_cover": 2.044367681706259,
+     "gross_debt_to_ebitda": 6.125263093025902,
+     "revenue_growth": 0.0375019226175248
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": false,
+      "value": 2.044367681706259,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 6.125263093025902,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 502.934,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Overconfident: false alarm",
+    "verdict": "The network gave 84%, but the company did not meet two stress conditions the next year. Among held-out companies scored in the same range, 89% did become stressed, so about 11% of such scores are false alarms; this was one of them. It already met two or more conditions in the filing year and recovered, the network's most common kind of false alarm.",
+    "same_range_observed_rate": 0.8899082568807339,
+    "same_range": {
+     "from": 0.7841482227793228,
+     "to": 0.8815181851418613,
+     "n": 109
+    }
+   },
+   "example": 1
+  },
+  {
+   "id": "0001519751-2020-12-31",
+   "category": "correct_all_clear",
+   "rank_in_category": 3,
+   "known": {
+    "split": "test",
+    "company_name": "Fortune Brands Innovations, Inc.",
+    "cik": "0001519751",
+    "fiscal_year_end": "2020-12-31",
+    "features_as_of": "2021-02-24",
+    "filed_days_after_year_end": 55,
+    "next_fiscal_year_end": "2021-12-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 6090.3,
+     "ebitda": null,
+     "ebitda_margin": null,
+     "operating_income": 801.4,
+     "interest_expense": 83.9,
+     "gross_debt": 2572.2,
+     "cash": 419.1,
+     "operating_cash_flow": 825.7,
+     "ebit_interest_cover": 9.551847437425506,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.0565000173472574
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 9.551847437425506,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": null,
+      "value": null,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 825.7,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.005353472101118395,
+     "logit": -5.550897326046504,
+     "band": "low",
+     "xgboost_probability": 0.02930375
+    },
+    "drivers": [
+     {
+      "feature": "d_debt_to_assets",
+      "description": "change in debt / assets",
+      "unit": "pp",
+      "value": -0.06118048708564072,
+      "logit_contribution": 0.26366145018296194
+     },
+     {
+      "feature": "ebitda_margin",
+      "description": "(operating income + D&A) / revenue",
+      "unit": "pct",
+      "value": null,
+      "logit_contribution": -0.2575097173389196
+     },
+     {
+      "feature": "ebitda_nonpositive",
+      "description": "1 if EBITDA <= 0",
+      "unit": "flag",
+      "value": null,
+      "logit_contribution": -0.24815164381450927
+     },
+     {
+      "feature": "ebitda_interest_cover",
+      "description": "EBITDA / interest expense",
+      "unit": "x",
+      "value": null,
+      "logit_contribution": -0.16723133507974453
+     }
+    ]
+   },
+   "outcome": {
+    "label": 0,
+    "label_available_date": "2022-02-28",
+    "fiscal_year_end": "2021-12-31",
+    "metrics_usd_m": {
+     "revenue": 7656.1,
+     "ebitda": null,
+     "ebitda_margin": null,
+     "operating_income": 1090.4,
+     "interest_expense": 84.4,
+     "gross_debt": 3109.8,
+     "cash": 471.5,
+     "operating_cash_flow": 688.7,
+     "ebit_interest_cover": 12.919431279620854,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.2570973515261974
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": false,
+      "value": 12.919431279620854,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": null,
+      "value": null,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 688.7,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Well-calibrated all-clear",
+    "verdict": "The network gave 1% and no stress followed. Among held-out companies scored in the same range, 0% became stressed.",
+    "same_range_observed_rate": 0.0,
+    "same_range": {
+     "from": 0.00337434653638628,
+     "to": 0.011168776352686977,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0000821002-2022-01-31",
+   "category": "missed",
+   "rank_in_category": 1,
+   "known": {
+    "split": "test",
+    "company_name": "G III APPAREL GROUP LTD /DE/",
+    "cik": "0000821002",
+    "fiscal_year_end": "2022-01-31",
+    "features_as_of": "2022-03-28",
+    "filed_days_after_year_end": 56,
+    "next_fiscal_year_end": "2023-01-31",
+    "company_in_training_data": false,
+    "metrics_usd_m": {
+     "revenue": 2766.538,
+     "ebitda": 338.719,
+     "ebitda_margin": 0.122434248146962,
+     "operating_income": 311.093,
+     "interest_expense": 54.393,
+     "gross_debt": 515.344,
+     "cash": 465.984,
+     "operating_cash_flow": 185.798,
+     "ebit_interest_cover": 5.719357270236979,
+     "gross_debt_to_ebitda": 1.5214499334256422,
+     "revenue_growth": 0.3461515629546512
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 5.719357270236979,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 1.5214499334256422,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 185.798,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.018349247862765657,
+     "logit": -4.183266335395472,
+     "band": "low",
+     "xgboost_probability": 0.05184336
+    },
+    "drivers": [
+     {
+      "feature": "cfo_to_assets",
+      "description": "operating cash flow / total assets",
+      "unit": "pct",
+      "value": 0.06774698380472324,
+      "logit_contribution": 0.25533847546301214
+     },
+     {
+      "feature": "net_leverage",
+      "description": "net debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 0.1457255128882645,
+      "logit_contribution": -0.24943106571487972
+     },
+     {
+      "feature": "cash_to_assets",
+      "description": "cash / total assets",
+      "unit": "pct",
+      "value": 0.16991038924670962,
+      "logit_contribution": 0.22870859412769562
+     },
+     {
+      "feature": "d_cfo_to_assets",
+      "description": "change in CFO / assets",
+      "unit": "pp",
+      "value": 0.03706301172476547,
+      "logit_contribution": 0.22633543692733227
+     }
+    ]
+   },
+   "outcome": {
+    "label": 1,
+    "label_available_date": "2023-03-27",
+    "fiscal_year_end": "2023-01-31",
+    "metrics_usd_m": {
+     "revenue": 3226.728,
+     "ebitda": -81.7,
+     "ebitda_margin": -0.0253197666490636,
+     "operating_income": -109.462,
+     "interest_expense": 44.108,
+     "gross_debt": 483.84,
+     "cash": 191.652,
+     "operating_cash_flow": -104.599,
+     "ebit_interest_cover": -2.481681327650313,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.1663414708202093
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": true,
+      "value": -2.481681327650313,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": null,
+      "ebitda_nonpositive": true,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": true,
+      "value": -104.599,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Miss",
+    "verdict": "The network gave only 2%, yet stress followed. Among held-out companies scored in the same range, 2% became stressed. Stress that starts from healthy accounts in the filing year is the network's main blind spot.",
+    "same_range_observed_rate": 0.018518518518518517,
+    "same_range": {
+     "from": 0.011168776352686977,
+     "to": 0.01843053335496927,
+     "n": 108
+    }
+   },
+   "example": 2
+  },
+  {
+   "id": "0001232524-2021-12-31",
+   "category": "correct_warning",
+   "rank_in_category": 1,
+   "known": {
+    "split": "test",
+    "company_name": "Jazz Pharmaceuticals plc",
+    "cik": "0001232524",
+    "fiscal_year_end": "2021-12-31",
+    "features_as_of": "2022-03-01",
+    "filed_days_after_year_end": 60,
+    "next_fiscal_year_end": "2022-12-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 3094.238,
+     "ebitda": 196.978,
+     "ebitda_margin": 0.063659615065163,
+     "operating_income": 170.278,
+     "interest_expense": 89.9,
+     "gross_debt": 6049.943,
+     "cash": 591.448,
+     "operating_cash_flow": 778.507,
+     "ebit_interest_cover": 1.8940823136818685,
+     "gross_debt_to_ebitda": 30.71380052594706,
+     "revenue_growth": 0.3091391105054351
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 1.8940823136818685,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 30.71380052594706,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 778.507,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.7601891620260482,
+     "logit": 1.455749966083634,
+     "band": "high",
+     "xgboost_probability": 0.57380146
+    },
+    "drivers": [
+     {
+      "feature": "net_leverage",
+      "description": "net debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 27.71119109748297,
+      "logit_contribution": 1.127017836908851
+     },
+     {
+      "feature": "gross_leverage",
+      "description": "gross debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 30.713800525947065,
+      "logit_contribution": 1.0375396871241174
+     },
+     {
+      "feature": "stress_conditions_t",
+      "description": "number of the 3 stress conditions met in year t (unknown = 0, masked)",
+      "unit": "count",
+      "value": 1.0,
+      "logit_contribution": 0.3070754912703946
+     },
+     {
+      "feature": "net_margin",
+      "description": "net income / revenue",
+      "unit": "pct",
+      "value": -0.10654254779367328,
+      "logit_contribution": 0.15519362719486174
+     }
+    ]
+   },
+   "outcome": {
+    "label": 1,
+    "label_available_date": "2023-03-01",
+    "fiscal_year_end": "2022-12-31",
+    "metrics_usd_m": {
+     "revenue": 3659.374,
+     "ebitda": -35.22800000000001,
+     "ebitda_margin": -0.0096267831601798,
+     "operating_income": -65.528,
+     "interest_expense": 32.8,
+     "gross_debt": 5724.341,
+     "cash": 881.482,
+     "operating_cash_flow": 1271.977,
+     "ebit_interest_cover": -1.997804878048781,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.1826414128454243
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": true,
+      "value": -1.997804878048781,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": null,
+      "ebitda_nonpositive": true,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 1271.977,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Well-calibrated warning",
+    "verdict": "The network gave 76% and stress followed. Among held-out companies scored in the same range, 75% became stressed, so a score this high was borne out.",
+    "same_range_observed_rate": 0.7522935779816514,
+    "same_range": {
+     "from": 0.6738676935676319,
+     "to": 0.7841482227793228,
+     "n": 109
+    }
+   },
+   "example": 3
+  },
+  {
+   "id": "0000059527-2024-12-31",
+   "category": "correct_all_clear",
+   "rank_in_category": 1,
+   "known": {
+    "split": "test",
+    "company_name": "LINCOLN ELECTRIC HOLDINGS INC",
+    "cik": "0000059527",
+    "fiscal_year_end": "2024-12-31",
+    "features_as_of": "2025-02-26",
+    "filed_days_after_year_end": 57,
+    "next_fiscal_year_end": "2025-12-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 4008.67,
+     "ebitda": 724.7,
+     "ebitda_margin": 0.1807831525169196,
+     "operating_income": 636.462,
+     "interest_expense": 52.916,
+     "gross_debt": 1250.5549999999998,
+     "cash": 377.262,
+     "operating_cash_flow": 598.977,
+     "ebit_interest_cover": 12.027779877541764,
+     "gross_debt_to_ebitda": 1.7256174968952667,
+     "revenue_growth": -0.0436502597076655
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 12.027779877541764,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 1.7256174968952667,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 598.977,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.00337434653638628,
+     "logit": -6.060088082399654,
+     "band": "low",
+     "xgboost_probability": 0.027672123
+    },
+    "drivers": [
+     {
+      "feature": "cfo_to_assets",
+      "description": "operating cash flow / total assets",
+      "unit": "pct",
+      "value": 0.17015705616421156,
+      "logit_contribution": -0.5300522918848998
+     },
+     {
+      "feature": "fcf_margin",
+      "description": "(CFO - capex) / revenue",
+      "unit": "pct",
+      "value": 0.12033267891844426,
+      "logit_contribution": -0.20372390732195722
+     },
+     {
+      "feature": "log_assets",
+      "description": "ln(total assets, USD m)",
+      "unit": "log",
+      "value": 8.166256608687561,
+      "logit_contribution": -0.1926732316308435
+     },
+     {
+      "feature": "roa",
+      "description": "net income / total assets",
+      "unit": "pct",
+      "value": 0.13241170384603804,
+      "logit_contribution": -0.185740576095081
+     }
+    ]
+   },
+   "outcome": {
+    "label": 0,
+    "label_available_date": "2026-02-25",
+    "fiscal_year_end": "2025-12-31",
+    "metrics_usd_m": {
+     "revenue": 4233.003,
+     "ebitda": 816.605,
+     "ebitda_margin": 0.1929138722557012,
+     "operating_income": 718.059,
+     "interest_expense": 58.379,
+     "gross_debt": 1150.228,
+     "cash": 308.789,
+     "operating_cash_flow": 661.173,
+     "ebit_interest_cover": 12.299953750492472,
+     "gross_debt_to_ebitda": 1.4085488087876024,
+     "revenue_growth": 0.0559619524680254
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": false,
+      "value": 12.299953750492472,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 1.4085488087876024,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 661.173,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Well-calibrated all-clear",
+    "verdict": "The network gave 0% and no stress followed. Among held-out companies scored in the same range, 0% became stressed.",
+    "same_range_observed_rate": 0.0,
+    "same_range": {
+     "from": 0.00337434653638628,
+     "to": 0.011168776352686977,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001668397-2023-12-31",
+   "category": "correct_all_clear",
+   "rank_in_category": 2,
+   "known": {
+    "split": "test",
+    "company_name": "Medpace Holdings, Inc.",
+    "cik": "0001668397",
+    "fiscal_year_end": "2023-12-31",
+    "features_as_of": "2024-02-13",
+    "filed_days_after_year_end": 44,
+    "next_fiscal_year_end": "2024-12-31",
+    "company_in_training_data": false,
+    "metrics_usd_m": {
+     "revenue": 1885.842,
+     "ebitda": null,
+     "ebitda_margin": null,
+     "operating_income": 336.825,
+     "interest_expense": 3.056,
+     "gross_debt": null,
+     "cash": 245.449,
+     "operating_cash_flow": 433.374,
+     "ebit_interest_cover": 110.21760471204188,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.2916761415784701
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 110.21760471204188,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": null,
+      "value": null,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 433.374,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.00361427881786843,
+     "logit": -5.984366695498005,
+     "band": "low",
+     "xgboost_probability": 0.024258839
+    },
+    "drivers": [
+     {
+      "feature": "cfo_to_assets",
+      "description": "operating cash flow / total assets",
+      "unit": "pct",
+      "value": 0.2615684911167605,
+      "logit_contribution": -0.5352752852183809
+     },
+     {
+      "feature": "ebitda_margin",
+      "description": "(operating income + D&A) / revenue",
+      "unit": "pct",
+      "value": null,
+      "logit_contribution": -0.15669209881451795
+     },
+     {
+      "feature": "roa",
+      "description": "net income / total assets",
+      "unit": "pct",
+      "value": 0.17069363868790244,
+      "logit_contribution": -0.15592742413024663
+     },
+     {
+      "feature": "gross_leverage",
+      "description": "gross debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": null,
+      "logit_contribution": -0.14441440065193945
+     }
+    ]
+   },
+   "outcome": {
+    "label": 0,
+    "label_available_date": "2025-02-11",
+    "fiscal_year_end": "2024-12-31",
+    "metrics_usd_m": {
+     "revenue": 2109.054,
+     "ebitda": null,
+     "ebitda_margin": null,
+     "operating_income": 446.87,
+     "interest_expense": 0.171,
+     "gross_debt": null,
+     "cash": 669.436,
+     "operating_cash_flow": 608.815,
+     "ebit_interest_cover": 2613.2748538011692,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.1183619836656517
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": false,
+      "value": 2613.2748538011692,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": null,
+      "value": null,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 608.815,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Well-calibrated all-clear",
+    "verdict": "The network gave 0% and no stress followed. Among held-out companies scored in the same range, 0% became stressed.",
+    "same_range_observed_rate": 0.0,
+    "same_range": {
+     "from": 0.00337434653638628,
+     "to": 0.011168776352686977,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001000694-2021-12-31",
+   "category": "correct_warning",
+   "rank_in_category": 2,
+   "known": {
+    "split": "test",
+    "company_name": "NOVAVAX INC",
+    "cik": "0001000694",
+    "fiscal_year_end": "2021-12-31",
+    "features_as_of": "2022-03-01",
+    "filed_days_after_year_end": 60,
+    "next_fiscal_year_end": "2022-12-31",
+    "company_in_training_data": false,
+    "metrics_usd_m": {
+     "revenue": 1146.29,
+     "ebitda": -1674.076,
+     "ebitda_margin": -1.4604297341859391,
+     "operating_income": -1686.576,
+     "interest_expense": 21.127,
+     "gross_debt": null,
+     "cash": 1515.116,
+     "operating_cash_flow": 322.946,
+     "ebit_interest_cover": -79.83035925592844,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 1.4102077805205235
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": null,
+     "coverage_weak": {
+      "met": true,
+      "value": -79.83035925592844,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": null,
+      "value": null,
+      "ebitda_nonpositive": true,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 322.946,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.693523966540767,
+     "logit": 1.0854768310996246,
+     "band": "high",
+     "xgboost_probability": 0.34452683
+    },
+    "drivers": [
+     {
+      "feature": "net_margin",
+      "description": "net income / revenue",
+      "unit": "pct",
+      "value": -1.52121278210575,
+      "logit_contribution": 0.7466706984547592
+     },
+     {
+      "feature": "operating_margin",
+      "description": "operating income / revenue",
+      "unit": "pct",
+      "value": -1.471334479058528,
+      "logit_contribution": 0.48072622997890657
+     },
+     {
+      "feature": "roa",
+      "description": "net income / total assets",
+      "unit": "pct",
+      "value": -0.6767241563316313,
+      "logit_contribution": 0.4704975118031437
+     },
+     {
+      "feature": "d_ebitda_margin",
+      "description": "change in EBITDA margin",
+      "unit": "pp",
+      "value": -0.5932709151833362,
+      "logit_contribution": -0.3852883431084102
+     }
+    ]
+   },
+   "outcome": {
+    "label": 1,
+    "label_available_date": "2023-02-28",
+    "fiscal_year_end": "2022-12-31",
+    "metrics_usd_m": {
+     "revenue": 1981.872,
+     "ebitda": -615.636,
+     "ebitda_margin": -0.3106335827944488,
+     "operating_income": -644.736,
+     "interest_expense": 19.88,
+     "gross_debt": null,
+     "cash": 1336.883,
+     "operating_cash_flow": -415.937,
+     "ebit_interest_cover": -32.43138832997988,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.7289446824102104
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": true,
+      "value": -32.43138832997988,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": null,
+      "value": null,
+      "ebitda_nonpositive": true,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": true,
+      "value": -415.937,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Well-calibrated warning",
+    "verdict": "The network gave 69% and stress followed. Among held-out companies scored in the same range, 75% became stressed, so a score this high was borne out.",
+    "same_range_observed_rate": 0.7522935779816514,
+    "same_range": {
+     "from": 0.6738676935676319,
+     "to": 0.7841482227793228,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001687221-2020-10-31",
+   "category": "false_alarm",
+   "rank_in_category": 3,
+   "known": {
+    "split": "test",
+    "company_name": "REV Group, Inc.",
+    "cik": "0001687221",
+    "fiscal_year_end": "2020-10-31",
+    "features_as_of": "2021-01-07",
+    "filed_days_after_year_end": 68,
+    "next_fiscal_year_end": "2021-10-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 2277.6,
+     "ebitda": 22.300000000000004,
+     "ebitda_margin": 0.0097910080786793,
+     "operating_income": -17.9,
+     "interest_expense": 25.7,
+     "gross_debt": 342.2,
+     "cash": 11.4,
+     "operating_cash_flow": 55.7,
+     "ebit_interest_cover": -0.6964980544747081,
+     "gross_debt_to_ebitda": 15.345291479820624,
+     "revenue_growth": -0.0524607896160086
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 1,
+     "coverage_weak": {
+      "met": true,
+      "value": -0.6964980544747081,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 15.345291479820624,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 55.7,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.8060805005919545,
+     "logit": 1.7534702735390995,
+     "band": "high",
+     "xgboost_probability": 0.6689586
+    },
+    "drivers": [
+     {
+      "feature": "net_leverage",
+      "description": "net debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 14.834080717488789,
+      "logit_contribution": 0.8587896777483756
+     },
+     {
+      "feature": "stress_conditions_t",
+      "description": "number of the 3 stress conditions met in year t (unknown = 0, masked)",
+      "unit": "count",
+      "value": 2.0,
+      "logit_contribution": 0.8092049948229069
+     },
+     {
+      "feature": "gross_leverage",
+      "description": "gross debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 15.345291479820624,
+      "logit_contribution": 0.5543177036992695
+     },
+     {
+      "feature": "cash_to_assets",
+      "description": "cash / total assets",
+      "unit": "pct",
+      "value": 0.008687038024841881,
+      "logit_contribution": -0.11587897292170823
+     }
+    ]
+   },
+   "outcome": {
+    "label": 0,
+    "label_available_date": "2021-12-15",
+    "fiscal_year_end": "2021-10-31",
+    "metrics_usd_m": {
+     "revenue": 2380.8,
+     "ebitda": 115.8,
+     "ebitda_margin": 0.0486391129032258,
+     "operating_income": 83.8,
+     "interest_expense": 17.3,
+     "gross_debt": 215.0,
+     "cash": 13.3,
+     "operating_cash_flow": 158.3,
+     "ebit_interest_cover": 4.8439306358381495,
+     "gross_debt_to_ebitda": 1.8566493955094991,
+     "revenue_growth": 0.0453108535300317
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": false,
+      "value": 4.8439306358381495,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 1.8566493955094991,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 158.3,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Overconfident: false alarm",
+    "verdict": "The network gave 81%, but the company did not meet two stress conditions the next year. Among held-out companies scored in the same range, 89% did become stressed, so about 11% of such scores are false alarms; this was one of them. It already met two or more conditions in the filing year and recovered, the network's most common kind of false alarm.",
+    "same_range_observed_rate": 0.8899082568807339,
+    "same_range": {
+     "from": 0.7841482227793228,
+     "to": 0.8815181851418613,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001320695-2022-12-31",
+   "category": "false_alarm",
+   "rank_in_category": 2,
+   "known": {
+    "split": "test",
+    "company_name": "TreeHouse Foods, Inc.",
+    "cik": "0001320695",
+    "fiscal_year_end": "2022-12-31",
+    "features_as_of": "2023-02-13",
+    "filed_days_after_year_end": 44,
+    "next_fiscal_year_end": "2023-12-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 3454.0,
+     "ebitda": 122.3,
+     "ebitda_margin": 0.0354082223508975,
+     "operating_income": -21.5,
+     "interest_expense": 69.9,
+     "gross_debt": 1394.6,
+     "cash": 43.0,
+     "operating_cash_flow": -150.7,
+     "ebit_interest_cover": -0.3075822603719599,
+     "gross_debt_to_ebitda": 11.403107113654947,
+     "revenue_growth": -0.2018670856825954
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 1,
+     "coverage_weak": {
+      "met": true,
+      "value": -0.3075822603719599,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": 11.403107113654947,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": true,
+      "value": -150.7,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.8239786389222105,
+     "logit": 1.883971079045628,
+     "band": "high",
+     "xgboost_probability": 0.6945592
+    },
+    "drivers": [
+     {
+      "feature": "stress_conditions_t",
+      "description": "number of the 3 stress conditions met in year t (unknown = 0, masked)",
+      "unit": "count",
+      "value": 3.0,
+      "logit_contribution": 1.0285951458147435
+     },
+     {
+      "feature": "net_leverage",
+      "description": "net debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 11.051512673753065,
+      "logit_contribution": 0.5467908192118285
+     },
+     {
+      "feature": "gross_leverage",
+      "description": "gross debt / EBITDA (undefined if EBITDA <= 0)",
+      "unit": "x",
+      "value": 11.403107113654944,
+      "logit_contribution": 0.3713576708527002
+     },
+     {
+      "feature": "cfo_to_assets",
+      "description": "operating cash flow / total assets",
+      "unit": "pct",
+      "value": -0.035426314675944426,
+      "logit_contribution": 0.22263164399788238
+     }
+    ]
+   },
+   "outcome": {
+    "label": 0,
+    "label_available_date": "2024-02-16",
+    "fiscal_year_end": "2023-12-31",
+    "metrics_usd_m": {
+     "revenue": 3431.6,
+     "ebitda": 288.8,
+     "ebitda_margin": 0.0841589928896141,
+     "operating_income": 146.9,
+     "interest_expense": 74.8,
+     "gross_debt": 1396.4,
+     "cash": 320.3,
+     "operating_cash_flow": 157.3,
+     "ebit_interest_cover": 1.9639037433155082,
+     "gross_debt_to_ebitda": 4.835180055401662,
+     "revenue_growth": -0.0064852345107122
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": false,
+      "value": 1.9639037433155082,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 4.835180055401662,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 157.3,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Overconfident: false alarm",
+    "verdict": "The network gave 82%, but the company did not meet two stress conditions the next year. Among held-out companies scored in the same range, 89% did become stressed, so about 11% of such scores are false alarms; this was one of them. It already met two or more conditions in the filing year and recovered, the network's most common kind of false alarm.",
+    "same_range_observed_rate": 0.8899082568807339,
+    "same_range": {
+     "from": 0.7841482227793228,
+     "to": 0.8815181851418613,
+     "n": 109
+    }
+   },
+   "example": null
+  },
+  {
+   "id": "0001519061-2021-12-31",
+   "category": "missed",
+   "rank_in_category": 3,
+   "known": {
+    "split": "test",
+    "company_name": "Trinseo PLC",
+    "cik": "0001519061",
+    "fiscal_year_end": "2021-12-31",
+    "features_as_of": "2022-02-23",
+    "filed_days_after_year_end": 54,
+    "next_fiscal_year_end": "2022-12-31",
+    "company_in_training_data": true,
+    "metrics_usd_m": {
+     "revenue": 4827.5,
+     "ebitda": 628.9,
+     "ebitda_margin": 0.1302744691869497,
+     "operating_income": 461.4,
+     "interest_expense": 62.4,
+     "gross_debt": 2324.1,
+     "cash": 573.0,
+     "operating_cash_flow": 452.7,
+     "ebit_interest_cover": 7.394230769230769,
+     "gross_debt_to_ebitda": 3.6955000795038955,
+     "revenue_growth": 0.5903475539449843
+    },
+    "stress_conditions_in_t": {
+     "stressed_in_t": 0,
+     "coverage_weak": {
+      "met": false,
+      "value": 7.394230769230769,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": false,
+      "value": 3.6955000795038955,
+      "ebitda_nonpositive": false,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 452.7,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "prediction": {
+     "probability": 0.02135866545846442,
+     "logit": -4.0130649985901,
+     "band": "low",
+     "xgboost_probability": 0.05835669
+    },
+    "drivers": [
+     {
+      "feature": "debt_to_assets",
+      "description": "gross debt / total assets",
+      "unit": "pct",
+      "value": 0.4932091167607487,
+      "logit_contribution": 0.30265655619876686
+     },
+     {
+      "feature": "roa",
+      "description": "net income / total assets",
+      "unit": "pct",
+      "value": 0.09337464453970545,
+      "logit_contribution": -0.28913604804763393
+     },
+     {
+      "feature": "revenue_growth",
+      "description": "revenue_t / revenue_t-1 - 1",
+      "unit": "pct",
+      "value": 0.5903475539449843,
+      "logit_contribution": 0.1912001538867285
+     },
+     {
+      "feature": "cash_to_assets",
+      "description": "cash / total assets",
+      "unit": "pct",
+      "value": 0.12159925300284369,
+      "logit_contribution": 0.16874192547493383
+     }
+    ]
+   },
+   "outcome": {
+    "label": 1,
+    "label_available_date": "2023-02-27",
+    "fiscal_year_end": "2022-12-31",
+    "metrics_usd_m": {
+     "revenue": 4965.5,
+     "ebitda": -126.99999999999996,
+     "ebitda_margin": -0.0255764776961031,
+     "operating_income": -363.9,
+     "interest_expense": 103.4,
+     "gross_debt": 2317.6,
+     "cash": 211.7,
+     "operating_cash_flow": 43.5,
+     "ebit_interest_cover": -3.5193423597678914,
+     "gross_debt_to_ebitda": null,
+     "revenue_growth": 0.0285862247540134
+    },
+    "conditions": {
+     "coverage_weak": {
+      "met": true,
+      "value": -3.5193423597678914,
+      "rule": "EBIT / interest < 1.5x"
+     },
+     "leverage_high": {
+      "met": true,
+      "value": null,
+      "ebitda_nonpositive": true,
+      "rule": "gross debt / EBITDA > 5.0x (or debt with EBITDA <= 0)"
+     },
+     "cash_flow_weak": {
+      "met": false,
+      "value": 43.5,
+      "rule": "operating cash flow < 0"
+     }
+    },
+    "assessment": "Miss",
+    "verdict": "The network gave only 2%, yet stress followed. Among held-out companies scored in the same range, 6% became stressed. Stress that starts from healthy accounts in the filing year is the network's main blind spot.",
+    "same_range_observed_rate": 0.05504587155963303,
+    "same_range": {
+     "from": 0.01843053335496927,
+     "to": 0.03071206217769291,
+     "n": 109
+    }
+   },
+   "example": null
+  }
+ ]
+}

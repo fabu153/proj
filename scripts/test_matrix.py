@@ -33,6 +33,10 @@ MATRIX = [
     ("WF-01", "Start page to memo (v1.1)", "Guided journey with progress and wake-up states", ["test_e01_"]),
     ("WF-02", "Shared analysis snapshot (v1.1)", "Table, memo and PDF share one snapshot id", ["test_wf02_"]),
     ("HYG", "Upload privacy hygiene (v1.1)", "Uploads unlisted; audit operator-only", ["test_full_upload_to_memo_flow", "test_security_headers"]),
+    ("ML-01", "Model X-Ray evidence (v1.2)", "Every headline claim served from frozen artifacts; XGBoost lead shown", ["test_ml01_"]),
+    ("ML-02", "Neural score vs loan stress (v1.2)", "Sliders never change the neural score", ["test_ml02_", "test_e01_"]),
+    ("OUT-01", "Replay hides the future (v1.2)", "No outcome in the forecast until revealed", ["test_out01_"]),
+    ("OUT-02", "Replay is genuine and frozen (v1.2)", "Forecasts equal saved held-out predictions; date-consistent", ["test_out02_"]),
     ("A11Y", "WCAG 2.1 AA (axe-core)", "No serious/critical violations", ["test_wcag_aa"]),
     ("SEC", "Security controls", "Validation, limits, headers, deletion", ["test_rejects_non_pdf", "test_upload_rate_limit", "test_security_headers", "test_unexpected_errors_hide", "test_cors_"]),
 ]

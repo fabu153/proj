@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import type { Driver, RiskModel } from "@/lib/api";
+import { fyLabel } from "@/lib/api";
 import Ruler from "./Ruler";
 import { featureLabel } from "@/lib/labels";
 
 const pct = (v: number) => `${(v * 100).toFixed(v < 0.1 ? 1 : 0)}%`;
 
-function featureValue(d: Driver) {
+export function featureValue(d: Pick<Driver, "value" | "unit">) {
   if (d.value === null) return "not available";
   switch (d.unit) {
     case "pct":
@@ -27,7 +28,7 @@ function featureValue(d: Driver) {
   }
 }
 
-export default function RiskScreen({ risk }: { risk: RiskModel }) {
+export default function RiskScreen({ risk, fiscalYearEnd }: { risk: RiskModel; fiscalYearEnd?: string }) {
   if (risk.status === "model_unavailable") {
     return <div className="notice">No trained model is deployed, so no risk estimate is shown.</div>;
   }
@@ -72,10 +73,23 @@ export default function RiskScreen({ risk }: { risk: RiskModel }) {
       <p className="fine" style={{ margin: "2px 0 0" }}>
         Bands: low below 15%, elevated 15–40%, high from 40%. Fixed before training, for display only.
       </p>
+      {risk.model && (
+        <p className="score-sentence">
+          The network reads only the {fiscalYearEnd ? `${fyLabel(fiscalYearEnd)} ` : ""}annual report and puts the chance of
+          accounting stress in the following year at {pct(p)}; on 2021–25 filings it never saw, it reached a precision-recall AUC of{" "}
+          {risk.model.test_pr_auc.toFixed(3)} against {risk.model.xgboost_benchmark_test_pr_auc.toFixed(3)} for XGBoost, a difference within the
+          margin of error. <Link href="/model">Model X-Ray</Link> · <Link href="/replay">See it on held-out cases</Link>
+        </p>
+      )}
+      <p className="fine" style={{ margin: "6px 0 0" }}>
+        This score does not respond to the loan lab: the network predicts from the filed accounts, while the loan lab reworks financing
+        mechanically.
+      </p>
 
       <h4 style={{ margin: "18px 0 0", fontSize: 14 }}>What moved the score</h4>
       <p className="fine" style={{ margin: "2px 0 0" }}>
-        Change in the model&apos;s log-odds when each input is replaced by its training median. These are associations, not causes.
+        Change in the network&apos;s log-odds when each input is replaced by its training median: not percentage points, and associations,
+        not causes. <Link href="/model#where-it-fails">How to read these</Link>.
       </p>
       <ul className="drivers">
         {(risk.drivers ?? []).map((d) => {

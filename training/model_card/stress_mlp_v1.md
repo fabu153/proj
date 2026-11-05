@@ -32,6 +32,34 @@ Paired MLP − XGBoost PR-AUC: -0.020
 At the validation-chosen threshold: precision 0.73,
 recall 0.71, flag rate 29%.
 
+## Error analysis on the frozen test window (added v1.2, no retraining)
+
+Per-row MLP test predictions were not written at training time. They were recovered by re-running the frozen
+artifact on the frozen test rows (`python -m training.ml.export_replay`). The re-run reproduces the recorded
+evaluation exactly (PR-AUC and ROC-AUC to 1e-12, Brier to 1e-8, and the confusion matrix at the validation
+threshold count for count), and it is saved as `training/experiments/mlp_v1/test_predictions_label_next_fy.csv`.
+
+| At the validation-chosen threshold (0.446) | Stressed next year | Not stressed |
+|---|---|---|
+| Flagged | 229 correct warnings | 84 false alarms |
+| Not flagged | 93 missed | 680 correct all-clears |
+
+| Screening band | Company-years | Mean prediction | Observed stress |
+|---|---|---|---|
+| low (0%–15%) | 634 | 4.0% | 6.6% |
+| elevated (15%–40%) | 120 | 26.0% | 34.2% |
+| high (40%–100%) | 332 | 70.1% | 72.0% |
+
+**Persistence versus onset.** Of the stressed company-years that already met two conditions in the filing year, the
+network caught 214 of 226. Of those that *became*
+stressed from healthier accounts, it caught 15 of 96.
+66 of the 84 false alarms were companies already
+stressed that recovered. The network is mainly a persistence detector, so it should not be presented as an early
+warning of new stress.
+
+The Historical Model Replay (`/replay`) shows held-out cases selected by a fixed rule
+(`backend/data/replay/replay_v1.json`, `selection_rule`).
+
 ## Serving safeguards
 - Score withheld when: hard data checks fail, revenue < USD 50m, < 4 of 7 critical facts, or > 12 of 31 features missing.
 - Bands (display only): low < 15%, elevated 15–40%, high ≥ 40%.

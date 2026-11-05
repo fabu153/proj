@@ -39,19 +39,19 @@ def _cond_coverage(ebit, interest) -> Optional[bool]:
         return None
     if interest <= 0:
         return False      # no valid positive interest -> condition cannot fire (debt-free firms)
-    return ebit / interest < EBIT_COVER_MAX
+    return bool(ebit / interest < EBIT_COVER_MAX)     # bool(): numpy inputs give np.bool_, which `is True` misses
 
 
 def _cond_leverage(gross_debt, ebitda) -> Optional[bool]:
     if gross_debt is None or ebitda is None:
         return None
     if ebitda <= 0:
-        return gross_debt > 0
-    return gross_debt / ebitda > LEVERAGE_MAX
+        return bool(gross_debt > 0)
+    return bool(gross_debt / ebitda > LEVERAGE_MAX)
 
 
 def _cond_cfo(cfo) -> Optional[bool]:
-    return None if cfo is None else cfo < CFO_MIN
+    return None if cfo is None else bool(cfo < CFO_MIN)
 
 
 def stress_label(next_year: Mapping[str, Optional[float]]) -> StressLabel:

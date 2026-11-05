@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.2.0 — Stage C (deep-learning evidence) and Stage D (Historical Model Replay)
+
+Reason for the new release: two new frozen artifacts, both derived from the unchanged model. The first is the
+held-out MLP predictions, re-scored by the frozen network; they reproduce the recorded test evaluation exactly.
+The second is the replay dataset built from them. No model artifact, training result or curated filing changed
+(`release/manifest.json`: `model_artifacts_unchanged: true`).
+
+### Stage C
+- **C1 Model X-Ray in three layers.**
+  - What the network learned: target definition, 31 inputs in 8 groups, network diagram, training, validation and
+    test windows.
+  - How it performed: PR-AUC, ROC-AUC and Brier with intervals and no-skill references; why PR-AUC matters for a
+    30% outcome; matched baseline table; calibration; outcomes by screening band.
+  - Where it fails: the confusion matrix at the validation-chosen threshold, persistence versus onset (15 of 96 new
+    stress onsets caught), false alarms that were recoveries (66 of 84), scope limits, and how to read log-odds
+    driver bars.
+- **C2 Honest comparison.** XGBoost's higher point estimate (0.825 vs 0.805) and lower Brier are stated outright.
+  The workspace explains the score in one sentence and links to the X-Ray.
+- **C3 Separate purposes.** The neural score is labelled as independent of the loan lab. A browser test moves the
+  slider and checks the score does not change; an API test checks the scenario response carries no score.
+
+### Stage D
+- **Historical Model Replay at `/replay`.**
+  - 12 held-out 2021–25 company-years chosen by a fixed, documented rule, including three examples: a correct
+    warning, a false alarm and a miss.
+  - Filing timeline, known-at-time snapshot, the frozen forecast with drivers and the XGBoost benchmark, then
+    "Reveal next-year outcome" with the three label conditions and an assessment against same-range observed rates.
+  - The outcome sits behind its own endpoint, so nothing about the future reaches the browser before it is requested.
+- `python -m training.ml.export_replay` rebuilds both artifacts and refuses to write if the re-scored predictions
+  do not reproduce the frozen metrics.
+
+### Fixes
+- The stress-label function counted numpy booleans as "not met". The training panel was unaffected (all 4,322 rows
+  re-checked), but the function is now robust.
+- The calibration chart broke its observed line above 50%.
+- The X-Ray's data-window counts mixed panel rows with scored rows.
+
 ## 1.1.0 — Stage A (financial correctness) and Stage B (workflow)
 
 Reason for the new release: the 10-K reconciliation (A5) showed that some credit figures used by the

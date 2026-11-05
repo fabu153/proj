@@ -72,7 +72,7 @@ def main():
         cap("A trained neural network screens next-year accounting stress: 1.8%, low, with the inputs that moved it.", 4200)
         pg.screenshot(path=str(SHOTS / "risk_screen.png"))
         pg.goto(BASE + "/model", wait_until="networkidle")
-        pg.wait_for_selector("text=Does the network work?", timeout=30000)
+        pg.wait_for_selector("#where-it-fails", timeout=30000)
         cap("Model X-Ray: tested once on 2021–25 filings it never saw. Level with XGBoost within the margin of error, "
             "and reported as such.", 4400)
         pg.screenshot(path=str(SHOTS / "model_xray.png"))

@@ -1,7 +1,7 @@
 {
- "version": "1.1.0",
- "frozen_at": "2026-11-04 22:31 UTC",
- "frozen_from_commit": "ad4b087a4725e2e034fcfafa6ac8fceb7ba1e4dd",
+ "version": "1.2.0",
+ "frozen_at": "2026-11-04 23:01 UTC",
+ "frozen_from_commit": "b6bc15d3f6f352a7c1158f7708bcf3726c859477",
  "python": "3.13.18",
  "model": {
   "model": "stress_mlp_v1",
@@ -20,15 +20,11 @@
   ],
   "xgboost_pr_auc": 0.8250541134723463
  },
- "previous_version": "1.0.0",
- "reason": "Stage A 10-K reconciliation: curated SEC caches refetched with supplemental tags for credit-basis rules R5-R7; upload fixtures regenerated from the 10-Ks (B&G interest corrected), new fixture C, byte-stable rendering. Model artifacts unchanged.",
+ "previous_version": "1.1.0",
+ "reason": "Stages C/D: held-out MLP test predictions re-scored with the unchanged frozen model (reproduce recorded metrics exactly) and the replay dataset built from them. Model artifacts unchanged.",
  "changed_since_previous": [
-  "backend/data/curated/companyfacts_0000080424.json.gz",
-  "backend/data/curated/companyfacts_0001067701.json.gz",
-  "backend/data/curated/companyfacts_0001278027.json.gz",
-  "tests/fixtures/ar_thousands.pdf",
-  "tests/fixtures/ar_unlabelled.pdf",
-  "tests/fixtures/us_10k_millions.pdf"
+  "backend/data/replay/replay_v1.json",
+  "training/experiments/mlp_v1/test_predictions_label_next_fy.csv"
  ],
  "model_artifacts_unchanged": true,
  "files": {
@@ -40,6 +36,8 @@
   "training/data/reports/coverage_v1.md": "e84cc5f29af38aa3286d7aa489c7adfa24df4af7f88482c79da15e371b995340",
   "training/experiments/baselines_v1/results.json": "c4724f8405fcf75227b8f0ad0baf23dc9afcf4b3486bebc40795c6e5cf92dee5",
   "training/experiments/mlp_v1/results.json": "009ad09bfb4890fbf55731e9e790b15718a5d9bf2c972fa8dee57bfe991f2619",
+  "training/experiments/mlp_v1/test_predictions_label_next_fy.csv": "df908073907167b176098af97a41abb99f86aa797b05c6e3a3fcc08f8c45cb66",
+  "backend/data/replay/replay_v1.json": "ce50327203099ddb45d557c859b23dff6f5b9b25ec38790e6f46988595414b23",
   "backend/models/stress_mlp_v1/calibrator.json": "72d143392f09d8e168707b61a57bf4d34f7692e6c6a2d621882c053af68b1ef3",
   "backend/models/stress_mlp_v1/metadata.json": "3685d5ed4f6defe5c6d2801fba54aa2ecfe08ca76f2504cc4392fbfdb33ff807",
   "backend/models/stress_mlp_v1/parity.npz": "c163f5ec45d6f2cd2ed6ff078979e201d0db994a1f598bcfb2db0d80b729dbb2",
@@ -65,6 +63,7 @@
   "python -m training.ml.run_baselines --config configs/experiment_baselines_v1.yaml",
   "python -m training.ml.train_mlp --config configs/experiment_mlp_v1.yaml",
   "python -m training.ml.export_xray",
+  "python -m training.ml.export_replay          # re-scores the frozen test rows; stops unless they reproduce the frozen metrics",
   "python scripts/test_matrix.py"
  ]
 }

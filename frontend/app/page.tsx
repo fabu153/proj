@@ -79,6 +79,16 @@ export default function Start() {
             <p className="fine">Use public filings only. Do not upload confidential or client documents.</p>
           </section>
         </div>
+        <section className="sheet start-card replay-card" aria-labelledby="h-replay">
+          <div>
+            <h2 id="h-replay">Replay the model on held-out years</h2>
+            <p className="fine">
+              What could the network infer when an annual report was first published, and what happened a year later? Real 2021–25 cases
+              it never saw: a correct warning, a false alarm and a miss.
+            </p>
+          </div>
+          <Link className="btn ghost" href="/replay">Open the replay</Link>
+        </section>
       </main>
     </>
   );

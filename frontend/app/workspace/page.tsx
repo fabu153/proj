@@ -167,15 +167,15 @@ export default function Workspace() {
                     two of EBIT / interest below 1.5x, debt / EBITDA above 5x, or negative operating cash flow. It is not a probability of
                     default.
                   </p>
-                  <RiskScreen risk={analysis.risk_model} />
+                  <RiskScreen risk={analysis.risk_model} fiscalYearEnd={analysis.fiscal_year_end} />
                 </section>
 
                 <section className="block" aria-labelledby="h-lab">
                   <h2 id="h-lab">Loan lab</h2>
                   <p className="lede">
                     Add the proposed facility, then stress it. Base, downside and severe cases are fixed for comparability; your case
-                    follows the sliders. Every number is recalculated by the API, and each set of inputs gets a snapshot id that the memo
-                    and its PDF carry.
+                    follows the sliders. These are deterministic calculations, separate from the neural screen above, which the sliders
+                    never change. Each set of inputs gets a snapshot id that the memo and its PDF carry.
                   </p>
                   <LoanLab
                     key={`${analysis.company_id}|${analysis.fiscal_year_end}`}

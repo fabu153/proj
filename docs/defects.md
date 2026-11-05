@@ -38,6 +38,9 @@ blueprint's risk table: **High** = could show a wrong number or block the demo; 
 | DF-30 | v1.1 B1 | Medium | On a cold start the site could sit on "Loading…" indefinitely | No timeout or retry | Wake-up status with elapsed time, timeouts, retries and a "Try again" action |
 | DF-31 | v1.1 A4 | Low | One malformed upload could break the company list for everyone | Exceptions not isolated | Malformed uploads are logged and skipped. `test_malformed_upload_does_not_break_company_list` |
 | DF-32 | v1.1 axe scan | Medium | Review-table exception colours below 4.5:1 | Teal and amber text on tinted rows | Darker text and edge markers instead of tinted rows. `test_data01_unlabelled_report_needs_confirmation` |
+| DF-33 | v1.2 replay tests | Medium | The stress-label function returned "not stressed" for numpy inputs that met two conditions | `x is True` is false for `np.bool_` | Conditions return plain `bool`; the training panel was unaffected (4,322 rows re-checked). `test_stress_label_accepts_numpy_values` |
+| DF-34 | v1.2 X-Ray review | Low | The calibration chart's observed line stopped at 50% | Two lines with separate data arrays on one numeric axis | Both series in one data array |
+| DF-35 | v1.2 X-Ray review | Low | Data-window counts (1,626 / 497 / 1,307) did not match the evaluated rows (1,219 / 389 / 1,086) | The panel's window counts were shown next to metrics on gated rows | The X-Ray shows the scored rows and says which gate applies |
 
 ## Known limitations (accepted, documented, not defects)
 
@@ -47,5 +50,7 @@ blueprint's risk table: **High** = could show a wrong number or block the demo; 
   reconciled line by line against the original 10-Ks (`docs/manual_cross_check.md`).
 - The neural screen keeps its v1.0 input definitions (model basis) so its frozen evaluation stays valid; the
   credit ratios use the corrected v1.1 credit basis. Retraining on the corrected definitions needs a new model version.
+- The network catches only 15 of 96 new stress onsets on the test window; it is mainly a persistence detector
+  (Model X-Ray, "Where it fails").
 - United Rentals tags no single capex line, so its simple free cash flow is shown as not available.
 - Render free tier sleeps after ~15 minutes idle; first request can take up to a minute.

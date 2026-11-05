@@ -62,6 +62,13 @@ def test_e01_issuer_to_memo_pdf(page):
     page.wait_for_selector("text=EBITDA shock -30%", timeout=15000)
     # memo, citation, PDF
     page.wait_for_selector("text=Current · snapshot", timeout=15000)
+    # ML-02: the deterministic loan stress never changes the neural score
+    score = page.inner_text(".risk-head .pct")
+    page.locator("input[type=range]").first.fill("-50")
+    page.wait_for_selector("text=Current · snapshot", timeout=15000)
+    assert page.inner_text(".risk-head .pct") == score
+    page.locator("input[type=range]").first.fill("-30")
+    page.wait_for_selector("text=EBITDA shock -30%", timeout=15000)
     page.click("text=Draft credit memo")
     page.wait_for_selector(".memo-section", timeout=60000)
     assert "All sentences passed the evidence checks" in page.inner_text(".memo")
@@ -143,6 +150,27 @@ def test_data01_unlabelled_report_needs_confirmation(page):
     assert page.errors == []
 
 
+def test_out01_replay_hides_outcome_until_revealed(page):
+    """Stage D: nothing about the next year is requested or shown before 'Reveal next-year outcome'."""
+    urls = []
+    page.on("request", lambda r: urls.append(r.url))
+    page.goto(BASE + "/replay", wait_until="networkidle")
+    page.wait_for_selector("text=Reveal next-year outcome", timeout=90000)
+    assert page.locator("button.example").count() == 3
+    assert not any("/outcome" in u for u in urls)
+    assert "hidden" in page.inner_text(".timeline")
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []
+    page.click("text=Reveal next-year outcome")
+    page.wait_for_selector(".assessment", timeout=15000)
+    assert any("/outcome" in u for u in urls)
+    assert _axe(page) == []
+    page.locator("button.example").nth(1).click()
+    page.wait_for_selector("text=Reveal next-year outcome", timeout=15000)
+    assert page.locator(".assessment").count() == 0                      # hidden again for the next case
+    assert page.errors == []
+
+
 def _axe(page):
     return page.evaluate("""async () => (await axe.run(document, {runOnly: {type: 'tag',
         values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})).violations
@@ -151,7 +179,7 @@ def _axe(page):
 
 
 @pytest.mark.parametrize("path,wait", [("/", ".company-list a"), ("/workspace", "text=Pro forma credit metrics"),
-                                       ("/model", "text=Does the network work?"), ("/upload", "text=Extract figures")])
+                                       ("/model", "#where-it-fails"), ("/replay", "text=Reveal next-year outcome"), ("/upload", "text=Extract figures")])
 def test_wcag_aa_no_serious_violations(page, path, wait):
     page.goto(BASE + path, wait_until="networkidle")
     page.wait_for_selector(wait, timeout=60000)

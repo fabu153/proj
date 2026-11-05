@@ -366,3 +366,73 @@ export const memos = {
   edit: (id: string, sentenceId: string, text: string) => send<Memo>(`/memos/${id}/sentences/${sentenceId}`, "PATCH", { text }),
   pdfUrl: (id: string) => `${API_URL}/memos/${id}/pdf`,
 };
+
+// ---------------------------------------------------------------- Stage D: historical model replay
+export type ReplayListItem = {
+  id: string;
+  example: number | null;
+  company_name: string;
+  fiscal_year_end: string;
+  features_as_of: string;
+  probability: number;
+  band: "low" | "elevated" | "high";
+};
+export type ReplayOverview = {
+  version: string;
+  model: string;
+  split: "test";
+  test_window: [string, string];
+  selection_rule: string;
+  verification: { rows: number; pr_auc_recomputed: number; pr_auc_frozen: number; all_checks_passed: boolean };
+  cases: ReplayListItem[];
+};
+export type ReplayMetrics = {
+  revenue: number | null;
+  ebitda: number | null;
+  ebitda_margin: number | null;
+  operating_income: number | null;
+  interest_expense: number | null;
+  gross_debt: number | null;
+  cash: number | null;
+  operating_cash_flow: number | null;
+  ebit_interest_cover: number | null;
+  gross_debt_to_ebitda: number | null;
+  revenue_growth: number | null;
+};
+export type Condition = { met: boolean | null; value: number | null; rule: string; ebitda_nonpositive?: boolean };
+export type Conditions = { coverage_weak: Condition; leverage_high: Condition; cash_flow_weak: Condition };
+export type ReplayForecast = {
+  id: string;
+  example: number | null;
+  split: "test";
+  company_name: string;
+  cik: string;
+  fiscal_year_end: string;
+  features_as_of: string;
+  filed_days_after_year_end: number;
+  next_fiscal_year_end: string;
+  company_in_training_data: boolean;
+  metrics_usd_m: ReplayMetrics;
+  stress_conditions_in_t: Conditions & { stressed_in_t: number | null };
+  prediction: { probability: number; logit: number; band: "low" | "elevated" | "high"; xgboost_probability: number };
+  drivers: { feature: string; description: string; unit: string; value: number | null; logit_contribution: number }[];
+};
+export type ReplayOutcome = {
+  id: string;
+  category: "correct_warning" | "false_alarm" | "missed" | "correct_all_clear";
+  label: 0 | 1;
+  label_available_date: string;
+  fiscal_year_end: string;
+  metrics_usd_m: ReplayMetrics;
+  conditions: Conditions;
+  assessment: string;
+  verdict: string;
+  same_range_observed_rate: number;
+  same_range: { from: number; to: number; n: number };
+};
+
+export const replayApi = {
+  overview: () => call<ReplayOverview>("/replay"),
+  forecast: (id: string) => call<ReplayForecast>(`/replay/cases/${encodeURIComponent(id)}`),
+  outcome: (id: string) => call<ReplayOutcome>(`/replay/cases/${encodeURIComponent(id)}/outcome`),
+};

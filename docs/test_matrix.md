@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-04 22:32 UTC by `scripts/test_matrix.py`: 194 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-04 23:01 UTC by `scripts/test_matrix.py`: 208 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -27,7 +27,11 @@ _Generated 2026-11-04 22:32 UTC by `scripts/test_matrix.py`: 194 passed, 0 faile
 | WF-01 | Start page to memo (v1.1) | Guided journey with progress and wake-up states | 1 | ✅ pass |
 | WF-02 | Shared analysis snapshot (v1.1) | Table, memo and PDF share one snapshot id | 7 | ✅ pass |
 | HYG | Upload privacy hygiene (v1.1) | Uploads unlisted; audit operator-only | 2 | ✅ pass |
-| A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 4 | ✅ pass |
+| ML-01 | Model X-Ray evidence (v1.2) | Every headline claim served from frozen artifacts; XGBoost lead shown | 2 | ✅ pass |
+| ML-02 | Neural score vs loan stress (v1.2) | Sliders never change the neural score | 2 | ✅ pass |
+| OUT-01 | Replay hides the future (v1.2) | No outcome in the forecast until revealed | 3 | ✅ pass |
+| OUT-02 | Replay is genuine and frozen (v1.2) | Forecasts equal saved held-out predictions; date-consistent | 5 | ✅ pass |
+| A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 5 | ✅ pass |
 | SEC | Security controls | Validation, limits, headers, deletion | 6 | ✅ pass |
 
 ## Release acceptance (Blueprint p.22)

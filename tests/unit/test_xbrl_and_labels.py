@@ -95,3 +95,13 @@ def test_onset_excludes_already_stressed():
                           "operating_cash_flow": -1}), stress_label({"operating_income": 50, "interest_expense": 1,
                           "gross_debt": 10, "ebitda": 60, "operating_cash_flow": 40})
     assert onset_label(s, s) is None and onset_label(ok, s) == 1 and onset_label(ok, ok) == 0
+
+
+def test_stress_label_accepts_numpy_values():
+    """Regression (DF-33): numpy comparisons return np.bool_, which an `is True` count silently ignored."""
+    import numpy as np
+    from backend.app.labels.stress_label import stress_label
+    lab = stress_label({"operating_income": np.float64(-10.0), "interest_expense": np.float64(5.0),
+                        "gross_debt": np.float64(900.0), "ebitda": np.float64(100.0),
+                        "operating_cash_flow": np.float64(20.0)})
+    assert lab.label == 1 and lab.coverage_weak is True and lab.leverage_high is True and lab.cash_flow_weak is False

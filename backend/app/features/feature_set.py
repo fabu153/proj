@@ -62,6 +62,19 @@ FEATURE_DICTIONARY: dict[str, tuple[str, str]] = {
     "stress_conditions_t": ("number of the 3 stress conditions met in year t (unknown = 0, masked)", "count"),
 }
 FEATURES = list(FEATURE_DICTIONARY)
+
+# Display grouping for the Model X-Ray (same order as the dictionary; not used by the model).
+FEATURE_GROUPS: dict[str, list[str]] = {
+    "Profitability": ["ebitda_margin", "operating_margin", "net_margin", "roa"],
+    "Cash generation": ["cfo_margin", "cfo_to_assets", "fcf_margin", "capex_intensity"],
+    "Leverage and capital structure": ["gross_leverage", "net_leverage", "debt_to_assets", "liabilities_to_assets",
+                                       "equity_to_assets", "cfo_to_debt", "fcf_to_debt"],
+    "Coverage and funding cost": ["ebit_interest_cover", "ebitda_interest_cover", "implied_cost_of_debt"],
+    "Liquidity": ["current_ratio", "cash_to_assets", "cash_to_current_liabilities", "short_term_debt_share"],
+    "Size": ["log_assets"],
+    "Year-on-year trends": ["revenue_growth", "d_ebitda_margin", "d_debt_to_assets", "debt_growth", "d_cfo_to_assets"],
+    "Current-state flags": ["ebitda_nonpositive", "no_debt", "stress_conditions_t"],
+}
 FLAG_FEATURES = {"ebitda_nonpositive", "no_debt", "stress_conditions_t"}
 
 

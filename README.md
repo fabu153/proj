@@ -17,9 +17,10 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
 | 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.1.0** — 187 automated tests + 7 browser tests, 194 passed, 0 failed (`docs/test_matrix.md`).
+**Release v1.2.0** — 199 automated tests + 9 browser tests, 208 passed, 0 failed (`docs/test_matrix.md`).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -119,6 +120,19 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
+## v1.2 — Stages C and D
+
+- **Model X-Ray (`/model`).** Three layers: what the network learned (target, input groups, architecture, data
+  windows), how it performed (PR-AUC 0.805, ROC-AUC 0.904, Brier 0.113, matched baselines with XGBoost's higher
+  point estimate stated) and where it fails. The network caught 214 of 226 persisting cases but only 15 of 96 new
+  stress onsets, and 66 of its 84 false alarms were recoveries.
+- **Historical Model Replay (`/replay`).** Held-out 2021–25 company-years show the frozen forecast first. The
+  next-year outcome is revealed on request, from `GET /replay/cases/{id}/outcome`. The forecast endpoints carry no
+  outcome fields.
+- **Frozen predictions.** `python -m training.ml.export_replay` re-scores the frozen test rows with the frozen
+  network. It writes `training/experiments/mlp_v1/test_predictions_label_next_fy.csv` and
+  `backend/data/replay/replay_v1.json` only if they reproduce the recorded metrics exactly.
+
 ## v1.1 — Stages A and B
 
 - **Two value bases.** Ratios, loan scenarios and the memo use the *credit basis*. It applies the 10-K
@@ -141,10 +155,10 @@ Only the package (labels, formatted values, source descriptions) is sent to the 
 
 - `tests/end_to_end/` drives the full journeys in Chrome and runs axe-core WCAG 2.1 AA scans
   (`E2E_BASE_URL=http://localhost:3000 pytest tests/end_to_end`).
-- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 32 defects and their fixes.
+- `python scripts/test_matrix.py` regenerates `docs/test_matrix.md`; `docs/defects.md` logs 35 defects and their fixes.
 - Security: upload type/size/page limits, no file persistence, retention purge, rate limits, security headers,
   `no-store` on uploads and memos, generic errors with a request reference, operator-only audit trail at `GET /audit`.
-- `release/manifest.json` freezes 25 artifacts (data, model, configs, fixtures) by SHA-256;
+- `release/manifest.json` freezes 27 artifacts (data, model, configs, fixtures) by SHA-256;
   `tests/unit/test_release_manifest.py` fails if any changes. Re-freeze deliberately with
   `python scripts/freeze_release.py <version> "<reason>"` (it refuses if model artifacts changed).
 - `scripts/record_demo.py` re-records the captioned fallback video and the screenshots in `docs/screenshots/`.
@@ -164,7 +178,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 187 tests (+7 browser tests with E2E_BASE_URL)
+pytest -q                                        # 199 tests (+9 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

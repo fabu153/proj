@@ -21,7 +21,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, Response, Uploa
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .. import store
+from .. import replay, store
 from ..documents import pdf_extract, uploads
 from ..documents.xbrl import CompanyYear, build_company_years, engine_inputs
 from ..finance.metrics import compute_all
@@ -42,7 +42,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -219,7 +219,39 @@ def model_card():
         out[name] = json.loads(p.read_text()) if p.exists() else None
     if out["metadata"] is None:
         raise HTTPException(404, "No model artifact deployed")
+    from ..features.feature_set import FEATURE_DICTIONARY, FEATURE_GROUPS
+    out["feature_groups"] = [{"group": g, "features": [{"name": f, "definition": FEATURE_DICTIONARY[f][0]} for f in fs]}
+                             for g, fs in FEATURE_GROUPS.items()]
+    try:
+        out["held_out"] = replay.model_evidence()
+    except FileNotFoundError:
+        out["held_out"] = None
     return out
+
+
+# ------------------------------------------------------------------ historical model replay (Stage D)
+@app.get("/replay")
+def replay_overview():
+    """Held-out (2021-25) cases with their frozen forecasts. No outcome fields."""
+    return replay.overview()
+
+
+@app.get("/replay/cases/{case_id}")
+def replay_forecast(case_id: str):
+    """What was known when the year-t 10-K was filed, and the frozen forecast. No outcome fields."""
+    try:
+        return replay.forecast(case_id)
+    except KeyError:
+        raise HTTPException(404, "Unknown replay case")
+
+
+@app.get("/replay/cases/{case_id}/outcome")
+def replay_outcome(case_id: str):
+    """The next-year accounting-stress label, its three conditions and the assessment of the forecast."""
+    try:
+        return replay.outcome(case_id)
+    except KeyError:
+        raise HTTPException(404, "Unknown replay case")
 
 
 @app.get("/companies/{company_id}/history", response_model=list[HistoryPoint])

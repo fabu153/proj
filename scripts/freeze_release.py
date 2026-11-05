@@ -21,6 +21,8 @@ FROZEN = [
     "training/data/reports/coverage_v1.md",
     "training/experiments/baselines_v1/results.json",
     "training/experiments/mlp_v1/results.json",
+    "training/experiments/mlp_v1/test_predictions_label_next_fy.csv",
+    "backend/data/replay/*",
     "backend/models/stress_mlp_v1/*",
     "backend/data/curated/*",
     "docs/scenario_crosscheck.xlsx",
@@ -37,6 +39,7 @@ REPRODUCE = [
     "python -m training.ml.run_baselines --config configs/experiment_baselines_v1.yaml",
     "python -m training.ml.train_mlp --config configs/experiment_mlp_v1.yaml",
     "python -m training.ml.export_xray",
+    "python -m training.ml.export_replay          # re-scores the frozen test rows; stops unless they reproduce the frozen metrics",
     "python scripts/test_matrix.py",
 ]
 
