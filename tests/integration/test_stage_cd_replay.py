@@ -97,6 +97,23 @@ def test_out02_three_examples_cover_warning_false_alarm_and_miss():
                 "missed": p < 0.15 and y == 1}[c["category"]]
 
 
+def _same(a, b, path="$"):
+    """Exact for structure, text, ids, labels and dates; floats equal to 1e-12 relative (last-digit differences
+    between numpy/pandas builds are not a reproducibility failure)."""
+    if isinstance(a, float) or isinstance(b, float):
+        assert a == pytest.approx(b, rel=1e-12, abs=1e-15), path
+    elif isinstance(a, dict):
+        assert a.keys() == b.keys(), path
+        for k in a:
+            _same(a[k], b[k], f"{path}.{k}")
+    elif isinstance(a, list):
+        assert len(a) == len(b), path
+        for i, (x, y) in enumerate(zip(a, b)):
+            _same(x, y, f"{path}[{i}]")
+    else:
+        assert a == b, path
+
+
 def test_out02_replay_export_is_reproducible(tmp_path, monkeypatch):
     from training.ml import export_replay
     monkeypatch.setattr(export_replay, "PRED_CSV", tmp_path / "pred.csv")
@@ -104,11 +121,14 @@ def test_out02_replay_export_is_reproducible(tmp_path, monkeypatch):
     monkeypatch.chdir(ROOT)
     export_replay.main()
     again = json.loads((tmp_path / "replay.json").read_text())
-    again["provenance"].pop("predictions_csv")
     frozen = json.loads(replay.REPLAY_FILE.read_text())
+    again["provenance"].pop("predictions_csv")
     frozen["provenance"].pop("predictions_csv")
-    assert again == frozen
-    assert (tmp_path / "pred.csv").read_bytes() == (ROOT / "training/experiments/mlp_v1/test_predictions_label_next_fy.csv").read_bytes()
+    assert [(c["id"], c["category"], c["example"], c["outcome"]["label"]) for c in again["cases"]] == \
+           [(c["id"], c["category"], c["example"], c["outcome"]["label"]) for c in frozen["cases"]]
+    _same(again, frozen)
+    new = pd.read_csv(tmp_path / "pred.csv", dtype={"cik": str})
+    pd.testing.assert_frame_equal(new, PRED, check_exact=False, rtol=1e-12, atol=1e-15)
 
 
 # ------------------------------------------------------------------ OUT-01 no future in the forecast
