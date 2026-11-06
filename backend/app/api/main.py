@@ -43,7 +43,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.3.2"
+VERSION = "1.3.3"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -88,8 +88,9 @@ async def observe(request: Request, call_next):
     response.headers["x-content-type-options"] = "nosniff"
     response.headers["x-frame-options"] = "DENY"
     response.headers["referrer-policy"] = "no-referrer"
-    if path.startswith(("/documents", "/facts", "/memos", "/audit", "/companies", "/analyses", "/scenarios")):
-        response.headers["cache-control"] = "no-store"     # uploaded figures and memos are never cached
+    # nothing is cached anywhere: uploads and memos are private, and the site's proxy (Vercel) must always ask
+    # the live service
+    response.headers["cache-control"] = "no-store"
     log.info(json.dumps({"rid": rid, "method": request.method, "path": path, "status": response.status_code,
                          "ms": round((time.perf_counter() - start) * 1000, 1)}))
     return response

@@ -1,7 +1,10 @@
 // Typed client for the CreditLens API. All numbers are computed server-side;
 // the UI only formats them.
 
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+/** Where the analysis service actually runs (used only by next.config.mjs to forward /api/...). */
+export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+/** What the browser calls: this site's own /api path, forwarded to API_ORIGIN, so ad blockers do not interfere. */
+export const API_URL = "/api";
 
 export type Company = {
   company_id: string;

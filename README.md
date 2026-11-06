@@ -181,7 +181,9 @@ Only the package (labels, formatted values, source descriptions) is sent to the 
 | API | Render (`render.yaml`) | Blueprint from the repo; deploys after CI passes |
 | Web | Vercel | Import the repo, **Root Directory = `frontend`**, project name `creditlens`, env `NEXT_PUBLIC_API_URL=<Render URL>` |
 
-The API accepts browser calls from `https://creditlens*.vercel.app` (production and previews). If the Vercel
+The browser calls `/api/...` on the site's own domain; `frontend/next.config.mjs` forwards those requests to
+`NEXT_PUBLIC_API_URL` (a Vercel external rewrite), so ad blockers that block `onrender.com` do not break the site.
+The API also accepts direct browser calls from `https://creditlens*.vercel.app` (production and previews). If the Vercel
 project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 
 ## Run locally

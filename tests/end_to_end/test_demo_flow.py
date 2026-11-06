@@ -116,6 +116,25 @@ def test_f_heatmap_cell_populates_the_loan_lab(page):
     assert page.errors == []
 
 
+def test_works_when_the_api_host_is_blocked(page):
+    """An ad blocker that blocks the API's own domain (e.g. onrender.com) must not break the site: the browser
+    only talks to the site's /api path, which forwards to the service."""
+    from urllib.parse import urlparse
+    host = urlparse(API).netloc
+    blocked = []
+    page.route(lambda url: urlparse(url).netloc == host, lambda route: (blocked.append(route.request.url), route.abort()))
+    page.goto(BASE + "/", wait_until="networkidle")
+    page.wait_for_selector(".company-list a", timeout=90000)
+    page.locator(".company-list a").first.click()
+    page.wait_for_selector("text=Current · snapshot", timeout=60000)
+    page.click("text=Draft credit memo")
+    page.wait_for_selector(".memo-header", timeout=60000)
+    with page.expect_download() as dl:
+        page.click("text=Download PDF")
+    assert Path(dl.value.path()).read_bytes()[:5] == b"%PDF-"
+    assert blocked == [], blocked                       # the browser never needed the API's domain
+
+
 def test_upload_review_analyse(page):
     page.goto(BASE + "/upload", wait_until="networkidle")
     page.set_input_files("input[type=file]", str(PDF))

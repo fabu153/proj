@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.3 — Works with ad blockers
+
+- The browser no longer calls the API's hosting domain (onrender.com), which some ad blockers block. It calls
+  `/api/...` on the site's own domain, and Next.js / Vercel forward those requests to the service
+  (`frontend/next.config.mjs`). No CORS round-trip is needed, and the visitor's IP is still passed on for rate limits.
+- Every API response is `no-store`, so the proxy never serves a cached answer.
+- New browser test: with the API's domain blocked in the browser, the full journey to the PDF still works.
+
 ## 1.3.2 — Connection diagnostics
 
 - When the page cannot reach the analysis service it now shows the browser's last error, explains it ("Failed to
