@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { waitForApi } from "./api";
 
-export type ApiState = { phase: "waking" | "ready" | "failed"; elapsed: number; error: string | null };
+export type ApiState = {
+  phase: "waking" | "ready" | "failed";
+  elapsed: number;
+  error: string | null;
+  lastError?: string | null;
+  attempts?: number;
+};
 
 /**
  * Wakes the API once per page; exposes progress and a retry so a cold start never looks like a hang.
@@ -16,6 +22,8 @@ export function useApiReady(budgetMs = 75000) {
   useEffect(() => {
     let live = true;
     const start = Date.now();
+    let lastError: string | null = null;
+    let attempts = 0;
     setState({ phase: "waking", elapsed: 0, error: null });
     const clock = setInterval(() => {
       if (!live) return;
@@ -26,15 +34,20 @@ export function useApiReady(budgetMs = 75000) {
         setState({
           phase: "failed",
           elapsed,
-          error: `No answer from the analysis service after ${elapsed} seconds. The free server may still be starting up; try again in a moment.`,
+          lastError,
+          attempts,
+          error: `No answer from the analysis service after ${elapsed} seconds and ${attempts} attempt${attempts === 1 ? "" : "s"}.`,
         });
         return;
       }
-      setState((s) => (s.phase === "waking" ? { ...s, elapsed } : s));
+      setState((s) => (s.phase === "waking" ? { ...s, elapsed, lastError, attempts } : s));
     }, 1000);
-    waitForApi(undefined, budgetMs)
+    waitForApi((_, attempt, err) => {
+      attempts = attempt;
+      lastError = err;
+    }, budgetMs)
       .then(() => live && setState({ phase: "ready", elapsed: 0, error: null }))
-      .catch((e) => live && setState({ phase: "failed", elapsed: 0, error: (e as Error).message }))
+      .catch((e) => live && setState({ phase: "failed", elapsed: 0, error: (e as Error).message, lastError, attempts }))
       .finally(() => {
         live = false;
         clearInterval(clock);

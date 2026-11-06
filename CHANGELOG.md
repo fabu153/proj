@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2 — Connection diagnostics
+
+- When the page cannot reach the analysis service it now shows the browser's last error, explains it ("Failed to
+  fetch" means the request was blocked or the network cannot reach the service; a timeout means the server is
+  still starting), and links to the service's health check so the user can tell the two apart.
+
 ## 1.3.1 — Wake-up fix
 
 - The start page could sit on "Connecting to the analysis service…" indefinitely if the browser paused its timers

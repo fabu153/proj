@@ -224,16 +224,24 @@ function formatValidation(detail: unknown): string {
  * Wake the API (free hosting sleeps when idle; the first request can take up to about a minute).
  * Polls /health until it answers or `budgetMs` runs out; reports progress so the page can say what is happening.
  */
-export async function waitForApi(onProgress?: (elapsedS: number, attempt: number) => void, budgetMs = 90000): Promise<void> {
+export async function waitForApi(
+  onProgress?: (elapsedS: number, attempt: number, lastError: string | null) => void,
+  budgetMs = 90000,
+): Promise<void> {
   const start = Date.now();
+  let lastError: string | null = null;
   for (let attempt = 1; ; attempt++) {
-    onProgress?.(Math.round((Date.now() - start) / 1000), attempt);
+    onProgress?.(Math.round((Date.now() - start) / 1000), attempt, lastError);
     try {
       await call<{ status: string }>(`/health?t=${Date.now()}`, { retries: 0, timeoutMs: 15000 });
       return;
     } catch (e) {
+      // "Failed to fetch" arrives at once when the request is blocked (extension, network filter, DNS);
+      // a timeout means the server is reachable but still starting
+      lastError = (e as Error).message;
+      onProgress?.(Math.round((Date.now() - start) / 1000), attempt, lastError);
       if (Date.now() - start > budgetMs) {
-        throw new ApiError(`The analysis service at ${API_URL} did not wake up within ${Math.round(budgetMs / 1000)} seconds (${(e as Error).message}).`, null);
+        throw new ApiError(`The analysis service at ${API_URL} did not wake up within ${Math.round(budgetMs / 1000)} seconds (${lastError}).`, null);
       }
       await sleep(2000);
     }
