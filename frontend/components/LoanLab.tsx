@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Covenants, Facility, ScenarioResponse, ScenarioResult, Shock, UseOfProceeds } from "@/lib/api";
 import { api } from "@/lib/api";
+import NumInput from "./NumInput";
 import Ruler from "./Ruler";
 import StressHeatmap from "./StressHeatmap";
 
@@ -137,7 +138,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           <legend>Proposed facility</legend>
           <div className="inline">
             <Field label="Amount (m)">
-              <input type="number" min={1} step={5} value={fac.amount} onChange={(e) => set("amount", Math.max(1, +e.target.value))} />
+              <NumInput min={1} step={5} value={fac.amount} onCommit={(v) => v !== null && set("amount", v)} />
             </Field>
             <Field label="Currency">
               <select value={fac.currency} onChange={(e) => set("currency", e.target.value)}>
@@ -150,14 +151,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           {fxNeeded && (
             <div className="inline">
               <Field label={`${reportingCurrency} per 1 ${fac.currency}`}>
-                <input
-                  type="number"
-                  step={0.0001}
-                  min={0}
-                  placeholder="e.g. spot rate"
-                  value={fac.fx_rate_to_reporting ?? ""}
-                  onChange={(e) => set("fx_rate_to_reporting", e.target.value ? +e.target.value : null)}
-                />
+                <NumInput step={0.0001} min={0.000001} allowEmpty placeholder="e.g. spot rate" value={fac.fx_rate_to_reporting} onCommit={(v) => set("fx_rate_to_reporting", v)} />
               </Field>
               <Field label="Rate date">
                 <input type="text" placeholder="YYYY-MM-DD" value={fac.fx_rate_date ?? ""} onChange={(e) => set("fx_rate_date", e.target.value || null)} />
@@ -175,26 +169,19 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           </Field>
           {fac.use_of_proceeds === "refinancing" && (
             <Field label="Rate on the debt repaid (%; blank = average cost of debt)">
-              <input
-                type="number"
-                step={0.25}
-                min={0}
-                placeholder="interest / gross debt"
-                value={fac.refinanced_debt_rate === null ? "" : +(fac.refinanced_debt_rate * 100).toFixed(2)}
-                onChange={(e) => set("refinanced_debt_rate", e.target.value === "" ? null : +e.target.value / 100)}
-              />
+              <NumInput step={0.25} min={0} max={99} scale={100} allowEmpty placeholder="interest / gross debt" value={fac.refinanced_debt_rate} onCommit={(v) => set("refinanced_debt_rate", v)} />
             </Field>
           )}
           <div className="inline">
             <Field label="All-in coupon (%)">
-              <input type="number" step={0.25} min={0} value={+(fac.coupon * 100).toFixed(2)} onChange={(e) => set("coupon", +e.target.value / 100)} />
+              <NumInput step={0.25} min={0} max={99} scale={100} value={fac.coupon} onCommit={(v) => v !== null && set("coupon", v)} />
             </Field>
             <Field label="Tenor (years)">
-              <input type="number" min={1} max={30} value={fac.tenor_years} onChange={(e) => set("tenor_years", Math.max(1, +e.target.value))} />
+              <NumInput min={1} max={30} integer value={fac.tenor_years} onCommit={(v) => v !== null && set("tenor_years", v)} />
             </Field>
           </div>
           <Field label="Annual repayment (m, 0 = bullet)">
-            <input type="number" min={0} step={5} value={fac.annual_amortization} onChange={(e) => set("annual_amortization", Math.max(0, +e.target.value))} />
+            <NumInput min={0} step={5} value={fac.annual_amortization} onCommit={(v) => v !== null && set("annual_amortization", v)} />
           </Field>
           <label className="toggle">
             <input type="checkbox" checked={fac.floating} onChange={(e) => set("floating", e.target.checked)} /> Floating rate (reprices with rate shock)
@@ -218,10 +205,10 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           <legend>Covenants to test</legend>
           <div className="inline">
             <Field label="Max net debt / EBITDA (x)">
-              <input type="number" step={0.25} min={0} value={cov.max_net_leverage ?? ""} onChange={(e) => setCov((c) => ({ ...c, max_net_leverage: e.target.value ? +e.target.value : null }))} />
+              <NumInput step={0.25} min={0} allowEmpty value={cov.max_net_leverage} onCommit={(v) => setCov((c) => ({ ...c, max_net_leverage: v }))} />
             </Field>
             <Field label="Min EBITDA / interest (x)">
-              <input type="number" step={0.25} min={0} value={cov.min_ebitda_interest_cover ?? ""} onChange={(e) => setCov((c) => ({ ...c, min_ebitda_interest_cover: e.target.value ? +e.target.value : null }))} />
+              <NumInput step={0.25} min={0} allowEmpty value={cov.min_ebitda_interest_cover} onCommit={(v) => setCov((c) => ({ ...c, min_ebitda_interest_cover: v }))} />
             </Field>
           </div>
         </fieldset>

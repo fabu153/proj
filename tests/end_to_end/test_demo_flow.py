@@ -135,6 +135,26 @@ def test_works_when_the_api_host_is_blocked(page):
     assert blocked == [], blocked                       # the browser never needed the API's domain
 
 
+def test_loan_lab_numbers_can_be_cleared_and_retyped(page):
+    page.goto(BASE + "/workspace?company=0001067701", wait_until="networkidle")
+    page.wait_for_selector("text=Current · snapshot", timeout=90000)
+    amt = page.get_by_label("Amount (m)")
+    amt.click()
+    amt.press("End")
+    for _ in range(3):
+        amt.press("Backspace")
+    assert amt.input_value() == ""                      # nothing forces a "1" back in
+    amt.type("200")
+    page.wait_for_selector("text=Facility 200.00", timeout=15000)
+    tenor = page.get_by_label("Tenor (years)")
+    tenor.fill("45")
+    amt.click()
+    assert tenor.input_value() == "30"                  # out of range is clamped when leaving the field
+    # the evidence panel stays below the sticky progress bar and inside the window
+    bar, rail = page.locator(".workspace-progress").bounding_box(), page.locator("aside.rail").bounding_box()
+    assert rail["y"] >= bar["y"] + bar["height"] and rail["y"] + rail["height"] <= page.viewport_size["height"]
+
+
 def test_upload_review_analyse(page):
     page.goto(BASE + "/upload", wait_until="networkidle")
     page.set_input_files("input[type=file]", str(PDF))

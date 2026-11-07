@@ -375,7 +375,7 @@ export default function ModelXRay() {
             </section>
           </div>
 
-          <aside className="rail">
+          <aside className="rail" tabIndex={0} aria-label="Model summary">
             <div className="sheet">
               <h3>In one sentence</h3>
               <p style={{ fontSize: 14, margin: 0 }}>

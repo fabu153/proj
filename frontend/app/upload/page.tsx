@@ -217,7 +217,7 @@ function Review({
         </section>
       </div>
 
-      <aside className="rail">
+      <aside className="rail" tabIndex={0} aria-label="Review status">
         <div className="sheet">
           <h3>Before analysis</h3>
           {doc.blocking.length ? (

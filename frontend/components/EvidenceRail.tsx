@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { Analysis, PackageItem } from "@/lib/api";
 import { fmt } from "@/lib/api";
 import { ROWS } from "./CreditProfile";
@@ -52,11 +53,16 @@ export type Citation = { item: PackageItem; statement: string | null };
 
 export default function EvidenceRail({ analysis, selected, citation: cite }: { analysis: Analysis; selected: string; citation?: Citation | null }) {
   const citation = cite?.item;
+  const rail = useRef<HTMLElement>(null);
+  // a newly opened citation or row always starts at the top of the panel, fully visible
+  useEffect(() => {
+    rail.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [cite, selected]);
   const row = ROWS.flatMap((g) => g.rows).find((r) => r.key === selected);
   const metric = analysis.metrics[selected];
   const facts = Array.from(new Set(row?.facts ?? []));
   return (
-    <aside className="rail" aria-label="Source evidence">
+    <aside className="rail" aria-label="Source evidence" ref={rail} tabIndex={0}>
       {citation && (
         <div className="sheet evidence cite-card" aria-live="polite">
           <h3>{citation.source.trail ? "Source trail" : "Memo citation"}</h3>

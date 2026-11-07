@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.4 — Input and panel fixes
+
+- Loan lab number fields can be cleared and retyped: a value is applied only when it is a valid number within the
+  limits, and leaving the field restores or clamps anything else (`NumInput`).
+- The right-hand evidence panel sits below the sticky progress bar, fits the window and scrolls on its own; a newly
+  opened citation starts at its top.
+
 ## 1.3.3 — Works with ad blockers
 
 - The browser no longer calls the API's hosting domain (onrender.com), which some ad blockers block. It calls

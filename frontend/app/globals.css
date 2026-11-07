@@ -73,7 +73,10 @@ section.block > h2 { font-family: var(--serif); font-weight: 500; font-size: 25p
 section.block > .lede { color: var(--slate); margin: 0 0 16px; max-width: 70ch; font-size: 14px; }
 
 .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius-m); }
-.rail { position: sticky; top: 16px; }
+.rail { position: sticky; top: var(--rail-top, 64px); max-height: calc(100vh - var(--rail-top, 64px) - 12px); overflow-y: auto;
+  overscroll-behavior: contain; padding-right: 4px; scrollbar-width: thin; }
+/* below the sticky progress bar on wide screens; a normal block in the single-column layout */
+@media (max-width: 960px) { .rail { position: static; max-height: none; overflow: visible; padding-right: 0; } }
 .rail .sheet { padding: 16px 18px; margin-bottom: 16px; }
 .rail h3 { font-family: var(--serif); font-weight: 500; font-size: 19px; margin: 0 0 8px; }
 
