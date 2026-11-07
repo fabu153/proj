@@ -84,10 +84,13 @@ def _stress_table(pk: dict, small) -> list:
     strip = lambda x: x.replace(f"{pk['meta.company'].get('ccy', '')}", "")                # noqa: E731
 
     def hr(c, item):
-        if f"scen.{c}.{item}" not in pk:
+        st = pk.get(f"scen.{c}.{item}_state", {}).get("value")
+        if st is None:
             return "—"
+        if st == "not testable":
+            return "not testable (N/A)"
         v = pk[f"scen.{c}.{item}"]["value"]
-        return "n/a" if v is None else (f"{v:.2f}x" if v >= 0 else f"breach {-v:.2f}x")
+        return f"breach {-v:.2f}x" if st == "breach" else f"pass +{v:.2f}x"
     rows = [["", "Before loan"] + [names[c] for c in cases],
             ["Assumptions", "reported"] + [d(f"scen.{c}.assumptions").replace("no EBITDA or rate shock", "no shock") for c in cases],
             ["EBITDA", d("metric.ebitda.t")] + [d(f"scen.{c}.ebitda") for c in cases],
@@ -95,9 +98,9 @@ def _stress_table(pk: dict, small) -> list:
             ["Net debt", d("metric.net_debt.t")] + [d(f"scen.{c}.net_debt") for c in cases],
             ["Net debt / EBITDA", d("metric.net_leverage.t")] + [d(f"scen.{c}.net_leverage") for c in cases],
             ["EBITDA / interest", d("metric.ebitda_interest_cover.t")] + [d(f"scen.{c}.ebitda_interest_cover") for c in cases]]
-    if any(f"scen.{c}.headroom_lev" in pk for c in cases):
+    if any(f"scen.{c}.headroom_lev_state" in pk for c in cases):
         rows.append(["Headroom: max net debt / EBITDA", "—"] + [hr(c, "headroom_lev") for c in cases])
-    if any(f"scen.{c}.headroom_cov" in pk for c in cases):
+    if any(f"scen.{c}.headroom_cov_state" in pk for c in cases):
         rows.append(["Headroom: min EBITDA / interest", "—"] + [hr(c, "headroom_cov") for c in cases])
     rows = [[Paragraph(f"<font color='#b3262e'><b>{escape(str(x))}</b></font>" if str(x).startswith("breach")
                        else escape(strip(str(x))), small) for x in r] for r in rows]
@@ -107,7 +110,9 @@ def _stress_table(pk: dict, small) -> list:
              ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]
     t.setStyle(TableStyle(style))
     return [Spacer(1, 4), t, Spacer(1, 2),
-            Paragraph("Headroom is the distance to the covenant limit; a breach shows the shortfall.", small)]
+            Paragraph("Headroom is the distance to the covenant limit; a breach shows the shortfall. Not testable means "
+                      "the ratio is undefined (EBITDA at or below zero, or no interest expense); it is not counted as a "
+                      "breach. EBITDA shocks move EBITDA by a share of its size, so a downside deepens a loss.", small)]
 
 
 def _trails(memo: dict, pk: dict, h2, small, num) -> list:
@@ -230,7 +235,9 @@ def render_pdf(memo: dict) -> bytes:
     for sec in memo["sections"]:
         ok = [s for s in sec["sentences"] if s["status"] == "ok"]
         excluded += [(sec["title"], s) for s in sec["sentences"] if s["status"] != "ok"]
-        if not ok:
+        if not ok and sec["key"] != "stress":
+            continue
+        if not ok and not any(k.startswith("scen.") and k.endswith(".ebitda") for k in pk):
             continue
         flow.append(Paragraph(escape(sec["title"]), h2))
         para = []

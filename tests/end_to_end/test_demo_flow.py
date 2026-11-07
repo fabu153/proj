@@ -85,9 +85,9 @@ def test_e01_issuer_to_memo_pdf(page):
     # WF-02: change an input -> the memo is outdated and its PDF is withdrawn until regenerated
     page.get_by_label("Amount (m)").fill("150")
     page.wait_for_selector("text=Outdated — regenerate", timeout=15000)
-    assert page.locator("text=Download PDF").count() == 0
+    assert page.locator("button[data-testid=memo-pdf][disabled]").count() == 1      # Fix 4: no export of an old memo
     page.click("text=Regenerate now")
-    page.wait_for_selector("text=Download PDF", timeout=60000)
+    page.wait_for_selector("a[data-testid=memo-pdf]", timeout=60000)
     assert "EUR 150m" in page.inner_text(".memo-header")
     assert page.locator(".progress li.done").count() == 5
     page.locator("button.cite").first.click()
@@ -96,6 +96,78 @@ def test_e01_issuer_to_memo_pdf(page):
         page.click("text=Download PDF")
     path = dl.value.path()
     assert Path(path).read_bytes()[:5] == b"%PDF-"
+    assert page.errors == []
+
+
+def _pdf_enabled(page):
+    return page.locator("a[data-testid=memo-pdf]").count() == 1
+
+
+def _memo_ready(page):
+    page.wait_for_selector("text=Current · snapshot", timeout=60000)
+    if page.locator("text=Regenerate now").count():
+        page.click("text=Regenerate now")
+    elif page.locator("text=Draft credit memo").count():
+        page.click("text=Draft credit memo")
+    page.wait_for_selector("a[data-testid=memo-pdf]", timeout=60000)
+
+
+def test_fix4_no_outdated_memo_can_be_exported(page):
+    """Every input change withdraws the PDF at once; invalid input and a late memo reply never re-enable it."""
+    page.goto(BASE + "/workspace?company=0001067701", wait_until="networkidle")
+    page.wait_for_selector("text=Current · snapshot", timeout=90000)
+    _memo_ready(page)
+    slider = lambda i: page.locator("input[type=range]").nth(i)   # noqa: E731
+    changes = [
+        ("amount", lambda: page.get_by_label("Amount (m)").fill("150")),
+        ("coupon", lambda: page.get_by_label("All-in coupon (%)").fill("7.5")),
+        ("ebitda shock", lambda: slider(0).fill("-35")),
+        ("rate shock", lambda: slider(1).fill("300")),
+        ("covenant", lambda: page.get_by_label("Max net debt / EBITDA (x)").fill("3.75")),
+    ]
+    for what, act in changes:
+        act()
+        assert not _pdf_enabled(page), f"PDF still enabled right after changing {what}"
+        page.wait_for_selector("text=Outdated — regenerate", timeout=15000)
+        assert not _pdf_enabled(page), what
+        _memo_ready(page)
+    # currency: blocked until an FX rate is given, then outdated, never exportable in between
+    page.select_option(".controls select >> nth=0", "EUR")
+    assert not _pdf_enabled(page)
+    page.wait_for_selector("text=Currencies are never mixed silently", timeout=15000)
+    assert not _pdf_enabled(page)
+    page.fill("input[placeholder='e.g. spot rate']", "1.08")
+    page.fill("input[placeholder='YYYY-MM-DD']", "2026-11-04")
+    page.wait_for_selector("text=Outdated — regenerate", timeout=15000)
+    assert not _pdf_enabled(page)
+    _memo_ready(page)
+    page.fill("input[placeholder='e.g. spot rate']", "1.10")
+    assert not _pdf_enabled(page)
+    page.wait_for_selector("text=Outdated — regenerate", timeout=15000)
+    _memo_ready(page)
+    # invalid / half-typed input: the PDF is unavailable while the field holds it, and back when it is valid again
+    amt = page.get_by_label("Amount (m)")
+    amt.fill("")
+    page.wait_for_selector("text=incomplete or invalid number", timeout=5000)
+    assert not _pdf_enabled(page) and amt.get_attribute("aria-invalid") == "true"
+    assert page.locator(".ok-tag").count() == 0                  # the table does not claim to be current
+    amt.fill("-20")
+    assert not _pdf_enabled(page)
+    amt.fill("150")                                              # same value as the memo's: the same snapshot again
+    page.wait_for_selector("a[data-testid=memo-pdf]", timeout=15000)
+    # a memo reply that arrives after the inputs changed is not current
+    def slow(route):
+        import time
+        time.sleep(3)
+        route.continue_()
+    page.route("**/api/memos", slow)
+    page.click("text=Redraft")
+    page.wait_for_selector("text=Drafting from snapshot", timeout=5000)
+    amt.fill("175")
+    page.wait_for_selector(".memo-bar button:not([disabled]):has-text('Regenerate')", timeout=30000)
+    page.wait_for_selector("text=Outdated — regenerate", timeout=15000)
+    assert not _pdf_enabled(page)
+    page.unroute("**/api/memos")
     assert page.errors == []
 
 

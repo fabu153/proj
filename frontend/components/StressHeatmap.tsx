@@ -60,22 +60,18 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
   const fmt = (c: GridCell) => {
     if (c.error) return "n/a";
     const v = c[shown];
-    if (v === null || v === undefined) return shown === "net_leverage" ? "EBITDA ≤ 0" : "n/a";
+    if (v === null || v === undefined) return "N/A";
     if (shown.startsWith("headroom")) return v < 0 ? `−${Math.abs(v).toFixed(2)}x` : `+${v.toFixed(2)}x`;
     return `${v.toFixed(2)}x`;
   };
-  // breach colouring follows the covenant that belongs to the displayed metric; plain ratios use any breach
-  const breached = (c: GridCell) => {
-    if (c.error) return false;
-    if (shown === "net_leverage" || shown === "headroom_lev")
-      return covenants.max_net_leverage !== null && (c.net_leverage == null || (c.headroom_lev ?? 0) < 0);
-    if (shown === "ebitda_interest_cover" || shown === "headroom_cov")
-      return covenants.min_ebitda_interest_cover !== null && (c.headroom_cov ?? 0) < 0;
-    return !!c.breach;
-  };
+  // colouring is the engine's covenant assessment for the covenant behind the displayed metric (Fix 3)
+  const covKey = shown === "ebitda_interest_cover" || shown === "headroom_cov" ? "state_cov" : "state_lev";
+  const cellState = (c: GridCell) => (c.error ? "err" : c[covKey] ?? (shown.startsWith("headroom") ? null : c.breach ? "breach" : null));
+  const breached = (c: GridCell) => cellState(c) === "breach";
+  const untestable = (c: GridCell) => cellState(c) === "not_testable";
   const tight = (c: GridCell) => {
-    const h = shown === "ebitda_interest_cover" || shown === "headroom_cov" ? c.headroom_cov : c.headroom_lev;
-    return h != null && h >= 0 && h < 0.5;
+    const h = covKey === "state_cov" ? c.headroom_cov : c.headroom_lev;
+    return cellState(c) === "pass" && h != null && h < 0.5;
   };
 
   return (
@@ -115,18 +111,20 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
                   <th scope="row">+{grid.rate_shocks_bps[i]}</th>
                   {row.map((c) => {
                     const active = Math.abs(c.ebitda_shock - current.ebitda) < 1e-9 && c.rate_shock_bps === current.bps;
-                    const cls = c.error ? "err" : breached(c) ? "breach" : tight(c) ? "tight" : "ok";
+                    const cls = c.error ? "err" : breached(c) ? "breach" : untestable(c) ? "untestable" : tight(c) ? "tight" : "ok";
+                    const why = c.reasons?.[covKey === "state_cov" ? "min_ebitda_interest_cover" : "max_net_leverage"];
                     return (
                       <td key={c.ebitda_shock}>
                         <button
                           type="button"
                           className={`cell ${cls} ${active ? "active" : ""}`}
                           aria-pressed={active}
-                          title={c.error ?? `EBITDA ${Math.round(c.ebitda_shock * 100)}%, rates +${c.rate_shock_bps} bp${breached(c) ? ": covenant breached" : ""}`}
+                          title={c.error ?? `EBITDA ${Math.round(c.ebitda_shock * 100)}%, rates +${c.rate_shock_bps} bp${breached(c) ? ": covenant breached" : untestable(c) ? `: not testable (${why})` : ""}`}
                           onClick={() => onPick(c.ebitda_shock, c.rate_shock_bps)}
                         >
                           {fmt(c)}
                           {breached(c) && <span className="sr-only"> (covenant breached)</span>}
+                          {untestable(c) && <span className="sr-only"> (covenant not testable)</span>}
                         </button>
                       </td>
                     );
@@ -139,8 +137,11 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
       )}
       {state === "loading" && !grid && <p className="fine" role="status"><span className="spinner" aria-hidden="true" />Calculating 42 scenarios…</p>}
       <p className="fine heat-legend">
-        <span className="key breach" /> covenant breached <span className="key tight" /> within 0.5x of the limit <span className="key ok" /> holds
-        {grid ? ` · loan engine v${grid.engine_version}` : ""}
+        <span className="item"><span className="key breach" /> breach</span>
+        <span className="item"><span className="key tight" /> passes, within 0.5x of the limit</span>
+        <span className="item"><span className="key ok" /> passes</span>
+        <span className="item"><span className="key untestable" /> not testable (ratio undefined; not a breach)</span>
+        {grid ? <span className="item">loan engine v{grid.engine_version}</span> : null}
       </p>
     </section>
   );

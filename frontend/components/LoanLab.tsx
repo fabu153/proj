@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Covenants, Facility, ScenarioResponse, ScenarioResult, Shock, UseOfProceeds } from "@/lib/api";
 import { api } from "@/lib/api";
 import NumInput from "./NumInput";
@@ -32,7 +32,7 @@ const amt = (v: number) => (v < 0 ? `(${m1.format(-v)})` : m1.format(v));
 
 export type LabParams = { facility: Facility; covenants: Covenants; existing_floating_share: number; shocks: Shock[] };
 /** What the loan table currently shows. The memo compares its own snapshot id with `snapshotId`. */
-export type LabState = { params: LabParams; snapshotId: string | null; status: "calculating" | "current" | "error" };
+export type LabState = { params: LabParams; snapshotId: string | null; status: "calculating" | "current" | "error" | "editing" };
 
 type Props = {
   companyId: string;
@@ -63,6 +63,11 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
   const [before, setBefore] = useState<ScenarioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+  const editing = Object.values(pending).some(Boolean);
+  const editingRef = useRef(editing);
+  editingRef.current = editing;
+  const pend = (k: string) => (p: boolean) => setPending((s) => (s[k] === p ? s : { ...s, [k]: p }));
 
   const fxNeeded = fac.currency !== reportingCurrency;
   // stable identity: the heatmap depends on the facility, not on "your case" sliders
@@ -84,6 +89,13 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     [body],
   );
   const fxMissing = fxNeeded && !fac.fx_rate_to_reporting;
+
+  // Fix 4: a half-typed or invalid field means the inputs on screen are not the ones calculated
+  useEffect(() => {
+    if (editing) onState?.({ params, snapshotId: null, status: "editing" });
+    else if (res?.snapshot && !busy && !error) onState?.({ params, snapshotId: res.snapshot.id, status: "current" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
 
   useEffect(() => {
     if (blocked) return;
@@ -107,7 +119,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
         setRes(withLoan);
         setBefore(statusQuo.results[0]);
         setError(null);
-        onState?.({ params, snapshotId: withLoan.snapshot?.id ?? null, status: "current" });
+        onState?.({ params, snapshotId: withLoan.snapshot?.id ?? null, status: editingRef.current ? "editing" : "current" });
       } catch (e) {
         if (live) {
           setError((e as Error).message);
@@ -138,7 +150,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           <legend>Proposed facility</legend>
           <div className="inline">
             <Field label="Amount (m)">
-              <NumInput min={1} step={5} value={fac.amount} onCommit={(v) => v !== null && set("amount", v)} />
+              <NumInput onPending={pend("amount")} min={1} step={5} value={fac.amount} onCommit={(v) => v !== null && set("amount", v)} />
             </Field>
             <Field label="Currency">
               <select value={fac.currency} onChange={(e) => set("currency", e.target.value)}>
@@ -151,7 +163,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           {fxNeeded && (
             <div className="inline">
               <Field label={`${reportingCurrency} per 1 ${fac.currency}`}>
-                <NumInput step={0.0001} min={0.000001} allowEmpty placeholder="e.g. spot rate" value={fac.fx_rate_to_reporting} onCommit={(v) => set("fx_rate_to_reporting", v)} />
+                <NumInput onPending={pend("fx")} step={0.0001} min={0.000001} allowEmpty placeholder="e.g. spot rate" value={fac.fx_rate_to_reporting} onCommit={(v) => set("fx_rate_to_reporting", v)} />
               </Field>
               <Field label="Rate date">
                 <input type="text" placeholder="YYYY-MM-DD" value={fac.fx_rate_date ?? ""} onChange={(e) => set("fx_rate_date", e.target.value || null)} />
@@ -169,19 +181,19 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           </Field>
           {fac.use_of_proceeds === "refinancing" && (
             <Field label="Rate on the debt repaid (%; blank = average cost of debt)">
-              <NumInput step={0.25} min={0} max={99} scale={100} allowEmpty placeholder="interest / gross debt" value={fac.refinanced_debt_rate} onCommit={(v) => set("refinanced_debt_rate", v)} />
+              <NumInput onPending={pend("refi")} step={0.25} min={0} max={99} scale={100} allowEmpty placeholder="interest / gross debt" value={fac.refinanced_debt_rate} onCommit={(v) => set("refinanced_debt_rate", v)} />
             </Field>
           )}
           <div className="inline">
             <Field label="All-in coupon (%)">
-              <NumInput step={0.25} min={0} max={99} scale={100} value={fac.coupon} onCommit={(v) => v !== null && set("coupon", v)} />
+              <NumInput onPending={pend("coupon")} step={0.25} min={0} max={99} scale={100} value={fac.coupon} onCommit={(v) => v !== null && set("coupon", v)} />
             </Field>
             <Field label="Tenor (years)">
-              <NumInput min={1} max={30} integer value={fac.tenor_years} onCommit={(v) => v !== null && set("tenor_years", v)} />
+              <NumInput onPending={pend("tenor")} min={1} max={30} integer value={fac.tenor_years} onCommit={(v) => v !== null && set("tenor_years", v)} />
             </Field>
           </div>
           <Field label="Annual repayment (m, 0 = bullet)">
-            <NumInput min={0} step={5} value={fac.annual_amortization} onCommit={(v) => v !== null && set("annual_amortization", v)} />
+            <NumInput onPending={pend("amort")} min={0} step={5} value={fac.annual_amortization} onCommit={(v) => v !== null && set("annual_amortization", v)} />
           </Field>
           <label className="toggle">
             <input type="checkbox" checked={fac.floating} onChange={(e) => set("floating", e.target.checked)} /> Floating rate (reprices with rate shock)
@@ -205,10 +217,10 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
           <legend>Covenants to test</legend>
           <div className="inline">
             <Field label="Max net debt / EBITDA (x)">
-              <NumInput step={0.25} min={0} allowEmpty value={cov.max_net_leverage} onCommit={(v) => setCov((c) => ({ ...c, max_net_leverage: v }))} />
+              <NumInput onPending={pend("covlev")} step={0.25} min={0} allowEmpty value={cov.max_net_leverage} onCommit={(v) => setCov((c) => ({ ...c, max_net_leverage: v }))} />
             </Field>
             <Field label="Min EBITDA / interest (x)">
-              <NumInput step={0.25} min={0} allowEmpty value={cov.min_ebitda_interest_cover} onCommit={(v) => setCov((c) => ({ ...c, min_ebitda_interest_cover: v }))} />
+              <NumInput onPending={pend("covcov")} step={0.25} min={0} allowEmpty value={cov.min_ebitda_interest_cover} onCommit={(v) => setCov((c) => ({ ...c, min_ebitda_interest_cover: v }))} />
             </Field>
           </div>
         </fieldset>
@@ -218,6 +230,8 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
         {!error && res && (
           busy ? (
             <span className="stale-tag" role="status"><span className="spinner" aria-hidden="true" />Recalculating: the figures below are from the previous inputs</span>
+          ) : editing ? (
+            <span className="stale-tag" role="status">Waiting for a valid number: the figures below are from the previous inputs</span>
           ) : res.snapshot ? (
             <span className="ok-tag">Current · snapshot <code className="snap">{res.snapshot.id}</code></span>
           ) : null
@@ -262,22 +276,44 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
                   <Row
                     label="Net debt / EBITDA"
                     cases={cases}
-                    f={(c) => x2(c.net_leverage)}
-                    breach={(c) => cov.max_net_leverage !== null && (c.net_leverage === null || c.net_leverage > cov.max_net_leverage)}
+                    f={(c) => (c.net_leverage === null ? "N/A" : x2(c.net_leverage))}
+                    breach={(c) => state(c, "max_net_leverage") === "breach"}
                   />
                   <Row
                     label="EBITDA / interest"
                     cases={cases}
-                    f={(c) => x2(c.ebitda_interest_cover)}
-                    breach={(c) =>
-                      cov.min_ebitda_interest_cover !== null &&
-                      c.ebitda_interest_cover !== null &&
-                      c.ebitda_interest_cover < cov.min_ebitda_interest_cover
-                    }
+                    f={(c) => (c.ebitda_interest_cover === null ? "N/A" : x2(c.ebitda_interest_cover))}
+                    breach={(c) => state(c, "min_ebitda_interest_cover") === "breach"}
                   />
+                  {(["max_net_leverage", "min_ebitda_interest_cover"] as const).map((k) =>
+                    cases.some((c) => c.covenant_status?.[k]) ? (
+                      <tr key={k} className="covenant-row">
+                        <td>{k === "max_net_leverage" ? "Covenant: max net debt / EBITDA" : "Covenant: min EBITDA / interest"}</td>
+                        {cases.map((c) => {
+                          const a = c.covenant_status?.[k];
+                          return (
+                            <td key={c.name} title={a?.reason}>
+                              {a ? <span className={`cov-state ${a.state}`}>{STATE_TEXT[a.state]}</span> : "—"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ) : null,
+                  )}
                 </tbody>
               </table>
             </div>
+            {cases.some((c) => Object.values(c.covenant_status ?? {}).some((a) => a.state === "not_testable")) && (
+              <p className="fine">
+                Not testable: {Array.from(new Set(cases.flatMap((c) => Object.values(c.covenant_status ?? {}).filter((a) => a.state === "not_testable").map((a) => a.reason)))).join("; ")}.
+                An untestable covenant is not counted as a breach.
+              </p>
+            )}
+            {cases.some((c) => c.ebitda < 0) && (
+              <p className="fine">
+                EBITDA is negative: shocks move it by a share of its size, so a downside deepens the loss (−100 at −20% becomes −120).
+              </p>
+            )}
 
             {yours && (
               <>
@@ -352,6 +388,9 @@ function Field({ label, children }: { label: React.ReactNode; children: React.Re
     </div>
   );
 }
+
+const STATE_TEXT = { pass: "Pass", breach: "Breach", not_testable: "Not testable" } as const;
+const state = (c: ScenarioResult, k: string) => c.covenant_status?.[k]?.state;
 
 function Row({ label, cases, f, breach }: { label: string; cases: ScenarioResult[]; f: (c: ScenarioResult) => string; breach?: (c: ScenarioResult) => boolean }) {
   return (

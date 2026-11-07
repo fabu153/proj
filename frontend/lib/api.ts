@@ -117,6 +117,9 @@ export type Facility = {
 export type Shock = { name: string; ebitda_shock: number; rate_shock_bps: number };
 export type Covenants = { max_net_leverage: number | null; min_ebitda_interest_cover: number | null };
 
+export type CovenantState = "pass" | "breach" | "not_testable";
+export type CovenantAssessment = { covenant: string; limit: number; value: number | null; headroom: number | null; state: CovenantState; reason: string };
+
 export type ScenarioResult = {
   name: string;
   currency: string;
@@ -129,6 +132,7 @@ export type ScenarioResult = {
   gross_leverage: number | null;
   ebitda_interest_cover: number | null;
   covenant_headroom: Record<string, number | null>;
+  covenant_status?: Record<string, CovenantAssessment>;
   flags: string[];
   steps: string[];
 };
@@ -143,6 +147,10 @@ export type GridCell = {
   headroom_lev?: number | null;
   headroom_cov?: number | null;
   breach?: boolean;
+  not_testable?: boolean;
+  state_lev?: CovenantState | null;
+  state_cov?: CovenantState | null;
+  reasons?: Record<string, string>;
   error?: string;
 };
 export type Grid = {
@@ -396,7 +404,8 @@ export const memos = {
     shocks: Shock[];
   }) => send<Memo>("/memos", "POST", body),
   edit: (id: string, sentenceId: string, text: string) => send<Memo>(`/memos/${id}/sentences/${sentenceId}`, "PATCH", { text }),
-  pdfUrl: (id: string) => `${API_URL}/memos/${id}/pdf`,
+  /** `snapshot`: the loan lab's current snapshot; the server refuses (409) if the memo was built from another one */
+  pdfUrl: (id: string, snapshot: string) => `${API_URL}/memos/${id}/pdf?snapshot=${encodeURIComponent(snapshot)}`,
 };
 
 // ---------------------------------------------------------------- Stage D: historical model replay

@@ -325,12 +325,14 @@ def scenario_grid(req: GridRequest):
                 row.append({"ebitda_shock": e, "rate_shock_bps": r, "error": str(err)})
                 continue
             h = res.covenant_headroom
-            row.append({"ebitda_shock": e, "rate_shock_bps": r, "net_leverage": res.net_leverage,
+            st = {k: a.state.value for k, a in res.covenant_status.items()}
+            row.append({"ebitda_shock": e, "rate_shock_bps": r, "ebitda": res.ebitda, "net_leverage": res.net_leverage,
                         "ebitda_interest_cover": res.ebitda_interest_cover,
                         "headroom_lev": h.get("max_net_leverage"), "headroom_cov": h.get("min_ebitda_interest_cover"),
-                        "breach": any(v is not None and v < 0 for v in h.values())
-                        or "COVENANT_BREACH" in " ".join(res.flags).upper()
-                        or bool(req.covenants and req.covenants.max_net_leverage is not None and res.net_leverage is None),
+                        "state_lev": st.get("max_net_leverage"), "state_cov": st.get("min_ebitda_interest_cover"),
+                        # the engine's assessment is the only source of truth for colouring (Fix 3)
+                        "breach": "breach" in st.values(), "not_testable": "not_testable" in st.values(),
+                        "reasons": {k: a.reason for k, a in res.covenant_status.items()},
                         "flags": res.flags})
         rows.append(row)
     return {"company_id": req.company_id, "fiscal_year_end": cy.fiscal_year_end, "currency": base.currency,
@@ -470,8 +472,13 @@ def edit_memo_sentence(memo_id: str, sentence_id: str, body: MemoEdit):
 
 
 @app.get("/memos/{memo_id}/pdf")
-def memo_pdf(memo_id: str):
+def memo_pdf(memo_id: str, snapshot: Optional[str] = None):
+    """`snapshot` is the analysis snapshot the caller's loan table shows; a mismatch means the memo is outdated."""
     m = _memo(memo_id)
+    memo_snap = (m.get("snapshot") or {}).get("id")
+    if snapshot is not None and snapshot != memo_snap:
+        raise HTTPException(409, f"This memo was built from snapshot {memo_snap}, but the loan lab shows {snapshot}. "
+                                 "Regenerate the memo before exporting.")
     store.audit("memo_exported", memo_id, flagged=m["summary"]["flagged"])
     name = "".join(ch for ch in m["package"]["meta.company"]["display"] if ch.isalnum() or ch in " -")[:40].strip()
     return Response(render_pdf(m), media_type="application/pdf",

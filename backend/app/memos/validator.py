@@ -127,6 +127,9 @@ def semantic_issues(text: str, pk: Package) -> list[str]:
         positive = [r for r in refs if re.search(r"\.headroom_(lev|cov)$", r) and (_val(pk, r) or 0) >= 0]
         if positive and not re.search(r"\b(but|while|whereas)\b", bare):
             issues.append("covenant: describes a breach, but the cited headroom is positive")
+    # 2b. a covenant that cannot be tested is not a breach
+    if any(r.endswith("_reason") and ".headroom_" in r for r in refs) and re.search(BREACH, bare):
+        issues.append("covenant: the covenant cannot be tested, so it must not be described as breached")
     # 3. undefined ratios
     for r in refs:
         src = (pk.items.get(r) or {}).get("source", {})

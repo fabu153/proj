@@ -219,13 +219,20 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                            src)
                 for cov_key, item, what in (("max_net_leverage", "headroom_lev", "max net debt / EBITDA"),
                                             ("min_ebitda_interest_cover", "headroom_cov", "min EBITDA / interest")):
-                    if cov_key in res.covenant_headroom:
-                        h = res.covenant_headroom[cov_key]
-                        pk.add(f"scen.{name}.{item}", f"{CASE_LABELS.get(name, shock.name)} case headroom ({what})",
-                               h, "x", src)
-                        if h is not None and h < 0:   # shortfall as a positive magnitude, for readable breach wording
-                            pk.add(f"scen.{name}.{item}_shortfall",
-                                   f"{CASE_LABELS.get(name, shock.name)} case covenant shortfall ({what})", -h, "x", src)
+                    if cov_key in res.covenant_status:
+                        a = res.covenant_status[cov_key]           # the engine's assessment, never re-derived here
+                        case = CASE_LABELS.get(name, shock.name)
+                        pk.add(f"scen.{name}.{item}_state", f"{case} case covenant ({what})",
+                               {"pass": "pass", "breach": "breach", "not_testable": "not testable"}[a.state.value], "text",
+                               {**src, "covenant_reason": a.reason})
+                        if a.state.value == "not_testable":
+                            pk.add(f"scen.{name}.{item}_reason", f"{case} case: why the covenant cannot be tested ({what})",
+                                   a.reason, "text", {**src, "covenant_reason": a.reason})
+                            continue                               # no headroom number is invented
+                        pk.add(f"scen.{name}.{item}", f"{case} case headroom ({what})", a.headroom, "x", src)
+                        if a.state.value == "breach" and a.headroom is not None:
+                            pk.add(f"scen.{name}.{item}_shortfall", f"{case} case covenant shortfall ({what})",
+                                   -a.headroom, "x", src)
         else:
             pk.add("scen.unavailable", "Scenario inputs missing", ", ".join(missing), "text", {"kind": "data_checks"})
     pk.add("meta.generated_at", "Package built", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), "text",

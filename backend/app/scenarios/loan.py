@@ -17,7 +17,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-ENGINE_VERSION = "1.1.0"   # 1.1: refinancing/rate-floor validation, no interest clamp
+ENGINE_VERSION = "1.2.0"   # 1.2: EBITDA shocks scale |EBITDA| (losses deepen); explicit covenant states
+# 1.1: refinancing/rate-floor validation, no interest clamp
 
 
 class UseOfProceeds(str, Enum):
@@ -69,6 +70,24 @@ class Shock(BaseModel):
 class Covenants(BaseModel):
     max_net_leverage: Optional[float] = None
     min_ebitda_interest_cover: Optional[float] = None
+    # Some loan agreements define non-positive EBITDA as an automatic leverage breach. That is a contractual
+    # choice, so it is never assumed: by default an undefined ratio makes the covenant NOT TESTABLE.
+    nonpositive_ebitda_breaches_leverage: bool = False
+
+
+class CovenantState(str, Enum):
+    PASS = "pass"                  # ratio valid and within the limit
+    BREACH = "breach"              # ratio valid and outside the limit (or the contractual policy above applies)
+    NOT_TESTABLE = "not_testable"  # a required figure is missing or the ratio is undefined
+
+
+class CovenantAssessment(BaseModel):
+    covenant: str
+    limit: float
+    value: Optional[float]         # the ratio tested; None when it cannot be calculated
+    headroom: Optional[float]      # positive = room, negative = shortfall; None when not testable
+    state: CovenantState
+    reason: str
 
 
 class FXBlocked(ValueError):
@@ -92,6 +111,7 @@ class ScenarioResult(BaseModel):
     gross_leverage: Optional[float]
     ebitda_interest_cover: Optional[float]
     covenant_headroom: dict[str, Optional[float]] = {}
+    covenant_status: dict[str, CovenantAssessment] = {}
     flags: list[str] = []
     steps: list[str] = []          # human-readable audit trail of every adjustment
 
@@ -177,9 +197,19 @@ def run_scenario(base: Baseline, fac: Optional[Facility], shock: Shock,
         floating_debt = base.gross_debt * base.existing_floating_share
         steps = ["No new facility (status quo)."]
 
-    ebitda = base.ebitda * (1 + shock.ebitda_shock)
+    # Fix 2: a shock moves EBITDA by a share of its SIZE, so a downside always deteriorates it. For positive
+    # EBITDA this equals base x (1 + shock); for a loss, -100 at -20% becomes -120, not -80.
+    ebitda = base.ebitda + abs(base.ebitda) * shock.ebitda_shock
     if shock.ebitda_shock:
-        steps.append(f"EBITDA shock {shock.ebitda_shock:+.0%}: {base.ebitda:,.2f} -> {ebitda:,.2f}.")
+        if base.ebitda == 0:
+            steps.append(f"EBITDA shock {shock.ebitda_shock:+.0%}: EBITDA is zero, so a percentage shock has no "
+                         "absolute effect; EBITDA stays 0.00 and no stressed value is invented.")
+        elif base.ebitda < 0:
+            steps.append(f"EBITDA shock {shock.ebitda_shock:+.0%} applied to the size of the loss: {base.ebitda:,.2f} "
+                         f"{'-' if shock.ebitda_shock < 0 else '+'} {abs(base.ebitda * shock.ebitda_shock):,.2f} -> "
+                         f"{ebitda:,.2f} (a downside deepens a loss, an upside narrows it).")
+        else:
+            steps.append(f"EBITDA shock {shock.ebitda_shock:+.0%}: {base.ebitda:,.2f} -> {ebitda:,.2f}.")
     delta_rate = shock.rate_shock_bps / 10_000
     if delta_rate < 0:   # a cut cannot take any floating rate below zero
         if fac is not None and fac.floating and fac.coupon + delta_rate < 0:
@@ -212,22 +242,60 @@ def run_scenario(base: Baseline, fac: Optional[Facility], shock: Shock,
         flags.append("NET_CASH_POSITION")
 
     headroom: dict[str, Optional[float]] = {}
+    status: dict[str, CovenantAssessment] = {}
+    if base.ebitda == 0 and shock.ebitda_shock:
+        flags.append("EBITDA_ZERO_SHOCK_NOT_APPLICABLE")
     if covenants:
-        if covenants.max_net_leverage is not None:
-            h = None if net_lev is None else covenants.max_net_leverage - net_lev  # positive = room
-            headroom["max_net_leverage"] = h
-            if h is None or h < 0:
-                flags.append("COVENANT_BREACH:max_net_leverage")
-        if covenants.min_ebitda_interest_cover is not None:
-            h = None if cover is None else cover - covenants.min_ebitda_interest_cover  # positive = room
-            headroom["min_ebitda_interest_cover"] = h
-            if h is None or h < 0:
-                flags.append("COVENANT_BREACH:min_ebitda_interest_cover")
+        status = assess_covenants(covenants, net_lev, cover, ebitda, interest)
+        for k, a in status.items():
+            headroom[k] = a.headroom
+            if a.state is CovenantState.BREACH:
+                flags.append(f"COVENANT_BREACH:{k}")
+            elif a.state is CovenantState.NOT_TESTABLE:
+                flags.append(f"COVENANT_NOT_TESTABLE:{k}")
 
     return ScenarioResult(name=shock.name, currency=base.currency, ebitda=ebitda, gross_debt=gd, cash=cash,
                           net_debt=nd, interest_expense=interest, net_leverage=net_lev,
                           gross_leverage=gross_lev, ebitda_interest_cover=cover,
-                          covenant_headroom=headroom, flags=flags, steps=steps)
+                          covenant_headroom=headroom, covenant_status=status, flags=flags, steps=steps)
+
+
+def assess_covenants(cov: Covenants, net_lev: Optional[float], cover: Optional[float], ebitda: float,
+                     interest: float) -> dict[str, CovenantAssessment]:
+    """Fix 3: PASS / BREACH / NOT TESTABLE for every covenant set. Headroom stays numerically identical to v1.1
+    for testable covenants; an undefined ratio is never counted as a breach unless the contractual policy says so."""
+    out: dict[str, CovenantAssessment] = {}
+    if cov.max_net_leverage is not None:
+        lim = cov.max_net_leverage
+        if net_lev is None:
+            why = ("EBITDA is zero or negative, so net debt / EBITDA is undefined")
+            if cov.nonpositive_ebitda_breaches_leverage:
+                out["max_net_leverage"] = CovenantAssessment(covenant="max_net_leverage", limit=lim, value=None,
+                                                             headroom=None, state=CovenantState.BREACH,
+                                                             reason=why + "; the agreement treats this as a breach")
+            else:
+                out["max_net_leverage"] = CovenantAssessment(covenant="max_net_leverage", limit=lim, value=None,
+                                                             headroom=None, state=CovenantState.NOT_TESTABLE, reason=why)
+        else:
+            h = lim - net_lev
+            out["max_net_leverage"] = CovenantAssessment(
+                covenant="max_net_leverage", limit=lim, value=net_lev, headroom=h,
+                state=CovenantState.PASS if h >= 0 else CovenantState.BREACH,
+                reason=f"net debt / EBITDA {net_lev:.2f}x against a maximum of {lim:.2f}x")
+    if cov.min_ebitda_interest_cover is not None:
+        lim = cov.min_ebitda_interest_cover
+        if cover is None:
+            out["min_ebitda_interest_cover"] = CovenantAssessment(
+                covenant="min_ebitda_interest_cover", limit=lim, value=None, headroom=None,
+                state=CovenantState.NOT_TESTABLE,
+                reason="interest expense is zero or unavailable, so EBITDA / interest is undefined")
+        else:
+            h = cover - lim
+            out["min_ebitda_interest_cover"] = CovenantAssessment(
+                covenant="min_ebitda_interest_cover", limit=lim, value=cover, headroom=h,
+                state=CovenantState.PASS if h >= 0 else CovenantState.BREACH,
+                reason=f"EBITDA / interest {cover:.2f}x against a minimum of {lim:.2f}x")
+    return out
 
 
 def amortization_schedule(fac: Facility) -> list[dict]:

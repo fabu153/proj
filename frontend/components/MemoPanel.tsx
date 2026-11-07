@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LabState } from "./LoanLab";
 import type { Citation } from "./EvidenceRail";
 import type { Memo, PackageItem, Sentence } from "@/lib/api";
@@ -28,24 +28,38 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
 
   const labReady = lab?.status === "current" && !!lab.snapshotId;
   const memoSnap = memo?.snapshot?.id ?? null;
-  // a memo is current only when it was built from exactly the inputs the loan table now shows
+  // Fix 4. The memo is current, and the PDF can be exported, only when ALL of these hold: a memo exists, the loan lab
+  // has finished calculating, it shows a valid snapshot, that snapshot is exactly the memo's, and nothing is pending
+  // (no draft in flight, no half-typed or invalid input). Anything else shows the memo as outdated or pending.
+  const current = !!memo && labReady && !!memoSnap && memoSnap === lab!.snapshotId && !busy;
   const outdated = !!memo && labReady && memoSnap !== lab!.snapshotId;
+  const pendingLab = !!memo && !labReady;           // calculating, editing or invalid: cannot tell yet, so no export
+  const exportBlock = !memo ? null : busy ? "a memo is being drafted" : lab?.status === "editing"
+    ? "a loan lab field holds an incomplete or invalid number" : lab?.status === "error" ? "the loan lab inputs are invalid"
+    : !labReady ? "the loan lab is recalculating" : outdated ? "the memo describes earlier inputs" : null;
 
+  // only the latest request may set the memo; a reply to an older one is ignored
+  const req = useRef(0);
   const draft = async () => {
-    if (!lab || !labReady) return;
+    if (!lab || !labReady || !lab.snapshotId) return;
+    const mine = ++req.current;
+    const asked = lab.snapshotId;
     setBusy(true);
     setError(null);
     try {
       const m = await memos.create({ company_id: companyId, fiscal_year_end: fiscalYear, ...lab.params });
-      if (m.snapshot?.id !== lab.snapshotId) {
+      if (mine !== req.current) return;
+      if (m.snapshot?.id !== asked) {
         // the server rebuilt the case from the same inputs; a different id means the inputs drifted in transit
-        setError(`The memo was built from snapshot ${m.snapshot?.id}, but the loan lab shows ${lab.snapshotId}. Regenerate.`);
+        setError(`The memo was built from snapshot ${m.snapshot?.id}, but it was requested for ${asked}. Regenerate.`);
       }
+      // stored as what it is: a memo of snapshot m.snapshot.id. If the loan lab moved on meanwhile, the
+      // comparison above marks it outdated at once; it is never treated as current just because it arrived last.
       setMemo(m);
     } catch (e) {
-      setError(`The memo could not be drafted: ${(e as Error).message}`);
+      if (mine === req.current) setError(`The memo could not be drafted: ${(e as Error).message}`);
     } finally {
-      setBusy(false);
+      if (mine === req.current) setBusy(false);
     }
   };
 
@@ -69,11 +83,15 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
         <button className="btn" type="button" onClick={draft} disabled={busy || !labReady}>
           {busy ? "Drafting…" : memo ? (outdated ? "Regenerate with the current loan lab inputs" : "Redraft") : "Draft credit memo"}
         </button>
-        {memo && !outdated && (
-          <a className="btn ghost" href={memos.pdfUrl(memo.id)} target="_blank" rel="noreferrer">
+        {memo && current ? (
+          <a className="btn ghost" data-testid="memo-pdf" href={memos.pdfUrl(memo.id, lab!.snapshotId!)} target="_blank" rel="noreferrer">
             Download PDF
           </a>
-        )}
+        ) : memo ? (
+          <button type="button" className="btn ghost" data-testid="memo-pdf" disabled title={`PDF unavailable: ${exportBlock}`}>
+            Download PDF
+          </button>
+        ) : null}
         <span className="fine">
           {writer?.llm_configured ? `Written by ${writer.writer}; ` : "Written from templates (no language model configured); "}
           every number is inserted from the engines.
@@ -99,9 +117,18 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
           </button>
         </div>
       )}
-      {memo && lab?.status === "calculating" && <p className="fine" role="status">Loan lab recalculating; checking whether this memo is still current…</p>}
+      {pendingLab && (
+        <div className="notice outdated" role="status" data-testid="memo-pending">
+          <strong>Not current — PDF unavailable.</strong>
+          <span>
+            {lab?.status === "calculating"
+              ? "The loan lab inputs changed and are being recalculated; the memo is checked against the new snapshot when that finishes."
+              : `The PDF is unavailable because ${exportBlock}.`}
+          </span>
+        </div>
+      )}
       {memo && (
-        <div className={outdated ? "stale-results" : undefined} aria-hidden={outdated || undefined}>
+        <div className={!current ? "stale-results" : undefined} aria-hidden={outdated || undefined}>
           <p className="fine" style={{ margin: "4px 0 12px" }}>
             {memo.summary.sentences} sentences citing {memo.summary.cited_items} sourced items.{" "}
             {memo.summary.flagged

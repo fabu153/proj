@@ -82,6 +82,7 @@ class Candidate:
     statement: str
     confidence: str             # high | medium | low
     reasons: list[str] = field(default_factory=list)
+    year: Optional[int] = None  # the fiscal year printed above this figure's column
 
     @property
     def needs_review(self) -> bool:
@@ -232,8 +233,34 @@ def extract(data: bytes) -> Extraction:
     if currency is None:
         issues.append("Reporting currency not stated on the statement pages; confirm it in review")
 
+    # ---- fiscal years: every numeric column is mapped through its own heading, never by position (Fix 1)
+    page_heads: dict[int, list[int]] = {}
+    for pages in statement_pages.values():
+        for pi in pages:
+            for line in texts[pi].split("\n"):
+                m = YEAR_ROW.match(line.strip())
+                if m:
+                    page_heads[pi] = [int(y) for y in m.group(1).split()]
+                    break
+    all_years = sorted({y for ys in page_heads.values() for y in ys}, reverse=True)
+    latest = all_years[0] if all_years else 0
+    prior = next((y for y in all_years[1:] if y < latest), None)
+    period_of = {latest: "t", prior: "t-1"} if latest else {}
+    ambiguous_pages: dict[int, str] = {}
+    for pi, ys in page_heads.items():
+        kind = next(k for k, v in statement_pages.items() if pi in v)
+        name = kind.replace("cashflow", "cash flow").replace("income", "income statement").replace("balance", "balance sheet")
+        if len(set(ys)) != len(ys):
+            ambiguous_pages[pi] = f"the {name} column headings repeat a year ({', '.join(map(str, ys))})"
+        elif ys != sorted(ys, reverse=True) and ys != sorted(ys):
+            ambiguous_pages[pi] = f"the {name} column headings are not in date order ({', '.join(map(str, ys))})"
+        elif latest not in ys:
+            issues.append(f"The {name} (page {pi + 1}) shows {', '.join(map(str, ys))}, not {latest}: its figures are "
+                          f"not used for {latest}; confirm the statements in review")
+    for pi, why in ambiguous_pages.items():
+        issues.append(f"Year headings are ambiguous on page {pi + 1}: {why}; confirm each figure's year in review")
+
     raw: dict[str, list[Candidate]] = {}
-    years: list[int] = []
     for kind, pages in statement_pages.items():
         for pi in pages:
             lines = texts[pi].split("\n")
@@ -243,7 +270,6 @@ def extract(data: bytes) -> Extraction:
                 if m:
                     page_years = [int(y) for y in m.group(1).split()]
                     n_cols = len(page_years)
-                    years = years or page_years
                     continue
                 if not n_cols:
                     continue
@@ -258,9 +284,10 @@ def extract(data: bytes) -> Extraction:
                             break
                     else:
                         continue
-                    for col, period in ((0, "t"), (1, "t-1")):
-                        if col >= len(vals):
-                            continue
+                    for col, year in enumerate(page_years):
+                        period = period_of.get(year)
+                        if period is None or col >= len(vals):
+                            continue                     # an older comparative year, or a year outside t / t-1
                         reasons, conf = [], "high"
                         if strength == "partial":
                             conf = "medium"
@@ -271,15 +298,19 @@ def extract(data: bytes) -> Extraction:
                         if stmt != kind:
                             conf = "low"
                             reasons.append(f"found on the {kind} statement, expected {stmt}")
+                        if pi in ambiguous_pages:
+                            conf = "low"
+                            reasons.append(f"column year unclear: {ambiguous_pages[pi]}")
                         v = vals[col] * scale
                         if fld == "capital_expenditures":
                             v = abs(v)
                         raw.setdefault(f"{fld}|{period}", []).append(Candidate(
-                            fld, period, v, pi + 1, label, line.strip(), kind, conf, reasons))
+                            fld, period, v, pi + 1, label, line.strip(), kind, conf, reasons, year=year))
                     if strength == "combined":
-                        for c in raw[f"{fld}|t"][-1:] + raw.get(f"{fld}|t-1", [])[-1:]:
+                        for c in raw.get(f"{fld}|t", [])[-1:] + raw.get(f"{fld}|t-1", [])[-1:]:
                             c.reasons.append("total debt due within one year (includes short-term borrowings)")
                     break
+    years = all_years
 
     # resolve duplicates: keep the first high-confidence candidate; conflicting duplicates lower confidence
     candidates: list[Candidate] = []
@@ -292,7 +323,6 @@ def extract(data: bytes) -> Extraction:
             best.reasons.append(f"{len(distinct)} different values found for this line")
         candidates.append(best)
 
-    latest = max(years) if years else 0
     fye, inferred = detect_year_end(stmt_text, latest) if latest else (None, True)
     if inferred:
         issues.append("Fiscal year-end date not stated or not a valid date; confirm it in review")
