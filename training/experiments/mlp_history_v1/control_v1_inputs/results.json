@@ -1,0 +1,311 @@
+{
+ "experiment": "mlp_history_v1",
+ "status": "experiment only; not deployed",
+ "run_at": "2026-11-07 22:39 UTC",
+ "minutes": 1.1,
+ "inputs": {
+  "v1": 31,
+  "this_run": 31,
+  "added": [],
+  "summaries": {
+   "years_stressed_prior2": "number of the two prior years with 2+ stress conditions",
+   "years_negative_cfo_3y": "years with negative operating cash flow in t, t-1, t-2",
+   "ebitda_margin_slope_3y": "(EBITDA margin t - EBITDA margin t-2) / 2",
+   "ebitda_margin_vol_3y": "standard deviation of EBITDA margin over t, t-1, t-2"
+  }
+ },
+ "history_coverage": {
+  "ebitda_margin_lag1": {
+   "train": 0.7063166529942576,
+   "test": 0.8471454880294659
+  },
+  "ebitda_margin_lag2": {
+   "train": 0.5578342904019689,
+   "test": 0.8130755064456722
+  },
+  "stress_conditions_t_lag2": {
+   "train": 0.6759639048400328,
+   "test": 0.9475138121546961
+  }
+ },
+ "rows": {
+  "train": 1219,
+  "val": 389,
+  "test": 1086
+ },
+ "selected_config": "lr=0.0003,wd=0.0001,pos_weight=none",
+ "search": [
+  {
+   "config": "lr=0.001,wd=0.0001,pos_weight=none",
+   "val_pr_auc_mean": 0.7777508142307213,
+   "val_pr_auc_min": 0.7564951192164658,
+   "val_pr_auc_max": 0.8043588856968791
+  },
+  {
+   "config": "lr=0.001,wd=0.0001,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7649514252193571,
+   "val_pr_auc_min": 0.7450234719989515,
+   "val_pr_auc_max": 0.7954700200530002
+  },
+  {
+   "config": "lr=0.001,wd=0.01,pos_weight=none",
+   "val_pr_auc_mean": 0.7778889676913454,
+   "val_pr_auc_min": 0.7550412751668739,
+   "val_pr_auc_max": 0.8049928579228552
+  },
+  {
+   "config": "lr=0.001,wd=0.01,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7708231954175004,
+   "val_pr_auc_min": 0.7481839821040439,
+   "val_pr_auc_max": 0.7935513845339116
+  },
+  {
+   "config": "lr=0.0003,wd=0.0001,pos_weight=none",
+   "val_pr_auc_mean": 0.7821734651868935,
+   "val_pr_auc_min": 0.7712543905893601,
+   "val_pr_auc_max": 0.793609545200457
+  },
+  {
+   "config": "lr=0.0003,wd=0.0001,pos_weight=balanced",
+   "val_pr_auc_mean": 0.773841779444418,
+   "val_pr_auc_min": 0.7638043793712856,
+   "val_pr_auc_max": 0.7884212919878987
+  },
+  {
+   "config": "lr=0.0003,wd=0.01,pos_weight=none",
+   "val_pr_auc_mean": 0.7801913450577302,
+   "val_pr_auc_min": 0.7729436888607447,
+   "val_pr_auc_max": 0.790397355463198
+  },
+  {
+   "config": "lr=0.0003,wd=0.01,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7731242010906053,
+   "val_pr_auc_min": 0.7584946992577406,
+   "val_pr_auc_max": 0.7903269697994748
+  }
+ ],
+ "test": {
+  "v1": {
+   "n": 1086,
+   "positives": 322,
+   "prevalence": 0.2965009208103131,
+   "pr_auc": 0.8054597850314418,
+   "roc_auc": 0.9036697993561185,
+   "brier": 0.11341140349634507,
+   "log_loss": 0.3619086587175461
+  },
+  "history": {
+   "n": 1086,
+   "positives": 322,
+   "prevalence": 0.2965009208103131,
+   "pr_auc": 0.8054597850314418,
+   "roc_auc": 0.9036697993561185,
+   "brier": 0.11341140326426628,
+   "log_loss": 0.3619086578940127
+  }
+ },
+ "test_ci95": {
+  "v1": {
+   "pr_auc_ci95": [
+    0.7522653344622828,
+    0.8531550311125679
+   ],
+   "roc_auc_ci95": [
+    0.8801217882263579,
+    0.9243728128254947
+   ],
+   "resamples_used": 1000
+  },
+  "history": {
+   "pr_auc_ci95": [
+    0.7522653344622828,
+    0.8531550311125679
+   ],
+   "roc_auc_ci95": [
+    0.8801217882263579,
+    0.9243728128254947
+   ],
+   "resamples_used": 1000
+  }
+ },
+ "paired_history_minus_v1": {
+  "mean_diff": 0.0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "share_a_better": 0.0
+ },
+ "at_validation_threshold": {
+  "v1": {
+   "threshold": 0.44648106515671243,
+   "tp": 229,
+   "fp": 84,
+   "fn": 93,
+   "tn": 680,
+   "precision": 0.731629392971246,
+   "recall_sensitivity": 0.7111801242236024,
+   "flag_rate": 0.2882136279926335
+  },
+  "history": {
+   "threshold": 0.44648106515671243,
+   "tp": 229,
+   "fp": 84,
+   "fn": 93,
+   "tn": 680,
+   "precision": 0.731629392971246,
+   "recall_sensitivity": 0.7111801242236024,
+   "flag_rate": 0.2882136279926335
+  }
+ },
+ "onset": {
+  "rows": 787,
+  "stressed": 96,
+  "v1_pr_auc": 0.3946025052241721,
+  "history_pr_auc": 0.3946025052241721,
+  "v1_caught": 15,
+  "history_caught": 15
+ },
+ "persistent": {
+  "rows": 299,
+  "stressed": 226,
+  "v1_pr_auc": 0.8868950198799546,
+  "history_pr_auc": 0.8868950198799546,
+  "v1_caught": 214,
+  "history_caught": 214
+ },
+ "paired_on_onsets": {
+  "mean_diff": 0.0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "share_a_better": 0.0
+ },
+ "calibration_test": {
+  "v1": [
+   {
+    "bin": 0,
+    "mean_pred": 0.008053474803038734,
+    "observed": 0.0,
+    "n": 109
+   },
+   {
+    "bin": 1,
+    "mean_pred": 0.014758436565357172,
+    "observed": 0.01834862385321101,
+    "n": 109
+   },
+   {
+    "bin": 2,
+    "mean_pred": 0.023844343699093436,
+    "observed": 0.05555555555555555,
+    "n": 108
+   },
+   {
+    "bin": 3,
+    "mean_pred": 0.03710652706242988,
+    "observed": 0.045871559633027525,
+    "n": 109
+   },
+   {
+    "bin": 4,
+    "mean_pred": 0.06183908990195851,
+    "observed": 0.10185185185185185,
+    "n": 108
+   },
+   {
+    "bin": 5,
+    "mean_pred": 0.11748703361352367,
+    "observed": 0.1743119266055046,
+    "n": 109
+   },
+   {
+    "bin": 6,
+    "mean_pred": 0.2835217680115135,
+    "observed": 0.4074074074074074,
+    "n": 108
+   },
+   {
+    "bin": 7,
+    "mean_pred": 0.5583054213184216,
+    "observed": 0.5137614678899083,
+    "n": 109
+   },
+   {
+    "bin": 8,
+    "mean_pred": 0.7380357759786191,
+    "observed": 0.7592592592592593,
+    "n": 108
+   },
+   {
+    "bin": 9,
+    "mean_pred": 0.8242450254537041,
+    "observed": 0.8899082568807339,
+    "n": 109
+   }
+  ],
+  "history": [
+   {
+    "bin": 0,
+    "mean_pred": 0.008053473774512019,
+    "observed": 0.0,
+    "n": 109
+   },
+   {
+    "bin": 1,
+    "mean_pred": 0.014758435113375218,
+    "observed": 0.01834862385321101,
+    "n": 109
+   },
+   {
+    "bin": 2,
+    "mean_pred": 0.023844341688866302,
+    "observed": 0.05555555555555555,
+    "n": 108
+   },
+   {
+    "bin": 3,
+    "mean_pred": 0.03710652679380448,
+    "observed": 0.045871559633027525,
+    "n": 109
+   },
+   {
+    "bin": 4,
+    "mean_pred": 0.061839090404659014,
+    "observed": 0.10185185185185185,
+    "n": 108
+   },
+   {
+    "bin": 5,
+    "mean_pred": 0.11748703406812053,
+    "observed": 0.1743119266055046,
+    "n": 109
+   },
+   {
+    "bin": 6,
+    "mean_pred": 0.28352176528006784,
+    "observed": 0.4074074074074074,
+    "n": 108
+   },
+   {
+    "bin": 7,
+    "mean_pred": 0.558305421052052,
+    "observed": 0.5137614678899083,
+    "n": 109
+   },
+   {
+    "bin": 8,
+    "mean_pred": 0.7380357806250983,
+    "observed": 0.7592592592592593,
+    "n": 108
+   },
+   {
+    "bin": 9,
+    "mean_pred": 0.8242450296151442,
+    "observed": 0.8899082568807339,
+    "n": 109
+   }
+  ]
+ }
+}

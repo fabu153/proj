@@ -1,0 +1,196 @@
+{
+ "experiment": "gru_history_v1",
+ "status": "experiment only; not deployed",
+ "run_at": "2026-11-07 22:42 UTC",
+ "minutes": 1.7,
+ "architecture": "GRU(63 -> 64) over t-2, t-1, t; LayerNorm, dropout 0.25, Linear(64,32), ReLU, Linear(32,1)",
+ "years_present_test": {
+  "1": 18,
+  "2": 35,
+  "3": 1033
+ },
+ "selected_config": "lr=0.001,wd=0.01,pos_weight=balanced",
+ "search": [
+  {
+   "config": "lr=0.001,wd=0.0001,pos_weight=none",
+   "val_pr_auc_mean": 0.7953701394073482
+  },
+  {
+   "config": "lr=0.001,wd=0.0001,pos_weight=balanced",
+   "val_pr_auc_mean": 0.8022510058364055
+  },
+  {
+   "config": "lr=0.001,wd=0.01,pos_weight=none",
+   "val_pr_auc_mean": 0.7962012210132013
+  },
+  {
+   "config": "lr=0.001,wd=0.01,pos_weight=balanced",
+   "val_pr_auc_mean": 0.8024953559372003
+  },
+  {
+   "config": "lr=0.0003,wd=0.0001,pos_weight=none",
+   "val_pr_auc_mean": 0.7996194905926037
+  },
+  {
+   "config": "lr=0.0003,wd=0.0001,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7958768833849328
+  },
+  {
+   "config": "lr=0.0003,wd=0.01,pos_weight=none",
+   "val_pr_auc_mean": 0.7995615385800925
+  },
+  {
+   "config": "lr=0.0003,wd=0.01,pos_weight=balanced",
+   "val_pr_auc_mean": 0.7949000403300184
+  }
+ ],
+ "test": {
+  "v1": {
+   "n": 1086,
+   "positives": 322,
+   "prevalence": 0.2965009208103131,
+   "pr_auc": 0.8054597850314418,
+   "roc_auc": 0.9036697993561185,
+   "brier": 0.11341140349634507,
+   "log_loss": 0.3619086587175461
+  },
+  "gru": {
+   "n": 1086,
+   "positives": 322,
+   "prevalence": 0.2965009208103131,
+   "pr_auc": 0.8208205354500864,
+   "roc_auc": 0.9038364606029072,
+   "brier": 0.11176581283893271,
+   "log_loss": 0.3635334965091914
+  }
+ },
+ "test_ci95": {
+  "gru": {
+   "pr_auc_ci95": [
+    0.7689641072031462,
+    0.8657611427909802
+   ],
+   "roc_auc_ci95": [
+    0.8797305845434781,
+    0.926042043572956
+   ],
+   "resamples_used": 1000
+  }
+ },
+ "paired_gru_minus_v1": {
+  "mean_diff": 0.015113576150356103,
+  "ci95": [
+   -0.0024007540735285714,
+   0.03364891410443199
+  ],
+  "share_a_better": 0.962
+ },
+ "at_validation_threshold": {
+  "v1": {
+   "threshold": 0.44648106515671243,
+   "tp": 229,
+   "fp": 84,
+   "fn": 93,
+   "tn": 680,
+   "precision": 0.731629392971246,
+   "recall_sensitivity": 0.7111801242236024,
+   "flag_rate": 0.2882136279926335
+  },
+  "gru": {
+   "threshold": 0.4813684052962754,
+   "tp": 220,
+   "fp": 66,
+   "fn": 102,
+   "tn": 698,
+   "precision": 0.7692307692307693,
+   "recall_sensitivity": 0.6832298136645962,
+   "flag_rate": 0.26335174953959484
+  }
+ },
+ "onset": {
+  "rows": 787,
+  "stressed": 96,
+  "v1_pr_auc": 0.3946025052241721,
+  "gru_pr_auc": 0.4186758215994778,
+  "v1_caught": 15,
+  "gru_caught": 17
+ },
+ "persistent": {
+  "rows": 299,
+  "stressed": 226,
+  "v1_pr_auc": 0.8868950198799546,
+  "gru_pr_auc": 0.907076881426923,
+  "v1_caught": 214,
+  "gru_caught": 203
+ },
+ "paired_on_onsets": {
+  "mean_diff": 0.02151453586107776,
+  "ci95": [
+   -0.03002503611346422,
+   0.07298352303109745
+  ],
+  "share_a_better": 0.791
+ },
+ "calibration_test": [
+  {
+   "bin": 0,
+   "mean_pred": 0.008034596471747299,
+   "observed": 0.01834862385321101,
+   "n": 109
+  },
+  {
+   "bin": 1,
+   "mean_pred": 0.012687716287061373,
+   "observed": 0.027522935779816515,
+   "n": 109
+  },
+  {
+   "bin": 2,
+   "mean_pred": 0.020778121306236436,
+   "observed": 0.027777777777777776,
+   "n": 108
+  },
+  {
+   "bin": 3,
+   "mean_pred": 0.030663078807673334,
+   "observed": 0.05504587155963303,
+   "n": 109
+  },
+  {
+   "bin": 4,
+   "mean_pred": 0.04964384719132747,
+   "observed": 0.10185185185185185,
+   "n": 108
+  },
+  {
+   "bin": 5,
+   "mean_pred": 0.10789133850358969,
+   "observed": 0.1651376146788991,
+   "n": 109
+  },
+  {
+   "bin": 6,
+   "mean_pred": 0.273864724141095,
+   "observed": 0.3425925925925926,
+   "n": 108
+  },
+  {
+   "bin": 7,
+   "mean_pred": 0.5247880179616501,
+   "observed": 0.6055045871559633,
+   "n": 109
+  },
+  {
+   "bin": 8,
+   "mean_pred": 0.7102414023171622,
+   "observed": 0.6851851851851852,
+   "n": 108
+  },
+  {
+   "bin": 9,
+   "mean_pred": 0.816587282338891,
+   "observed": 0.9357798165137615,
+   "n": 109
+  }
+ ]
+}
