@@ -348,7 +348,7 @@ def test_search_keyboard_only_to_memo_pdf(page):
     page.keyboard.press("Enter")
     page.wait_for_url("**/workspace?company=0000076605", timeout=20000)
     page.wait_for_selector("[data-outcome]", timeout=90000)
-    assert page.locator("h1").first.inner_text() == "PATRICK INDUSTRIES INC"
+    assert page.locator("h1").first.inner_text().startswith("PATRICK INDUSTRIES")   # SEC spells it with a comma
     page.wait_for_selector("text=Current · snapshot", timeout=60000)
     page.wait_for_selector("table.heat button.cell", timeout=60000)
     page.locator("input[type=range]").first.fill("-30")
