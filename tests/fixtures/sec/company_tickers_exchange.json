@@ -1,0 +1,76 @@
+{
+"fields": [
+"cik",
+"name",
+"ticker",
+"exchange"
+],
+"data": [
+[
+80424,
+"PROCTER & GAMBLE Co",
+"PG",
+"NYSE"
+],
+[
+1067701,
+"UNITED RENTALS, INC.",
+"URI",
+"NYSE"
+],
+[
+1278027,
+"B&G Foods, Inc.",
+"BGS",
+"NYSE"
+],
+[
+76605,
+"PATRICK INDUSTRIES INC",
+"PATK",
+"Nasdaq"
+],
+[
+1047166,
+"UNITED RENTALS NORTH AMERICA INC (TEST FIXTURE)",
+"URNA",
+"OTC"
+],
+[
+1090727,
+"UNITED PARCEL SERVICE INC",
+"UPS",
+"NYSE"
+],
+[
+99901,
+"EXAMPLE BANCORP (TEST FIXTURE)",
+"EXBK",
+"Nasdaq"
+],
+[
+99902,
+"EXAMPLE IFRS FILER PLC (TEST FIXTURE)",
+"EXIF",
+"NYSE"
+],
+[
+99903,
+"EXAMPLE NO XBRL INC (TEST FIXTURE)",
+"EXNX",
+"OTC"
+],
+[
+1067983,
+"BERKSHIRE HATHAWAY INC",
+"BRK-B",
+"NYSE"
+],
+[
+1067983,
+"BERKSHIRE HATHAWAY INC",
+"BRK-A",
+"NYSE"
+]
+]
+}

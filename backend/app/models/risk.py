@@ -8,6 +8,7 @@ import pandas as pd
 
 from ..features.feature_set import build_features
 from ..features.panel import panel_rows
+from ..features.universe_rules import REASONS as UNIVERSE_REASONS, excluded_sic
 from .inference import ARTIFACT_DIR, get_model
 
 CRITICAL_INPUTS = ["revenue", "operating_income", "interest_expense", "depreciation_amortization",
@@ -66,6 +67,11 @@ def score(companyfacts: dict, fiscal_year_end: str, as_of: Optional[str] = None)
         reasons.insert(0, f"figures are in {ccy}: the network was trained on U.S. dollar data with dollar-based size "
                           "inputs, and no validated currency conversion of its inputs exists, so it is not applied. "
                           "Credit ratios and loan scenarios are unaffected")
+    if "sec_meta" in companyfacts:
+        # a company found by search: the training universe screen applies (financials, shells, no SIC excluded)
+        why = excluded_sic(companyfacts.get("sic"))
+        if why:
+            reasons.insert(0, UNIVERSE_REASONS[why])
     if reasons:
         return {"status": "withheld", "gate_reasons": reasons, **base}
     p = float(model.predict_proba(row)[0])

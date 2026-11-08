@@ -17,11 +17,12 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
 | 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| v1.4 | Search any U.S. public company (server-side SEC, five clear outcomes); fiscal-year columns by heading; negative-EBITDA stress; PASS / BREACH / NOT TESTABLE covenants; no outdated memo export | ✅ |
 | v1.3 | Stage E finished memo (header block, compact sections, semantic sentence checks), source trails for four headline figures, three-minute demo; Stage F stress heatmap from the Python engine | ✅ |
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.3.0** — 222 automated tests + 10 browser tests, 232 passed, 0 failed (`docs/test_matrix.md`).
+**Release v1.4.0** — 285 automated tests + 16 browser tests, 301 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -121,6 +122,19 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
+## v1.4 — Any U.S. public company
+
+- **Search.** Type a name, ticker or CIK on the start page. The API searches SEC's company list and, when you pick
+  one, loads its XBRL companyfacts server side (`/companies/search`, `/companies/resolve`; the browser never calls
+  SEC). The filings go through the same pipeline as the samples, with accession links and source trails.
+- **Honest coverage.** The workspace says whether the company is fully analysable, has metrics unavailable, is
+  outside the network's population (financials, shells, too little data), has no U.S. GAAP statements, or could not
+  be loaded because SEC is unavailable or rate-limiting. Nothing missing is estimated.
+- **Setting.** `SEC_USER_AGENT` must contain a contact email (SEC refuses the company list otherwise); it is set in
+  `render.yaml`. `CREDITLENS_SEC_FIXTURES=tests/fixtures/sec` serves mocked SEC responses for tests and offline demos.
+- **Fixes.** Year columns mapped by heading; negative EBITDA shocked by its size; explicit covenant states; PDF
+  export only for a memo that matches the loan lab (`CHANGELOG.md`, `docs/defects.md` DF-40 to DF-46).
+
 ## v1.3 — Stages E and F
 
 - **Memo.** It opens with borrower, fiscal year, facility, purpose and review status. It has compact sections
@@ -191,7 +205,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 222 tests (+10 browser tests with E2E_BASE_URL)
+pytest -q                                        # 285 tests (+16 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

@@ -194,7 +194,7 @@ a.btn.ghost { color: var(--teal); background: transparent; }
 .sentence:hover .edit-link { position: static; width: auto; height: auto; clip: auto; }
 .sentence.flagged .sentence-text { background: var(--amber-soft); text-decoration: underline wavy var(--amber); text-underline-offset: 3px; }
 .sentence .issue { display: block; font-family: var(--sans); font-size: 12.5px; color: var(--amber); margin: 2px 0 6px; }
-button.cite { font-family: var(--sans); font-size: 10.5px; line-height: 1; vertical-align: super; border: 0; background: var(--teal-soft); color: var(--teal); border-radius: 3px; padding: 2px 4px; margin-left: 2px; cursor: pointer; }
+button.cite { font-family: var(--sans); font-size: 10.5px; line-height: 1; vertical-align: super; border: 0; background: var(--teal-soft); color: #0a5f5d; border-radius: 3px; padding: 2px 4px; margin-left: 2px; cursor: pointer; }
 button.cite:hover { background: var(--teal); color: #fff; }
 .sentence-edit { display: block; margin: 6px 0; }
 .sentence-edit textarea { width: 100%; font: inherit; font-family: var(--sans); font-size: 14px; padding: 8px; border: 1px solid var(--rule-strong); border-radius: var(--radius-s); }
@@ -397,3 +397,38 @@ button.cell.untestable { background: repeating-linear-gradient(135deg, #eef0f2, 
 
 /* Fix 4: a half-typed or out-of-range number is visibly not applied */
 input[aria-invalid="true"] { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+
+/* Stage 2: company search + quick demo */
+.start-grid { align-items: stretch; }
+.start-card { display: flex; flex-direction: column; gap: 10px; }
+.start-card .btn { align-self: flex-start; }
+.quick-demo { margin-top: 22px; }
+.quick-demo h2 { font-family: var(--serif); font-weight: 500; font-size: 20px; margin: 0 0 4px; }
+.quick-demo .company-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0; }
+.quick-demo .company-list li { border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }
+.quick-demo .company-list a { padding: 10px 12px; }
+@media (max-width: 860px) { .quick-demo .company-list { grid-template-columns: 1fr; } }
+.company-search { position: relative; }
+.search-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.search-box { position: relative; }
+.search-box input { width: 100%; font-size: 16px; padding: 10px 34px 10px 12px; box-sizing: border-box; }
+.search-spinner { position: absolute; right: 8px; top: 50%; margin-top: -6px; }
+.search-dropdown { margin: 4px 0 0; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet);
+  position: absolute; left: 0; right: 0; z-index: 30; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+.search-dropdown:empty, .search-dropdown[hidden] { display: none; }
+.search-results { list-style: none; margin: 0; padding: 4px 0; max-height: 320px; overflow-y: auto; }
+.search-results.stale li[role=option] { opacity: .55; }
+.search-results li[role=option] { padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.search-results li[role=option].active { background: var(--teal-soft); }
+.search-results .hit-name { font-weight: 600; }
+.search-results .hit-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--slate); }
+.search-results .ticker { font-family: var(--mono, monospace); color: var(--text); }
+.search-results .badge { background: #eef0f2; border-radius: 3px; padding: 0 5px; }
+.search-msg { padding: 8px 12px; font-size: 14px; margin: 0; }
+.search-msg.error { color: var(--red); }
+.sec-outcome { max-width: 760px; margin: 8px 0 24px; }
+.sec-outcome h1 { font-family: var(--serif); font-weight: 500; font-size: 28px; margin: 0; }
+.sec-outcome .row-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.sec-banner { margin-bottom: 20px; }
+.sec-banner.score_withheld, .sec-banner.partial { border-left-color: var(--amber); background: var(--amber-soft); }
+.sec-banner.full { border-left-color: var(--teal); background: var(--teal-soft); }

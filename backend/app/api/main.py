@@ -22,7 +22,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .. import replay, store
-from ..documents import pdf_extract, uploads
+from ..documents import pdf_extract, sec_search, uploads
+from ..documents.sec_client import SECError
 from ..documents.xbrl import CompanyYear, build_company_years, engine_inputs
 from ..finance.metrics import compute_all
 from ..memos import service as memo_service
@@ -34,8 +35,8 @@ from ..scenarios.snapshot import credit_baseline, make_snapshot
 from ..scenarios.loan import (DEFAULT_CASES, ENGINE_VERSION, Baseline, Covenants, Facility, FXBlocked, ScenarioInputError, Shock,
                                amortization_schedule, run_scenario)
 from ..schemas.api import (AnalysisRequest, AnalysisResponse, CompanySummary, DocumentMetaUpdate, EvidenceRef, FactEntry, GridRequest,
-                           FactReview, HistoryPoint, MemoEdit, MemoRequest, MetricOut, PredictRequest, ScenarioRequest,
-                           ScenarioResponse)
+                           FactReview, HistoryPoint, MemoEdit, MemoRequest, MetricOut, PredictRequest, Resolution,
+                           ResolveRequest, ScenarioRequest, ScenarioResponse)
 
 REPO = Path(__file__).resolve().parents[3]
 CURATED_DIR = Path(os.environ.get("CREDITLENS_CURATED", REPO / "backend" / "data" / "curated"))
@@ -43,7 +44,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.3.4"
+VERSION = "1.4.0"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -61,7 +62,8 @@ app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_origin_rege
 
 # ------------------------------------------------------------------ cross-cutting: logging, rate limits
 RATE_LIMITS = {"/documents/upload": (int(os.environ.get("CREDITLENS_UPLOAD_LIMIT", "20")), 3600),
-               "/memos": (int(os.environ.get("CREDITLENS_MEMO_LIMIT", "60")), 3600)}
+               "/memos": (int(os.environ.get("CREDITLENS_MEMO_LIMIT", "60")), 3600),
+               "/companies/resolve": (int(os.environ.get("CREDITLENS_RESOLVE_LIMIT", "120")), 3600)}
 _hits: dict[tuple[str, str], deque] = defaultdict(deque)
 
 
@@ -112,7 +114,7 @@ def _companyfacts() -> dict[str, dict]:
     """Curated SEC issuers plus finalized uploaded reports (rebuilt from reviewed facts on each call).
 
     A malformed upload is logged and skipped so it can never break other companies (DATA-01)."""
-    out = dict(_curated())
+    out = {**sec_search.loaded(), **_curated()}          # companies fetched from SEC on request, then the samples
     for row in store.list_finalized():
         try:
             doc = store.get_document(row["id"])
@@ -123,8 +125,23 @@ def _companyfacts() -> dict[str, dict]:
     return out
 
 
+def _sec_load(cik10: str) -> dict:
+    """Fetch a filer from SEC through the server; SEC failures become clear, distinct HTTP errors."""
+    try:
+        return sec_search.load(cik10)
+    except SECError as e:
+        log.warning(json.dumps({"event": "sec_error", "kind": e.kind, "cik": cik10, "detail": str(e)}))
+        if e.kind == "not_found":
+            raise HTTPException(404, f"SEC EDGAR has no filer with CIK {cik10}.")
+        if e.kind == "throttled":
+            raise HTTPException(429, "SEC EDGAR is limiting requests right now (rate limit). Wait a minute and try again.")
+        raise HTTPException(502, f"SEC EDGAR is unavailable right now, so this company's filings cannot be loaded. {e}")
+
+
 def _cf(company_id: str) -> dict:
     cf = _companyfacts().get(company_id)
+    if cf is None and sec_search.is_cik(company_id):
+        cf = _sec_load(company_id)                        # e.g. a shared link after the server restarted
     if cf is None:
         raise HTTPException(404, f"Unknown company_id {company_id}")
     return cf
@@ -158,7 +175,10 @@ def companies(include: Optional[str] = None):
     """The curated sample issuers. Uploaded reports are private to whoever holds their link, so they are listed
     only when that link's id is passed as `include` — never to every visitor."""
     out = []
-    for cid, cf in _companyfacts().items():
+    all_cf = _companyfacts()
+    if include and include not in all_cf and sec_search.is_cik(include):
+        all_cf[include] = _sec_load(include)
+    for cid, cf in all_cf.items():
         if cid not in _curated() and cid != include:
             continue
         try:
@@ -170,8 +190,89 @@ def companies(include: Optional[str] = None):
                                   source=cf.get("source", "SEC XBRL companyfacts"),
                                   fiscal_years=[y.fiscal_year_end for y in ys],
                                   last_filed=max((y.available_as_of for y in ys if y.available_as_of), default=None),
-                                  synthetic="SYNTHETIC" in cf.get("entityName", "")))
+                                  synthetic="SYNTHETIC" in cf.get("entityName", ""), curated=cid in _curated(),
+                                  tickers=(cf.get("sec_meta") or {}).get("tickers") or []))
     return out
+
+
+# ------------------------------------------------------------------ any U.S. public company (search + load)
+KEY_METRICS = {"ebitda": "EBITDA", "net_debt": "net debt", "net_leverage": "net debt / EBITDA",
+               "ebitda_interest_cover": "EBITDA / interest", "ebit_interest_cover": "EBIT / interest",
+               "fcf_simple": "free cash flow", "current_ratio": "current ratio", "ebitda_margin": "EBITDA margin"}
+
+
+@app.get("/companies/search")
+def company_search(q: str = "", limit: int = 10):
+    """Name, ticker or CIK -> SEC registrants (name, tickers, CIK). Server side only: the browser never calls SEC."""
+    q = q.strip()
+    if not q:
+        raise HTTPException(422, "Type a company name, ticker or CIK.")
+    if len(q) > sec_search.MAX_QUERY:
+        raise HTTPException(422, f"The search text is too long (at most {sec_search.MAX_QUERY} characters).")
+    try:
+        res = sec_search.search(q, max(1, min(limit, 20)))
+    except SECError as e:
+        log.warning(json.dumps({"event": "sec_error", "kind": e.kind, "where": "search", "detail": str(e)}))
+        if e.kind == "throttled":
+            raise HTTPException(429, "SEC EDGAR is limiting requests right now (rate limit). Wait a minute and try again.")
+        raise HTTPException(502, "The SEC company list cannot be reached right now, so search is unavailable. "
+                                 "The sample companies and upload still work.")
+    cur = _curated()
+    for r in res["results"]:
+        r["curated"] = r["company_id"] in cur
+    return res
+
+
+@app.post("/companies/resolve", response_model=Resolution)
+def company_resolve(req: ResolveRequest):
+    """Load a searched filer and say plainly what CreditLens can do with it."""
+    cik10 = req.cik.upper().replace("CIK", "").strip().zfill(10)
+    cf = _curated().get(cik10) or _sec_load(cik10)
+    source = cf.get("source", "SEC XBRL companyfacts")
+    meta = cf.get("sec_meta") or {}
+    common = {"sic": meta.get("sic") or None, "sic_description": meta.get("sicDescription") or None,
+              "retrieved_at": cf.get("retrieved_at"), "source": source}
+    name = cf.get("entityName") or meta.get("name") or cik10
+    try:
+        years = build_company_years(cf)
+    except Exception:  # noqa: BLE001 — a record the pipeline cannot read is reported, never patched up
+        log.exception(json.dumps({"event": "resolve_unreadable", "cik": cik10}))
+        years = []
+    if not years:
+        return Resolution(company=None, outcome="no_supported_statements", **common,
+                          message=f"{name} has no annual financial statements in SEC XBRL that CreditLens can read "
+                                  "(U.S. GAAP 10-K data). This is typical of foreign issuers reporting under IFRS on "
+                                  "Form 20-F or 40-F, funds and trusts, and shells. Nothing is estimated in their place; "
+                                  "you can still upload a text-based annual report.")
+    summary = next(c for c in companies(include=cik10) if c.company_id == cik10)
+    cy, prior = years[-1], (years[-2] if len(years) > 1 else None)
+    vals = _scaled(engine_inputs(cy))
+    m = compute_all(vals, _scaled(engine_inputs(prior)) if prior else None, cash_basis=cy.cash_basis)
+    unavailable = [label for k, label in KEY_METRICS.items() if m[k].status.value == "not_available"]
+    risk = risk_service.score(cf, cy.fiscal_year_end)
+    status = risk.get("status")
+    lab_missing = (credit_baseline(cy, cf.get("currency", "USD"), 0.0)[1] if cy.scorable else ["passing data checks"])
+    lab_note = ("The loan lab and memo cannot run for this year: not available in XBRL: "
+                + ", ".join(m.replace("_", " ").replace("ebitda", "EBITDA") for m in lab_missing) + "."
+                if lab_missing else "")
+    gates = risk.get("gate_reasons", []) if status != "scored" else []
+    if status != "scored":
+        outcome = "score_withheld"
+        msg = ("Financial statements loaded; the neural stress screen is withheld for this company: "
+               + "; ".join(gates or [risk.get("message", "the model is unavailable")]) + "."
+               + (" " + lab_note if lab_note else " Ratios, the loan lab and the memo still work."))
+    elif unavailable or not cy.scorable or lab_missing:
+        outcome = "partial"
+        msg = ("Financial statements loaded; some figures are not reported in XBRL and are shown as unavailable, "
+               "never estimated: " + ", ".join(unavailable or ["see the data checks"]) + "."
+               + (" " + lab_note if lab_note else ""))
+    else:
+        outcome, msg = "full", "Financial statements loaded; all credit metrics and the stress screen are available."
+    if unavailable and outcome == "score_withheld":
+        msg += " Not reported in XBRL: " + ", ".join(unavailable) + "."
+    return Resolution(company=summary, outcome=outcome, message=msg, fiscal_year_end=cy.fiscal_year_end,
+                      loan_lab_available=not lab_missing,
+                      metrics_unavailable=unavailable, score_status=status, gate_reasons=gates, **common)
 
 
 @app.post("/analyses", response_model=AnalysisResponse)

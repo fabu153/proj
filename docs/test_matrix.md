@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-05 07:44 UTC by `scripts/test_matrix.py`: 232 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-08 00:02 UTC by `scripts/test_matrix.py`: 301 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -32,6 +32,12 @@ _Generated 2026-11-05 07:44 UTC by `scripts/test_matrix.py`: 232 passed, 0 faile
 | E1 | Memo semantic checks and structure | Direction, signed headroom, undefined ratios, case mixing | 9 | ✅ pass |
 | C3 | Neural score separate from loan stress | Sliders never change the score | 2 | ✅ pass |
 | F | Stress heatmap from the Python engine | One engine call per cell, matches loan table | 5 | ✅ pass |
+| FIX-1 | Fiscal-year columns mapped by heading | Same t / t-1 in any column order; ambiguity flagged | 12 | ✅ pass |
+| FIX-2 | Negative / zero EBITDA stress convention | base + |base| x shock; zero never shocked | 10 | ✅ pass |
+| FIX-3 | Covenant PASS / BREACH / NOT TESTABLE | Not testable never a breach; all outputs agree | 9 | ✅ pass |
+| FIX-4 | No outdated memo exported as current | PDF only when memo snapshot = lab snapshot | 11 | ✅ pass |
+| SRCH | Search any U.S. public company (SEC mocked) | Find, analyse, stress and export a sourced memo | 13 | ✅ pass |
+| SRCH-O | Searched-company outcomes | Full / partial / score withheld / no statements / SEC down | 11 | ✅ pass |
 | HYG | Upload privacy hygiene | Uploads unlisted; audit operator-only | 2 | ✅ pass |
 | A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 5 | ✅ pass |
 | SEC | Security controls | Validation, limits, headers, deletion | 6 | ✅ pass |

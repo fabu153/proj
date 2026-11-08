@@ -321,3 +321,101 @@ def test_wcag_aa_no_serious_violations(page, path, wait):
     page.add_script_tag(path=str(AXE))
     res = _axe(page)
     assert res == [], res
+
+
+# ------------------------------------------------------------------ Stage 2: search any U.S. public company
+# Works against the mocked SEC (API started with CREDITLENS_SEC_FIXTURES=tests/fixtures/sec) or live SEC.
+def _fixture_mode():
+    import json
+    import urllib.request
+    with urllib.request.urlopen(API + "/companies/search?q=EXAMPLE%20IFRS") as r:
+        return any("TEST FIXTURE" in x["name"] for x in json.load(r)["results"])
+
+
+def test_search_keyboard_only_to_memo_pdf(page):
+    """Find a non-curated issuer by ticker using only the keyboard, run stresses and export a sourced memo."""
+    page.goto(BASE + "/", wait_until="networkidle")
+    box = page.get_by_role("combobox", name="Company name, ticker or CIK")
+    box.wait_for(timeout=60000)
+    box.focus()
+    page.keyboard.type("PATK")
+    page.wait_for_selector("[role=option]:has-text('PATRICK INDUSTRIES')", timeout=20000)
+    opt = page.locator("[role=option]").first
+    assert "PATK" in opt.inner_text() and "CIK 0000076605" in opt.inner_text()
+    assert box.get_attribute("aria-activedescendant") == opt.get_attribute("id")
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []                                              # open listbox is accessible
+    page.keyboard.press("Enter")
+    page.wait_for_url("**/workspace?company=0000076605", timeout=20000)
+    page.wait_for_selector("[data-outcome]", timeout=90000)
+    assert page.locator("h1").first.inner_text() == "PATRICK INDUSTRIES INC"
+    page.wait_for_selector("text=Current · snapshot", timeout=60000)
+    page.wait_for_selector("table.heat button.cell", timeout=60000)
+    page.locator("input[type=range]").first.fill("-30")
+    page.wait_for_selector("text=EBITDA shock -30%", timeout=15000)
+    page.wait_for_selector("text=Current · snapshot", timeout=15000)
+    page.click("text=Draft credit memo")
+    page.wait_for_selector("a[data-testid=memo-pdf]", timeout=60000)
+    assert "PATRICK INDUSTRIES" in page.inner_text(".memo-header")
+    page.locator("button.num-link.has-trail").first.click()
+    page.wait_for_selector("text=Source trail", timeout=5000)
+    assert page.locator(".trail a[href*='sec.gov/Archives/edgar/data/76605/']").count() >= 1
+    with page.expect_download() as dl:
+        page.click("a[data-testid=memo-pdf]")
+    assert Path(dl.value.path()).read_bytes()[:5] == b"%PDF-"
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []
+    assert page.errors == []
+
+
+def test_search_states_and_stale_replies(page):
+    page.goto(BASE + "/", wait_until="networkidle")
+    box = page.get_by_role("combobox", name="Company name, ticker or CIK")
+    box.wait_for(timeout=60000)
+    box.fill("zzqqxx nothing")
+    page.wait_for_selector("text=No U.S. SEC registrant matches", timeout=20000)
+    # SEC failure is shown as such, with a retry
+    page.route("**/api/companies/search*", lambda r: r.fulfill(status=429, json={"detail": "SEC EDGAR is limiting requests right now (rate limit). Wait a minute and try again."}))
+    box.fill("patk")
+    page.wait_for_selector("text=rate limit", timeout=20000)
+    page.unroute("**/api/companies/search*")
+    page.click(".search-msg button:has-text('Try again')")
+    page.wait_for_selector("[role=option]:has-text('PATRICK')", timeout=20000)
+    page.errors = [e for e in page.errors if "429" not in e]          # the injected rate-limit reply
+    # a slow reply to an older query never replaces the newer one
+    held = []
+    page.route("**/api/companies/search*", lambda r: held.append(r) if "q=united" in r.request.url else r.continue_())
+    box.fill("united")
+    page.wait_for_timeout(600)                                            # past the debounce: "united" is in flight
+    assert len(held) == 1
+    box.fill("berkshire")
+    page.wait_for_selector("[role=option]:has-text('BERKSHIRE')", timeout=20000)
+    held[0].continue_()                                                   # the older reply arrives last
+    page.wait_for_timeout(1500)
+    names = page.locator("[role=option] .hit-name").all_inner_texts()
+    assert names and all("BERKSHIRE" in n for n in names), names
+    page.unroute("**/api/companies/search*")
+    page.keyboard.press("Escape")
+    assert page.locator("[role=listbox]").is_hidden()
+    assert page.errors == []
+
+
+def test_searched_company_outcomes(page):
+    if not _fixture_mode():
+        pytest.skip("needs the mocked SEC fixtures (CREDITLENS_SEC_FIXTURES)")
+    page.goto(BASE + "/workspace?company=0000099902", wait_until="networkidle")
+    page.wait_for_selector("[data-outcome=no_supported_statements]", timeout=60000)
+    assert "IFRS" in page.inner_text("[data-outcome]")
+    assert page.locator("text=Pro forma credit metrics").count() == 0     # nothing invented
+    page.goto(BASE + "/workspace?company=0000099901", wait_until="networkidle")
+    page.wait_for_selector("[data-outcome=score_withheld]", timeout=60000)
+    assert "financial-sector" in page.inner_text("[data-outcome]")
+    page.wait_for_selector("text=Pro forma credit metrics", timeout=60000)   # ratios and loan lab still work
+    page.route("**/api/companies/resolve", lambda r: r.fulfill(status=502, json={"detail": "SEC EDGAR is unavailable right now, so this company's filings cannot be loaded."}))
+    page.goto(BASE + "/workspace?company=0000076605", wait_until="networkidle")
+    page.wait_for_selector("text=This company could not be loaded", timeout=60000)
+    assert "SEC EDGAR is unavailable" in page.inner_text(".sec-outcome")
+    page.unroute("**/api/companies/resolve")
+    page.click("text=Try again")
+    page.wait_for_selector("[data-outcome=full]", timeout=60000)
+    assert [e for e in page.errors if "502" not in e] == []            # only the injected SEC failure

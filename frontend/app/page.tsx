@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import ApiStatus from "@/components/ApiStatus";
+import CompanySearch from "@/components/CompanySearch";
 import Progress from "@/components/Progress";
 import TopBar from "@/components/TopBar";
 import type { Company } from "@/lib/api";
 import { api, fyLabel } from "@/lib/api";
 import { useApiReady } from "@/lib/useApi";
+
+const SHORT: Record<string, string> = { "0000080424": "Procter & Gamble", "0001067701": "United Rentals", "0001278027": "B&G Foods" };
 
 export default function Start() {
   const apiState = useApiReady();
@@ -29,45 +32,25 @@ export default function Start() {
         <div className="start-head">
           <h1>Evidence-linked credit analysis</h1>
           <p>
-            Pick a company, check where every figure comes from, read a trained next-FY accounting-stress screen, stress a proposed
+            Find any U.S. public company or upload a report, check where every figure comes from, read a trained next-FY accounting-stress screen, stress a proposed
             loan, and draft a cited memo for the credit committee.
           </p>
         </div>
         <Progress states={{ company: "current", financials: "todo", screen: "todo", lab: "todo", memo: "todo" }} />
 
+        <ApiStatus state={apiState} onRetry={apiState.retry} />
         <div className="start-grid">
-          <section className="sheet start-card" aria-labelledby="h-sample">
-            <h2 id="h-sample">Explore a sample company</h2>
-            <p className="fine">Three U.S. issuers with figures taken from their SEC 10-K XBRL filings, including a stressed borrower.</p>
-            <ApiStatus state={apiState} onRetry={apiState.retry} />
-            {error && (
-              <div className="notice error" role="alert">
-                {error}{" "}
-                <button type="button" className="link" onClick={apiState.retry}>
-                  Try again
-                </button>
-              </div>
-            )}
-            {apiState.phase === "ready" && !companies && !error && <p className="fine" role="status">Loading the sample companies…</p>}
-            {companies && (
-              <ul className="company-list">
-                {companies.map((c) => (
-                  <li key={c.company_id}>
-                    <Link href={`/workspace?company=${c.company_id}`}>
-                      <strong>{c.name}</strong>
-                      <span className="fine">
-                        {c.fiscal_years.length} fiscal years, latest {fyLabel(c.fiscal_years[c.fiscal_years.length - 1])}
-                        {c.last_filed ? `, filed ${c.last_filed}` : ""}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <section className="sheet start-card" aria-labelledby="h-search">
+            <h2 id="h-search">Search a U.S. public company</h2>
+            <p className="fine">
+              Any SEC registrant that files U.S. GAAP financial statements in XBRL. Figures, filing dates and accession numbers come
+              straight from its 10-K data at SEC EDGAR; nothing missing is estimated.
+            </p>
+            <CompanySearch disabled={apiState.phase !== "ready"} />
           </section>
 
           <section className="sheet start-card" aria-labelledby="h-upload">
-            <h2 id="h-upload">Upload a public annual report</h2>
+            <h2 id="h-upload">Upload an annual report</h2>
             <p className="fine">
               A text-based PDF of a public company&apos;s financial statements. You confirm the currency, units and year-end and review
               each extracted figure before anything is analysed. The PDF itself is never stored, and the extracted figures are deleted
@@ -79,6 +62,35 @@ export default function Start() {
             <p className="fine">Use public filings only. Do not upload confidential or client documents.</p>
           </section>
         </div>
+
+        <section className="quick-demo" aria-labelledby="h-sample">
+          <h2 id="h-sample">Quick demo</h2>
+          {error && (
+            <div className="notice error" role="alert">
+              {error}{" "}
+              <button type="button" className="link" onClick={apiState.retry}>
+                Try again
+              </button>
+            </div>
+          )}
+          {apiState.phase === "ready" && !companies && !error && <p className="fine" role="status">Loading the sample companies…</p>}
+          {companies && (
+            <ul className="company-list">
+              {companies.map((c) => (
+                <li key={c.company_id}>
+                  <Link href={`/workspace?company=${c.company_id}`}>
+                    <strong>{SHORT[c.company_id] ?? c.name}</strong>
+                    <span className="fine">
+                      {c.fiscal_years.length} fiscal years, latest {fyLabel(c.fiscal_years[c.fiscal_years.length - 1])}
+                      {c.last_filed ? `, filed ${c.last_filed}` : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="fine">Three curated issuers kept offline, including a stressed borrower: they open even if SEC is unreachable.</p>
+        </section>
         <section className="sheet start-card replay-card" aria-labelledby="h-replay">
           <div>
             <h2 id="h-replay">Replay the model on held-out years</h2>

@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.4.0 — Search any U.S. public company; four correctness fixes
+
+No frozen artifact changed: the model, its preprocessing, calibration and gates, the replay predictions and the
+release manifest (1.2.0, 27 hashes) are untouched. The loan engine is now 1.2.0, so analysis snapshot ids differ
+from v1.3 and the sample memos in `docs/samples/` were regenerated.
+
+### Search a U.S. public company
+- The start page puts **Search a U.S. public company** and **Upload an annual report** side by side, with a quick
+  demo of the three curated issuers below.
+- Search by name, ticker or CIK (`GET /companies/search?q=`). Suggestions show name, tickers, CIK and exchange;
+  debounced, with only the latest reply shown; keyboard accessible (ARIA combobox); loading, empty and error states.
+- Choosing a company opens the workspace, which loads it through `POST /companies/resolve`: SEC companyfacts and
+  the identity record are fetched **by the server** (the browser only talks to `/api`) through `SECClient`
+  (User-Agent from `SEC_USER_AGENT`, ≤ 4 requests/s, short retries, 12-hour disk + memory cache; the company list
+  is cached for a day and an older copy is used if SEC is down).
+- The record goes through the unchanged XBRL pipeline: original vintages, filing-date availability, accession
+  numbers, derivation rules and source trails work exactly as for the samples.
+- Five outcomes are told apart: fully analysable; some metrics unavailable (shown as unavailable, never estimated,
+  with a note if the loan lab cannot run); neural screen withheld (with the reason); no supported statements
+  (e.g. IFRS 20-F filers, funds, shells); SEC unavailable or rate-limited (with a retry).
+- The training universe screen now also applies to searched companies: financial-sector (SIC 6000–6799), shell
+  and unclassified filers are never scored by the network (`backend/app/features/universe_rules.py`, shared with
+  `training/pipeline/universe.py`).
+- Tests mock SEC (`tests/fixtures/sec`, `CREDITLENS_SEC_FIXTURES` for browser runs); nothing in CI calls SEC.
+
+### Correctness fixes
+- **Year columns (PDF upload).** Figures are mapped by each column's year heading, not by position: 2- and
+  3-column statements in either order, and mixed column counts, give the same t and t-1. Out-of-order or repeated
+  headings are flagged for review, and a statement without the latest year is never combined with the others.
+- **Negative EBITDA.** Shocks move EBITDA by a share of its size, `stressed = base + |base| × shock`, so a downside
+  deepens a loss; zero EBITDA is never shocked into an invented value. Explained in the loan lab and the trail.
+- **Covenant states.** Each covenant is PASS, BREACH or NOT TESTABLE (with a reason) in the loan table, heatmap,
+  memo and PDF. Not testable is never counted as a breach; an explicit `nonpositive_ebitda_breaches_leverage`
+  policy flag exists for agreements that define it so, off by default.
+- **No outdated memo export.** The PDF button is enabled only when a memo exists, the loan lab is current, and the
+  memo's snapshot equals the lab's with no draft or half-typed input pending. A memo reply that arrives after the
+  inputs changed is shown as outdated. The PDF endpoint also refuses a snapshot mismatch (409).
+
+### Not done in this release
+- The research-only onset GRU experiment was deferred at the owner's request.
+
 ## 1.3.4 — Input and panel fixes
 
 - Loan lab number fields can be cleared and retyped: a value is applied only when it is a valid number within the

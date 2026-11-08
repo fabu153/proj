@@ -18,21 +18,11 @@ import math
 import random
 
 from backend.app.documents.sec_client import SECClient
+from backend.app.features.universe_rules import excluded_sic  # noqa: F401 — one rule for training and the app
 
 SNAPSHOTS = ["CY2011Q4I", "CY2015Q4I", "CY2019Q4I", "CY2022Q4I"]
 MIN_ASSETS_USD = 100e6
 SEED = 20261104
-
-
-def excluded_sic(sic) -> str | None:
-    if sic in (None, "", "0"):
-        return "sic_missing"
-    s = int(sic)
-    if 6000 <= s <= 6799:
-        return "financial_sector"
-    if s in (6770, 9995):
-        return "blank_check"
-    return None
 
 
 def candidates(client: SECClient) -> dict[int, dict]:

@@ -14,6 +14,10 @@ services:
       # (CREDITLENS_CORS_REGEX); add your Vercel URL here if the project has another name.
       - key: CREDITLENS_CORS_ORIGINS
         value: "http://localhost:3000"
+      # SEC fair-access policy: automated clients must identify themselves with a contact email. Needed by company
+      # search (SEC refuses the company list without it).
+      - key: SEC_USER_AGENT
+        value: "CreditLens-Capstone fabrizio.faragalli@student.ie.edu"
       # Operator-only audit log (GET /audit with header x-admin-token). Leave unset to disable the endpoint.
       - key: CREDITLENS_ADMIN_TOKEN
         generateValue: true

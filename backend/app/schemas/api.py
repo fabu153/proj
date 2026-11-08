@@ -16,6 +16,29 @@ class CompanySummary(BaseModel):
     fiscal_years: list[str]
     last_filed: Optional[str]
     synthetic: bool = False
+    curated: bool = False
+    tickers: list[str] = []
+
+
+class ResolveRequest(BaseModel):
+    cik: str = Field(min_length=1, max_length=13, pattern=r"^\s*(?:CIK)?\s*\d{1,10}\s*$")
+
+
+class Resolution(BaseModel):
+    """What a searched company supports. outcome, most restrictive first: no_supported_statements,
+    score_withheld, partial (some metrics unavailable), full. SEC failures are HTTP errors, not outcomes."""
+    company: Optional[CompanySummary]
+    outcome: Literal["full", "partial", "score_withheld", "no_supported_statements"]
+    message: str
+    fiscal_year_end: Optional[str] = None
+    metrics_unavailable: list[str] = []
+    loan_lab_available: bool = False
+    score_status: Optional[str] = None
+    gate_reasons: list[str] = []
+    sic: Optional[str] = None
+    sic_description: Optional[str] = None
+    retrieved_at: Optional[str] = None
+    source: str
 
 
 class EvidenceRef(BaseModel):

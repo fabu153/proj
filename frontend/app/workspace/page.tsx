@@ -10,7 +10,8 @@ import Progress, { type StepKey, type StepState } from "@/components/Progress";
 import RiskScreen from "@/components/RiskScreen";
 import TopBar from "@/components/TopBar";
 import TrendCharts from "@/components/TrendCharts";
-import type { Analysis, Company, HistoryPoint } from "@/lib/api";
+import Link from "next/link";
+import type { Analysis, Company, HistoryPoint, Resolution } from "@/lib/api";
 import { api } from "@/lib/api";
 import { useApiReady } from "@/lib/useApi";
 
@@ -27,28 +28,58 @@ export default function Workspace() {
   const [memoSnapshot, setMemoSnapshot] = useState<string | null>(null);
   const [citation, setCitation] = useState<Citation | null>(null);
   const [reload, setReload] = useState(0);
+  // Stage 2: a company opened from search (a CIK that is not a sample) is loaded from SEC through the API first
+  const [resolution, setResolution] = useState<Resolution | null>(null);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<{ cik: string; message: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const onLab = useCallback((s: LabState) => setLab(s), []);
 
   useEffect(() => {
     if (apiState.phase !== "ready") return;
-    // ?company=<id> opens a specific company; an uploaded report is listed only for the holder of its id
+    // ?company=<id> opens a specific company; an uploaded report is listed only for the holder of its id; a CIK from
+    // search is fetched from SEC by the server (never by the browser) before the credit file opens
     const wanted = new URLSearchParams(window.location.search).get("company");
-    api
-      .companies(wanted?.startsWith("doc") ? wanted : null)
-      .then((cs) => {
-        const real = cs.filter((c) => !c.synthetic);
-        const list = real.length ? real : cs;
-        if (!list.length) throw new Error("No companies are available.");
-        setCompanies(list);
-        const first = list.find((c) => c.company_id === wanted) ?? list[0];
-        if (wanted && first.company_id !== wanted) {
-          setError("That uploaded report is no longer available (uploads are deleted after 24 hours). Showing a sample company instead.");
+    const cik = wanted && /^\d{10}$/.test(wanted) ? wanted : null;
+    let live = true;
+    (async () => {
+      setLoadError(null);
+      let include: string | null = wanted?.startsWith("doc") ? wanted : null;
+      if (cik) {
+        const samples = await api.companies();
+        if (!samples.some((c) => c.company_id === cik)) {
+          setResolving(cik);
+          try {
+            const r = await api.resolveCompany(cik);
+            if (!live) return;
+            setResolution(r);
+            if (r.outcome === "no_supported_statements" || !r.company) return;   // nothing to open; say why
+            include = cik;
+          } catch (e) {
+            if (live) setLoadError({ cik, message: (e as Error).message });
+            return;
+          } finally {
+            if (live) setResolving(null);
+          }
         }
-        setCompanyId(first.company_id);
-        setFiscalYear(first.fiscal_years[first.fiscal_years.length - 1]);
-      })
-      .catch((e) => setError(`Could not load the company list: ${(e as Error).message}`));
-  }, [apiState.phase]);
+      }
+      const cs = await api.companies(include);
+      if (!live) return;
+      const real = cs.filter((c) => !c.synthetic);
+      const list = real.length ? real : cs;
+      if (!list.length) throw new Error("No companies are available.");
+      setCompanies(list);
+      const first = list.find((c) => c.company_id === wanted) ?? list[0];
+      if (wanted && first.company_id !== wanted) {
+        setError("That uploaded report is no longer available (uploads are deleted after 24 hours). Showing a sample company instead.");
+      }
+      setCompanyId(first.company_id);
+      setFiscalYear(first.fiscal_years[first.fiscal_years.length - 1]);
+    })().catch((e) => live && setError(`Could not load the company list: ${(e as Error).message}`));
+    return () => {
+      live = false;
+    };
+  }, [apiState.phase, attempt]);
 
   useEffect(() => {
     if (!companyId || !fiscalYear) return;
@@ -72,6 +103,7 @@ export default function Workspace() {
 
   const changeCompany = (id: string) => {
     const c = companies?.find((x) => x.company_id === id);
+    if (resolution?.company?.company_id !== id) setResolution(null);
     setCompanyId(id);
     if (c) setFiscalYear(c.fiscal_years[c.fiscal_years.length - 1]);
     const url = new URL(window.location.href);
@@ -118,7 +150,35 @@ export default function Workspace() {
             </button>
           </div>
         )}
-        {apiState.phase === "ready" && !analysis && !error && (
+        {resolving && (
+          <p className="skeleton" role="status">
+            <span className="spinner" aria-hidden="true" />
+            Loading CIK {resolving} from SEC EDGAR (filings, XBRL financial data and identity record)…
+          </p>
+        )}
+        {loadError && (
+          <div className="sheet start-card sec-outcome" role="alert">
+            <h1>This company could not be loaded</h1>
+            <p>{loadError.message}</p>
+            <p className="fine">Nothing has been estimated or substituted. The sample companies and upload keep working.</p>
+            <div className="row-actions">
+              <button type="button" className="btn" onClick={() => setAttempt((a) => a + 1)}>Try again</button>
+              <Link className="btn ghost" href="/">Back to search</Link>
+            </div>
+          </div>
+        )}
+        {resolution?.outcome === "no_supported_statements" && (
+          <div className="sheet start-card sec-outcome" role="status" data-outcome="no_supported_statements">
+            <h1>No supported financial statements</h1>
+            <p>{resolution.message}</p>
+            {resolution.sic_description && <p className="fine">SEC industry: {resolution.sic_description} (SIC {resolution.sic}).</p>}
+            <div className="row-actions">
+              <Link className="btn" href="/">Search another company</Link>
+              <Link className="btn ghost" href="/upload">Upload an annual report</Link>
+            </div>
+          </div>
+        )}
+        {apiState.phase === "ready" && !analysis && !error && !resolving && !loadError && resolution?.outcome !== "no_supported_statements" && (
           <p className="skeleton" role="status">
             <span className="spinner" aria-hidden="true" />
             Loading the credit file…
@@ -139,6 +199,19 @@ export default function Workspace() {
                 {uploaded && analysis.sec_check ? ` · ${analysis.sec_check}` : ""}
               </p>
             </div>
+            {resolution?.company?.company_id === analysis.company_id && (
+              <div className={`notice sec-banner ${resolution.outcome}`} role="status" data-outcome={resolution.outcome}>
+                <strong>
+                  {resolution.outcome === "full"
+                    ? "Loaded from SEC EDGAR"
+                    : resolution.outcome === "partial"
+                      ? "Loaded from SEC EDGAR · some metrics unavailable"
+                      : "Loaded from SEC EDGAR · neural stress screen withheld"}
+                </strong>{" "}
+                {resolution.message}
+                {resolution.retrieved_at ? ` Retrieved ${resolution.retrieved_at}.` : ""}
+              </div>
+            )}
             {(analysis.unavailable_inputs?.length ?? 0) > 0 && (
               <div className="notice" style={{ marginBottom: 20 }}>
                 Marked unavailable during review and not used in any calculation: {analysis.unavailable_inputs!.join(", ")}.

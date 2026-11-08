@@ -13,6 +13,35 @@ export type Company = {
   fiscal_years: string[];
   last_filed: string | null;
   synthetic: boolean;
+  curated?: boolean;
+  tickers?: string[];
+};
+
+export type SearchHit = {
+  company_id: string;
+  cik: string;
+  name: string;
+  tickers: string[];
+  exchanges: string[];
+  match: "cik" | "ticker" | "name";
+  curated: boolean;
+};
+export type SearchResponse = { query: string; results: SearchHit[]; index: { source: string; retrieved_at: string | null; companies: number } };
+
+/** What CreditLens can do with a company found by search (SEC failures arrive as errors, not outcomes). */
+export type Resolution = {
+  company: Company | null;
+  outcome: "full" | "partial" | "score_withheld" | "no_supported_statements";
+  message: string;
+  fiscal_year_end: string | null;
+  metrics_unavailable: string[];
+  loan_lab_available: boolean;
+  score_status: string | null;
+  gate_reasons: string[];
+  sic: string | null;
+  sic_description: string | null;
+  retrieved_at: string | null;
+  source: string;
 };
 
 export type Metric = {
@@ -261,6 +290,10 @@ export async function waitForApi(
 
 export const api = {
   companies: (include?: string | null) => call<Company[]>(`/companies${include ? `?include=${encodeURIComponent(include)}` : ""}`),
+  /** server-side SEC search (never browser -> SEC); no retries, so a stale request never lingers */
+  searchCompanies: (q: string) => call<SearchResponse>(`/companies/search?q=${encodeURIComponent(q)}`, { retries: 0, timeoutMs: 20000 }),
+  resolveCompany: (cik: string) =>
+    call<Resolution>("/companies/resolve", { method: "POST", body: JSON.stringify({ cik }), retries: 0, timeoutMs: 60000 }),
   analysis: (company_id: string, fiscal_year_end?: string) =>
     call<Analysis>("/analyses", { method: "POST", body: JSON.stringify({ company_id, fiscal_year_end }), retries: 1 }),
   history: (company_id: string) => call<HistoryPoint[]>(`/companies/${company_id}/history`),
