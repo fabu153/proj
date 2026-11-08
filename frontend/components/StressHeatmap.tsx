@@ -6,8 +6,8 @@ import { api } from "@/lib/api";
 
 type MetricKey = "net_leverage" | "ebitda_interest_cover" | "headroom_lev" | "headroom_cov";
 const METRICS: { key: MetricKey; label: string; needs?: keyof Covenants }[] = [
-  { key: "net_leverage", label: "Net debt / EBITDA" },
   { key: "ebitda_interest_cover", label: "EBITDA / interest" },
+  { key: "net_leverage", label: "Net debt / EBITDA" },
   { key: "headroom_lev", label: "Headroom: max net debt / EBITDA", needs: "max_net_leverage" },
   { key: "headroom_cov", label: "Headroom: min EBITDA / interest", needs: "min_ebitda_interest_cover" },
 ];
@@ -26,7 +26,7 @@ type Props = {
 /** Stage F: a grid of EBITDA and rate shocks. Every cell is computed by the Python scenario engine (/scenarios/grid). */
 export default function StressHeatmap({ companyId, fiscalYear, facility, covenants, floatShare, disabled, current, onPick }: Props) {
   const [grid, setGrid] = useState<Grid | null>(null);
-  const [metric, setMetric] = useState<MetricKey>("net_leverage");
+  const [metric, setMetric] = useState<MetricKey>("ebitda_interest_cover"); // varies with both shocks
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +56,7 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
 
   if (disabled) return null;
   const available = METRICS.filter((m) => !m.needs || covenants[m.needs] !== null);
-  const shown = available.some((m) => m.key === metric) ? metric : "net_leverage";
+  const shown = available.some((m) => m.key === metric) ? metric : "ebitda_interest_cover";
   const fmt = (c: GridCell) => {
     if (c.error) return "n/a";
     const v = c[shown];
@@ -136,6 +136,17 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
         </div>
       )}
       {state === "loading" && !grid && <p className="fine" role="status"><span className="spinner" aria-hidden="true" />Calculating 42 scenarios…</p>}
+      {shown === "net_leverage" || shown === "headroom_lev" ? (
+        <p className="fine heat-hint">Net debt / EBITDA does not depend on interest rates, so every rate row is the same; only EBITDA moves it.</p>
+      ) : floatShare === 0 ? (
+        <p className="fine heat-hint">
+          Rate shocks reprice only floating-rate debt.{" "}
+          {facility.floating
+            ? "With no existing debt set as floating, only the new facility reprices, so the rows differ little."
+            : "With no floating debt at all, the rows are identical."}{" "}
+          Set &ldquo;Existing debt at floating rate&rdquo; to see the company&apos;s rate exposure.
+        </p>
+      ) : null}
       <p className="fine heat-legend">
         <span className="item"><span className="key breach" /> breach</span>
         <span className="item"><span className="key tight" /> passes, within 0.5x of the limit</span>

@@ -169,8 +169,23 @@ def test_financial_sector_filer_is_analysed_but_never_scored():
     assert res["sic"] == "6022" and any("financial-sector" in g for g in res["gate_reasons"])
     a = client.post("/analyses", json={"company_id": BANK}).json()
     assert a["risk_model"]["status"] == "withheld" and "probability" not in a["risk_model"]
-    assert a["metrics"]["net_leverage"]["value"] is not None                                  # ratios still work
-    assert res["loan_lab_available"] is True and "loan lab and the memo still work" in res["message"]
+    # industrial credit metrics do not describe a bank: flagged for the ledger, and no loan lab or memo
+    assert a["industry"]["financial"] is True and "do not describe a bank" in a["industry"]["note"]
+    assert a["loan_lab"]["available"] is False and "financial-sector" in a["loan_lab"]["reason"]
+    assert res["loan_lab_available"] is False and "not available for financial-sector" in res["message"]
+    body = {"company_id": BANK, "facility": {"amount": 100, "currency": "USD", "coupon": 0.06, "floating": True,
+                                             "tenor_years": 5, "use_of_proceeds": "capex"}}
+    for path in ("/scenarios", "/memos"):
+        r = client.post(path, json=body)
+        assert r.status_code == 422 and "financial-sector" in r.json()["detail"], path
+
+
+def test_operating_company_has_industry_and_a_loan_lab():
+    a = client.post("/analyses", json={"company_id": PATK}).json()
+    assert a["industry"]["financial"] is False and a["industry"]["note"] is None
+    assert a["loan_lab"] == {"available": True, "reason": None, "missing": []}
+    cur = client.post("/analyses", json={"company_id": "0001067701"}).json()
+    assert cur["industry"] is None and cur["loan_lab"]["available"] is True             # samples unchanged
 
 
 def test_filer_without_us_gaap_statements():
@@ -208,6 +223,7 @@ def test_some_metrics_unavailable_are_never_filled_in(tmp_path):
     assert "EBITDA / interest" in res["metrics_unavailable"]
     assert res["loan_lab_available"] is False and "loan lab and memo cannot run" in res["message"]
     a = client.post("/analyses", json={"company_id": PATK}).json()
+    assert a["loan_lab"]["available"] is False and "interest expense" in a["loan_lab"]["reason"]
     assert a["metrics"]["ebitda_interest_cover"]["value"] is None
     assert a["metrics"]["ebitda_interest_cover"]["status"] == "not_available"
 

@@ -23,7 +23,7 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.5.0** — 300 automated tests + 17 browser tests, 317 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
+**Release v1.5.1** — 301 automated tests + 19 browser tests, 320 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -220,7 +220,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 300 tests (+17 browser tests with E2E_BASE_URL)
+pytest -q                                        # 301 tests (+19 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

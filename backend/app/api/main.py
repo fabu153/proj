@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse
 from .. import replay, store
 from ..documents import pdf_extract, sec_search, uploads
 from ..documents.sec_client import SECError
+from ..features.universe_rules import excluded_sic
 from ..documents.xbrl import CompanyYear, build_company_years, engine_inputs
 from ..finance.metrics import compute_all
 from ..memos import service as memo_service
@@ -44,7 +45,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -251,10 +252,10 @@ def company_resolve(req: ResolveRequest):
     unavailable = [label for k, label in KEY_METRICS.items() if m[k].status.value == "not_available"]
     risk = risk_service.score(cf, cy.fiscal_year_end)
     status = risk.get("status")
-    lab_missing = (credit_baseline(cy, cf.get("currency", "USD"), 0.0)[1] if cy.scorable else ["passing data checks"])
-    lab_note = ("The loan lab and memo cannot run for this year: not available in XBRL: "
-                + ", ".join(m.replace("_", " ").replace("ebitda", "EBITDA") for m in lab_missing) + "."
-                if lab_missing else "")
+    lab = _lab_status(cf, cy)
+    lab_missing = not lab["available"]
+    lab_note = ("" if lab["available"] else FINANCIAL_LAB if (_industry(cf) or {}).get("financial")
+                else "The loan lab and memo cannot run for this year. " + lab["reason"])
     gates = risk.get("gate_reasons", []) if status != "scored" else []
     if status != "scored":
         outcome = "score_withheld"
@@ -302,7 +303,8 @@ def analyses(req: AnalysisRequest):
         cash_basis=cy.cash_basis, unavailable_inputs=cf.get("unavailable_critical", []),
         sec_check=cf.get("sec_check", "SEC XBRL is the source" if "unavailable_critical" not in cf else None),
         warnings=cy.warnings, hard_failures=cy.hard_failures,
-        risk_model=risk_service.score(cf, cy.fiscal_year_end, req.as_of))
+        risk_model=risk_service.score(cf, cy.fiscal_year_end, req.as_of),
+        industry=_industry(cf), loan_lab=_lab_status(cf, cy))
 
 
 @app.post("/predict")
@@ -378,9 +380,49 @@ def history(company_id: str):
     return out
 
 
+FINANCIAL_NOTE = ("This is a financial-sector filer (SEC SIC {sic}{desc}). The industrial credit metrics used here "
+                  "(EBITDA, net debt / EBITDA, interest cover, free cash flow) do not describe a bank's or insurer's "
+                  "credit: interest is its main revenue and expense, deposits are its funding and \"revenue\" tags "
+                  "capture only part of its income. Bank credit is judged on capital, asset quality and liquidity, "
+                  "which CreditLens does not model. The figures below are shown as reported, not as credit metrics.")
+
+
+def _industry(cf: dict) -> Optional[dict]:
+    """Industry of a company found by search (SEC SIC code); None for samples and uploads."""
+    meta = cf.get("sec_meta")
+    if not meta:
+        return None
+    sic = cf.get("sic") or meta.get("sic")
+    financial = excluded_sic(sic) == "financial_sector"
+    desc = meta.get("sicDescription")
+    return {"sic": sic or None, "sic_description": desc, "financial": financial,
+            "note": FINANCIAL_NOTE.format(sic=sic, desc=f", {desc}" if desc else "") if financial else None}
+
+
+FINANCIAL_LAB = ("The loan lab and memo are not available for financial-sector filers: their leverage and coverage "
+                 "tests are built for operating companies and would be misleading for a bank or insurer.")
+
+
+def _lab_status(cf: dict, cy) -> dict:
+    """Whether the loan lab, heatmap and memo can run for this year, decided once on the server."""
+    ind = _industry(cf)
+    if ind and ind["financial"]:
+        return {"available": False, "reason": FINANCIAL_LAB, "missing": []}
+    if not cy.scorable:
+        return {"available": False, "reason": "Hard data checks failed for this year.", "missing": []}
+    missing = credit_baseline(cy, cf.get("currency", "USD"), 0.0)[1]
+    if missing:
+        return {"available": False, "missing": missing,
+                "reason": "Not reported in XBRL for this year: " + ", ".join(
+                    m.replace("_", " ").replace("ebitda", "EBITDA") for m in missing) + ". Nothing is estimated in its place."}
+    return {"available": True, "reason": None, "missing": []}
+
+
 def _baseline(company_id: str, fye: Optional[str], floating_share: float) -> tuple[Baseline, CompanyYear]:
     cf = _cf(company_id)
     cy, _ = _pick(build_company_years(cf), fye)
+    if (_industry(cf) or {}).get("financial"):
+        raise HTTPException(422, FINANCIAL_LAB)
     if not cy.scorable:
         raise HTTPException(422, f"Hard data checks failed: {cy.hard_failures}")
     base, missing = credit_baseline(cy, cf.get("currency", "USD"), floating_share)
@@ -545,6 +587,8 @@ def memo_config():
 @app.post("/memos")
 def create_memo(req: MemoRequest):
     cf = _cf(req.company_id)
+    if (_industry(cf) or {}).get("financial"):
+        raise HTTPException(422, FINANCIAL_LAB)
     facility = req.facility or Facility(amount=100.0, currency=cf.get("currency", "USD"))
     try:
         return memo_service.generate(cf, req.company_id, req.fiscal_year_end, facility, req.covenants,

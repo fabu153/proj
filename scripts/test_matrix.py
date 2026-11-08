@@ -48,6 +48,7 @@ MATRIX = [
     ("ONSET", "One canonical onset definition (label_onset)", "6 of 73 everywhere; 15 of 96 reconciled and labelled; frozen files unchanged", ["test_reconciliation_of_96_and_73", "test_frozen_files_keep_their_original", "test_history_experiments_use_the_canonical", "test_research_file_matches_its_sources", "test_research_file_regenerates", "test_docs_no_longer_present"]),
     ("WATCH", "Watch-list threshold research (not deployed)", "Thresholds from validation scores only; counts reproducible; not in the app", ["test_watchlist_thresholds_come_from_validation", "test_watchlist_is_not_in_the_app"]),
     ("XRAY-R", "Model X-Ray experimental research section", "Overall and onset tables separate; deployed vs experimental marked; no new score", ["test_model_xray_serves_research", "test_model_xray_research_section"]),
+    ("POL-151", "v1.5.1 review polish", "Banks flagged, no lab calls when unavailable, heatmap default", ["test_financial_sector_filer", "test_operating_company_has_industry", "test_bank_shows_banner", "test_heatmap_opens_on_interest_cover"]),
     ("HYG", "Upload privacy hygiene", "Uploads unlisted; audit operator-only", ["test_full_upload_to_memo_flow", "test_security_headers"]),
     ("A11Y", "WCAG 2.1 AA (axe-core)", "No serious/critical violations", ["test_wcag_aa"]),
     ("SEC", "Security controls", "Validation, limits, headers, deletion", ["test_rejects_non_pdf", "test_upload_rate_limit", "test_security_headers", "test_unexpected_errors_hide", "test_cors_"]),

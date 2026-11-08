@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.1 — Review polish
+
+- **Banks and insurers.** For financial-sector filers (SIC 6000–6799) the workspace now says that industrial
+  credit metrics don't apply, folds the reported figures away behind "Show the reported figures anyway", hides the
+  trend charts and marks the evidence rail "as reported, not a credit measure". The loan lab, heatmap and memo
+  are unavailable for them, enforced by the API too (`/scenarios`, `/scenarios/grid`, `/memos` answer 422).
+- **No wasted calls.** `/analyses` now returns `loan_lab: {available, reason, missing}` per company and year, and
+  the workspace renders the loan lab and memo only when it is available, so no request is sent that is bound to fail.
+- **Heatmap** opens on EBITDA / interest. It explains that net debt / EBITDA cannot move with rates and that rate
+  shocks reprice only floating debt (with 0% existing floating debt the rows differ little).
+- **Start page.** The replay card is laid out as text and button side by side.
+- Accessibility: a struck-through step in the progress bar had 2.9:1 contrast; fixed.
+
 ## 1.5.0 — One onset definition; watch-list research; experimental research in Model X-Ray
 
 No model, calibration, replay or release-manifest file changed (manifest 1.2.0, 27 hashes still verified).

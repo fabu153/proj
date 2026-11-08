@@ -90,6 +90,8 @@ class AnalysisResponse(BaseModel):
     sec_check: Optional[str] = None
     risk_model: dict = Field(default_factory=dict)
     review_required: bool = True
+    industry: Optional[dict] = None          # SEC SIC for searched companies; financial=True -> industrial metrics n/a
+    loan_lab: Optional[dict] = None          # {"available": bool, "reason": str|None, "missing": [...]}
 
 
 class PredictRequest(BaseModel):

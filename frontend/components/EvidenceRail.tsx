@@ -87,6 +87,11 @@ export default function EvidenceRail({ analysis, selected, citation: cite }: { a
       )}
       <div className="sheet evidence">
         <h3>Why this value?</h3>
+        {analysis.industry?.financial && (
+          <p className="fine sector-rail" role="note">
+            As reported, not a credit measure: industrial ratios do not apply to this financial-sector filer.
+          </p>
+        )}
         {row && (
           <p className="fine" style={{ margin: 0 }}>
             {row.label}, fiscal year ending {analysis.fiscal_year_end}

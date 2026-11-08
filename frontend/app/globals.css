@@ -229,7 +229,7 @@ button.cite:hover { background: var(--teal); color: #fff; }
 .progress li.current .n { border: 2px solid var(--ink); }
 .progress li.stale a { color: var(--amber); }
 .progress li.stale .n { border-color: var(--amber); }
-.progress li.blocked a { color: #8592a0; text-decoration: line-through; }
+.progress li.blocked a { color: var(--slate); text-decoration: line-through; }
 .workspace-progress { position: sticky; top: 0; z-index: 5; background: var(--paper); padding: 8px 0; margin: -8px 0 18px; border-bottom: 1px solid var(--rule); }
 .workspace-progress .progress { margin: 0; }
 .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--teal); border-right-color: transparent; border-radius: 50%; vertical-align: -1px; margin-right: 6px; animation: spin 0.9s linear infinite; }
@@ -345,8 +345,11 @@ details.explain p { margin: 6px 0 0; max-width: 75ch; }
 .fail-grid p { margin: 0; font-size: 14px; }
 .explain-box { border-left: 4px solid var(--teal); background: var(--teal-soft); padding: 10px 14px; font-size: 14px; margin-top: 12px; border-radius: 0 var(--radius-s) var(--radius-s) 0; }
 .score-sentence { font-size: 14px; margin: 12px 0 0; padding: 10px 12px; background: var(--paper); border-radius: var(--radius-s); }
-.replay-card { margin-top: 24px; display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
-.replay-card p { margin: 4px 0 0; max-width: 80ch; }
+.start-card.replay-card { margin-top: 24px; display: grid; grid-template-columns: 1fr auto; gap: 8px 32px; align-items: center; }
+.replay-card h2 { margin: 0; }
+.replay-card p { margin: 4px 0 0; max-width: 72ch; }
+.start-card.replay-card .btn { align-self: center; justify-self: end; white-space: nowrap; }
+@media (max-width: 700px) { .start-card.replay-card { grid-template-columns: 1fr; } .start-card.replay-card .btn { justify-self: start; } }
 
 /* ------------------------------------------------------------ v1.3: memo header, clickable figures, source trail */
 .memo-header { display: grid; grid-template-columns: 140px 1fr; gap: 0; margin: 6px 0 14px; border: 1px solid var(--ink); border-radius: var(--radius-s); font-size: 13.5px; }
@@ -448,3 +451,8 @@ tr.is-deployed { background: var(--teal-soft); }
 .kind.benchmark, .kind.reference { background: var(--sheet); }
 .plain-list { margin: 0; padding-left: 18px; font-size: 14px; }
 .plain-list li { margin-bottom: 6px; }
+
+.sector-banner { border-left-color: var(--amber); background: var(--amber-soft); margin-bottom: 12px; }
+.sector-details > summary { cursor: pointer; font-size: 14px; color: var(--slate); margin-bottom: 10px; }
+.sector-rail { margin: 0 0 6px; padding: 4px 8px; background: var(--amber-soft); border-left: 3px solid var(--amber); }
+.heat-hint { margin: 6px 0 0; }

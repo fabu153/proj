@@ -410,7 +410,7 @@ def test_searched_company_outcomes(page):
     page.goto(BASE + "/workspace?company=0000099901", wait_until="networkidle")
     page.wait_for_selector("[data-outcome=score_withheld]", timeout=60000)
     assert "financial-sector" in page.inner_text("[data-outcome]")
-    page.wait_for_selector("text=Pro forma credit metrics", timeout=60000)   # ratios and loan lab still work
+    page.wait_for_selector("[data-testid=lab-unavailable]", timeout=60000)   # banks: no loan lab (v1.5.1)
     page.route("**/api/companies/resolve", lambda r: r.fulfill(status=502, json={"detail": "SEC EDGAR is unavailable right now, so this company's filings cannot be loaded."}))
     page.goto(BASE + "/workspace?company=0000076605", wait_until="networkidle")
     page.wait_for_selector("text=This company could not be loaded", timeout=60000)
@@ -441,3 +441,31 @@ def test_model_xray_research_section(page):
     page.add_script_tag(path=str(AXE))
     assert _axe(page) == []
     assert page.errors == []
+
+
+# ------------------------------------------------------------------ v1.5.1 polish
+def test_bank_shows_banner_and_makes_no_lab_calls(page):
+    if not _fixture_mode():
+        pytest.skip("needs the mocked SEC fixtures (CREDITLENS_SEC_FIXTURES)")
+    calls = []
+    page.on("request", lambda r: calls.append(r.url) if "/scenarios" in r.url or "/memos" in r.url else None)
+    page.goto(BASE + "/workspace?company=0000099901", wait_until="networkidle")
+    page.wait_for_selector("[data-testid=financial-banner]", timeout=60000)
+    assert "don't apply to banks" in page.inner_text("[data-testid=financial-banner]")
+    assert not page.locator("details.sector-details").get_attribute("open")      # figures folded away by default
+    page.wait_for_selector("[data-testid=lab-unavailable]")
+    page.wait_for_timeout(1500)
+    assert calls == [] and page.locator("table.heat").count() == 0               # loan_lab.available guards the calls
+    assert "not a credit measure" in page.inner_text(".evidence")
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []
+    assert page.errors == []
+
+
+def test_heatmap_opens_on_interest_cover(page):
+    page.goto(BASE + "/workspace?company=0001067701", wait_until="networkidle")
+    page.wait_for_selector("table.heat button.cell", timeout=90000)
+    assert page.locator("[role=radio][aria-checked=true]").first.inner_text().startswith("EBITDA / interest")
+    assert "reprice only floating-rate debt" in page.inner_text(".heat-hint")
+    page.click("[role=radio]:has-text('Net debt / EBITDA')")
+    assert "does not depend on interest rates" in page.inner_text(".heat-hint")

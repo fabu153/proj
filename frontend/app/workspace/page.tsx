@@ -225,13 +225,27 @@ export default function Workspace() {
                     Every figure comes from {uploaded ? "the reviewed annual report" : "the company's 10-K filings"} and a versioned formula.
                     Grey dots mark ratios that are undefined, amber dots mark approximations or qualified values.
                   </p>
-                  <CreditProfile analysis={analysis} history={history} selected={selected} onSelect={setSelected} />
+                  {analysis.industry?.financial ? (
+                    <>
+                      <div className="notice sector-banner" role="note" data-testid="financial-banner">
+                        <strong>Industrial credit metrics don&apos;t apply to banks and insurers.</strong> {analysis.industry.note}
+                      </div>
+                      <details className="sector-details">
+                        <summary>Show the reported figures anyway (not credit metrics for this filer)</summary>
+                        <CreditProfile analysis={analysis} history={history} selected={selected} onSelect={setSelected} />
+                      </details>
+                    </>
+                  ) : (
+                    <CreditProfile analysis={analysis} history={history} selected={selected} onSelect={setSelected} />
+                  )}
                 </section>
 
-                <section className="block" aria-labelledby="h-trends">
-                  <h2 id="h-trends">Trends</h2>
-                  <TrendCharts history={history} upto={analysis.fiscal_year_end} currency={analysis.currency} />
-                </section>
+                {!analysis.industry?.financial && (
+                  <section className="block" aria-labelledby="h-trends">
+                    <h2 id="h-trends">Trends</h2>
+                    <TrendCharts history={history} upto={analysis.fiscal_year_end} currency={analysis.currency} />
+                  </section>
+                )}
 
                 <section className="block" aria-labelledby="h-risk">
                   <h2 id="h-risk">Neural screen</h2>
@@ -250,6 +264,11 @@ export default function Workspace() {
                     follows the sliders. These are deterministic calculations, separate from the neural screen above, which the sliders
                     never change. Each set of inputs gets a snapshot id that the memo and its PDF carry.
                   </p>
+                  {analysis.loan_lab && !analysis.loan_lab.available ? (
+                    <div className="notice" role="status" data-testid="lab-unavailable">
+                      <strong>Not available for this company and year.</strong> {analysis.loan_lab.reason}
+                    </div>
+                  ) : (
                   <LoanLab
                     key={`${analysis.company_id}|${analysis.fiscal_year_end}`}
                     companyId={analysis.company_id}
@@ -258,6 +277,7 @@ export default function Workspace() {
                     blocked={!analysis.scorable}
                     onState={onLab}
                   />
+                  )}
                 </section>
 
                 <section className="block" aria-labelledby="h-memo">
@@ -266,6 +286,9 @@ export default function Workspace() {
                     A draft for the credit committee built from everything above, using the current loan lab snapshot. Each number is
                     inserted by the engines and cited; select a citation to see its source, or edit a sentence and it is checked again.
                   </p>
+                  {analysis.loan_lab && !analysis.loan_lab.available ? (
+                    <p className="fine" role="status">The memo is built on the loan lab, so it is not available either.</p>
+                  ) : (
                   <MemoPanel
                     key={`${analysis.company_id}|${analysis.fiscal_year_end}`}
                     companyId={analysis.company_id}
@@ -275,6 +298,7 @@ export default function Workspace() {
                     onCite={setCitation}
                     onMemo={setMemoSnapshot}
                   />
+                  )}
                 </section>
               </div>
               <EvidenceRail analysis={analysis} selected={selected} citation={citation} />

@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-08 14:14 UTC by `scripts/test_matrix.py`: 317 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-08 21:33 UTC by `scripts/test_matrix.py`: 320 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -42,6 +42,7 @@ _Generated 2026-11-08 14:14 UTC by `scripts/test_matrix.py`: 317 passed, 0 faile
 | ONSET | One canonical onset definition (label_onset) | 6 of 73 everywhere; 15 of 96 reconciled and labelled; frozen files unchanged | 6 | ✅ pass |
 | WATCH | Watch-list threshold research (not deployed) | Thresholds from validation scores only; counts reproducible; not in the app | 2 | ✅ pass |
 | XRAY-R | Model X-Ray experimental research section | Overall and onset tables separate; deployed vs experimental marked; no new score | 2 | ✅ pass |
+| POL-151 | v1.5.1 review polish | Banks flagged, no lab calls when unavailable, heatmap default | 4 | ✅ pass |
 | HYG | Upload privacy hygiene | Uploads unlisted; audit operator-only | 2 | ✅ pass |
 | A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 5 | ✅ pass |
 | SEC | Security controls | Validation, limits, headers, deletion | 6 | ✅ pass |

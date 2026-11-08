@@ -101,6 +101,10 @@ export type RiskModel = {
 };
 
 export type Analysis = {
+  /** searched companies: SEC industry; financial=true means industrial credit metrics do not apply */
+  industry?: { sic: string | null; sic_description: string | null; financial: boolean; note: string | null } | null;
+  /** whether the loan lab, heatmap and memo can run for this year (decided by the server) */
+  loan_lab?: { available: boolean; reason: string | null; missing: string[] } | null;
   company_id: string;
   company_name: string;
   fiscal_year_end: string;
