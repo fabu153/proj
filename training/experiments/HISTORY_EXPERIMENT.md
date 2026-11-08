@@ -44,3 +44,8 @@ year *t* was filed. A control run of the same pipeline with v1 inputs reproduces
 
 Re-run: `python -m training.ml.experiment_history [--control]` and `python -m training.ml.experiment_sequence`
 (about 1–2 minutes each, CPU). Results: `mlp_history_v1/results.json` and `gru_history_v1/results.json`.
+
+## Follow-up: onset-specific GRU (gru_onset_v1)
+
+A GRU trained only on currently healthy companies did **not** improve onset detection: test PR-AUC 0.254, against
+0.319 for the deployed network on the same 727 onset rows. See `gru_onset_v1/report.md`.

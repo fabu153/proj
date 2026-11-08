@@ -22,7 +22,7 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.4.0** — 285 automated tests + 16 browser tests, 301 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
+**Release v1.4.0** — 291 automated tests + 16 browser tests, 307 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -122,6 +122,13 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
+## Research: onset-specific GRU (not deployed)
+
+`training/experiments/gru_onset_v1/report.md` asks whether a three-year GRU trained only on currently healthy
+companies spots new stress better. It does not: test PR-AUC 0.254, against 0.319 for the deployed network on the
+same 727 rows (73 onsets) and 0.346 for the onset XGBoost. The training set holds just 65 onsets. The report
+recommends against deployment and lists what would make the idea worth revisiting.
+
 ## v1.4 — Any U.S. public company
 
 - **Search.** Type a name, ticker or CIK on the start page. The API searches SEC's company list and, when you pick
@@ -205,7 +212,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 285 tests (+16 browser tests with E2E_BASE_URL)
+pytest -q                                        # 291 tests (+16 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

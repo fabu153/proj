@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-08 00:02 UTC by `scripts/test_matrix.py`: 301 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-08 13:17 UTC by `scripts/test_matrix.py`: 307 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -38,6 +38,7 @@ _Generated 2026-11-08 00:02 UTC by `scripts/test_matrix.py`: 301 passed, 0 faile
 | FIX-4 | No outdated memo exported as current | PDF only when memo snapshot = lab snapshot | 11 | ✅ pass |
 | SRCH | Search any U.S. public company (SEC mocked) | Find, analyse, stress and export a sourced memo | 13 | ✅ pass |
 | SRCH-O | Searched-company outcomes | Full / partial / score withheld / no statements / SEC down | 11 | ✅ pass |
+| RES-ON | Onset GRU research (not deployed) | Canonical cohort, point-in-time history, numbers reproducible | 6 | ✅ pass |
 | HYG | Upload privacy hygiene | Uploads unlisted; audit operator-only | 2 | ✅ pass |
 | A11Y | WCAG 2.1 AA (axe-core) | No serious/critical violations | 5 | ✅ pass |
 | SEC | Security controls | Validation, limits, headers, deletion | 6 | ✅ pass |

@@ -1,5 +1,16 @@
 # Changelog
 
+## Research — gru_onset_v1 (not deployed)
+- A three-year GRU trained only on companies not stressed in year t, to detect new stress
+  (`training/experiments/gru_onset_v1/report.md`). Canonical `label_onset` cohort: 886 / 295 / 727 rows with
+  65 / 18 / 73 onsets. Missing prior years are skipped (packed sequences), not zero-filled.
+- Result: test PR-AUC 0.254, against 0.300 for the onset MLP (reproduced exactly), 0.346 for the onset XGBoost
+  and 0.319 for the deployed network on the same rows. Not deployed; the report recommends against it.
+- Exploratory only: the 2021–25 test window had already been inspected. Nothing in `backend/models`, the
+  manifest, Model X-Ray or the replay changed. The research tests (`tests/integration/test_research_gru_onset.py`)
+  check the cohort, point-in-time history, missing-year handling and that every published number follows from
+  the saved predictions.
+
 ## 1.4.0 — Search any U.S. public company; four correctness fixes
 
 No frozen artifact changed: the model, its preprocessing, calibration and gates, the replay predictions and the
@@ -37,9 +48,6 @@ from v1.3 and the sample memos in `docs/samples/` were regenerated.
 - **No outdated memo export.** The PDF button is enabled only when a memo exists, the loan lab is current, and the
   memo's snapshot equals the lab's with no draft or half-typed input pending. A memo reply that arrives after the
   inputs changed is shown as outdated. The PDF endpoint also refuses a snapshot mismatch (409).
-
-### Not done in this release
-- The research-only onset GRU experiment was deferred at the owner's request.
 
 ## 1.3.4 — Input and panel fixes
 
