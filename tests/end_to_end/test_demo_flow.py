@@ -478,7 +478,7 @@ def test_v16_peers_maturities_and_textbook_scores(page):
     ledger = page.inner_text("section[aria-labelledby=h-profile]")
     assert "Peers" in ledger and "SIC 73" in ledger and "percentile" in page.locator("td.peer .sr-only").first.inner_text()
     mat = page.inner_text("section[aria-labelledby=h-maturities]")
-    assert "1,577" in mat and "5,420" in mat and "Liquidity runway" in mat
+    assert "1,577" in mat and "5,420" in mat and "liquidity runway" in mat.lower()          # KPI labels are upper-cased by CSS
     assert page.locator("section[aria-labelledby=h-maturities] a[href*='sec.gov/Archives/edgar/data/1067701/']").count() >= 1
     classic = page.inner_text(".classic")
     assert "Altman Z″" in classic and "Ohlson O" in classic and "not CreditLens" in classic

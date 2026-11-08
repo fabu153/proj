@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1 — Layout polish
+
+- Debt maturities: four headline tiles (due within 12 months, liquidity runway with a coloured status edge,
+  coverage through year N, share due within 2 years), then a full-width chart with a legend, then a footer
+  with the balance-sheet reconciliation, notes and source.
+- Textbook scores: each peer percentile is drawn as a gauge from riskier to safer (Ohlson O flipped, since lower
+  is safer), with a "safer than N% of peers" label.
+
 ## 1.6.0 — Peer percentiles, debt maturity wall, textbook scores
 
 No model, calibration, replay or release-manifest file changed (manifest 1.2.0, 27 hashes still verified). The new
