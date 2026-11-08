@@ -1,0 +1,372 @@
+{
+ "version": "research_v1",
+ "status": "Experimental results. None of these models or thresholds produces a score in the app.",
+ "test_window": "filed 2021-2025; already inspected in earlier experiments, so all comparisons are exploratory",
+ "populations": {
+  "overall": {
+   "definition": "label_next_fy: at least two of three stress conditions in the next fiscal year; every held-out row",
+   "rows": 1086,
+   "positives": 322
+  },
+  "onset": {
+   "definition": "label_onset: confirmed not stressed in the filing year (status determinable) and next-year status determinable",
+   "rows": 727,
+   "positives": 73,
+   "training_onsets": 65
+  }
+ },
+ "reconciliation": {
+  "test_rows": 1086,
+  "threshold": 0.44648106515671243,
+  "groups": {
+   "already_stressed": {
+    "rows": 299,
+    "stressed_next_year": 226,
+    "caught": 214,
+    "false_alarms": 66
+   },
+   "confirmed_healthy": {
+    "rows": 727,
+    "stressed_next_year": 73,
+    "caught": 6,
+    "false_alarms": 8
+   },
+   "status_undetermined": {
+    "rows": 60,
+    "stressed_next_year": 23,
+    "caught": 9,
+    "false_alarms": 10
+   }
+  },
+  "legacy_onset": {
+   "rows": 787,
+   "stressed_next_year": 96,
+   "caught": 15,
+   "false_alarms": 18,
+   "definition": "fewer than two stress conditions met in year t, counting a condition that could not be checked as not met"
+  },
+  "explanation": "The earlier '15 of 96' counted 60 company-years whose year-t status could not be determined (one condition met, others unreported) as healthy. Canonical onset = confirmed healthy only: 96 = 73 confirmed-healthy onsets + 23 undetermined; 15 caught = 6 + 9."
+ },
+ "overall": [
+  {
+   "model": "Deployed network (stress_mlp_v1)",
+   "kind": "deployed",
+   "inputs": "year t: 31 measures + missing flags",
+   "trained_on": "all borrowers",
+   "pr_auc": 0.8054597850314418,
+   "pr_auc_ci95": [
+    0.7522653344622828,
+    0.8531550311125679
+   ],
+   "vs_deployed": null,
+   "source": "mlp_v1"
+  },
+  {
+   "model": "Network + two prior years (MLP)",
+   "kind": "experiment",
+   "inputs": "year t + lagged ratios for t-1, t-2",
+   "trained_on": "all borrowers",
+   "pr_auc": 0.8044861955994286,
+   "pr_auc_ci95": [
+    0.7530761855885443,
+    0.8504271840531563
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.0010697165794061117,
+    "ci95": [
+     -0.022425975726411574,
+     0.019491472457747044
+    ],
+    "share_a_better": 0.45
+   },
+   "source": "mlp_history_v1"
+  },
+  {
+   "model": "General three-year GRU",
+   "kind": "experiment",
+   "inputs": "sequence t-2, t-1, t",
+   "trained_on": "all borrowers",
+   "pr_auc": 0.8208205354500864,
+   "pr_auc_ci95": [
+    0.7689641072031462,
+    0.8657611427909802
+   ],
+   "vs_deployed": {
+    "mean_diff": 0.015113576150356103,
+    "ci95": [
+     -0.0024007540735285714,
+     0.03364891410443199
+    ],
+    "share_a_better": 0.962
+   },
+   "source": "gru_history_v1"
+  },
+  {
+   "model": "XGBoost benchmark",
+   "kind": "benchmark",
+   "inputs": "year t",
+   "trained_on": "all borrowers",
+   "pr_auc": 0.8250541134723463,
+   "pr_auc_ci95": [
+    0.771502739342203,
+    0.8700063613540886
+   ],
+   "vs_deployed": {
+    "mean_diff": 0.019557542345440042,
+    "ci95": [
+     -0.0062222919738278756,
+     0.04357708213681887
+    ],
+    "share_a_better": 0.9390000000000001
+   },
+   "source": "baselines_v1"
+  },
+  {
+   "model": "No skill (base rate)",
+   "kind": "reference",
+   "inputs": "-",
+   "trained_on": "-",
+   "pr_auc": 0.2965009208103131,
+   "pr_auc_ci95": null,
+   "vs_deployed": null,
+   "source": "baselines_v1"
+  }
+ ],
+ "onset": [
+  {
+   "model": "Deployed network (stress_mlp_v1)",
+   "kind": "deployed",
+   "inputs": "year t",
+   "trained_on": "all borrowers",
+   "pr_auc": 0.31930569056161323,
+   "pr_auc_ci95": [
+    0.23293070310946562,
+    0.44259617816302793
+   ],
+   "vs_deployed": null,
+   "source": "gru_onset_v1"
+  },
+  {
+   "model": "General three-year GRU",
+   "kind": "experiment",
+   "inputs": "sequence t-2, t-1, t",
+   "trained_on": "all borrowers",
+   "pr_auc": 0.3167725659408952,
+   "pr_auc_ci95": [
+    0.22773654103742677,
+    0.43863307718341915
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.0025331246207180302,
+    "ci95": [
+     -0.060092513848316244,
+     0.05541491202367628
+    ],
+    "share_a_better": 0.442
+   },
+   "source": "gru_onset_v1"
+  },
+  {
+   "model": "Onset-specific MLP",
+   "kind": "experiment",
+   "inputs": "year t",
+   "trained_on": "healthy borrowers only",
+   "pr_auc": 0.30006116166558094,
+   "pr_auc_ci95": [
+    0.22980858374063,
+    0.4182376564076143
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.019244528896032287,
+    "ci95": [
+     -0.0869628952644142,
+     0.04919721476606919
+    ],
+    "share_a_better": 0.299
+   },
+   "source": "mlp_v1 (reproduced in gru_onset_v1)"
+  },
+  {
+   "model": "Onset-specific GRU",
+   "kind": "experiment",
+   "inputs": "sequence t-2, t-1, t (missing years skipped)",
+   "trained_on": "healthy borrowers only",
+   "pr_auc": 0.2542355526045635,
+   "pr_auc_ci95": [
+    0.17740926480034896,
+    0.3545280748283235
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.06507013795704975,
+    "ci95": [
+     -0.15520597475767814,
+     0.004188693155845773
+    ],
+    "share_a_better": 0.035
+   },
+   "source": "gru_onset_v1"
+  },
+  {
+   "model": "Onset XGBoost benchmark",
+   "kind": "benchmark",
+   "inputs": "year t",
+   "trained_on": "healthy borrowers only",
+   "pr_auc": 0.34595410949993866,
+   "pr_auc_ci95": [
+    0.2570083844692113,
+    0.470557776932293
+   ],
+   "vs_deployed": {
+    "mean_diff": 0.026648418938325424,
+    "ci95": [
+     -0.057740101398235336,
+     0.11117406328514515
+    ],
+    "share_a_better": 0.732
+   },
+   "source": "baselines_v1"
+  },
+  {
+   "model": "No skill (base rate)",
+   "kind": "reference",
+   "inputs": "-",
+   "trained_on": "-",
+   "pr_auc": 0.10041265474552957,
+   "pr_auc_ci95": null,
+   "vs_deployed": null,
+   "source": "baselines_v1"
+  }
+ ],
+ "watchlist": {
+  "population": {
+   "definition": "label_onset: year-t status determinable and not stressed; t+1 determinable",
+   "validation": {
+    "rows": 295,
+    "onsets": 18,
+    "companies": 143
+   },
+   "test": {
+    "rows": 727,
+    "onsets": 73,
+    "companies": 205
+   }
+  },
+  "rows": [
+   {
+    "rule": "original",
+    "threshold": 0.44648106515671243,
+    "flagged": 14,
+    "flag_rate": 0.01925722145804677,
+    "caught": 6,
+    "missed": 67,
+    "false_alarms": 8,
+    "precision": 0.42857142857142855,
+    "recall": 0.0821917808219178,
+    "recall_ci95": [
+     0.0273972602739726,
+     0.1493014578271433
+    ],
+    "precision_ci95": [
+     0.16666666666666666,
+     0.7272727272727273
+    ]
+   },
+   {
+    "rule": "budget_5",
+    "threshold": 0.3041627463615068,
+    "flagged": 47,
+    "flag_rate": 0.06464924346629987,
+    "caught": 17,
+    "missed": 56,
+    "false_alarms": 30,
+    "precision": 0.3617021276595745,
+    "recall": 0.2328767123287671,
+    "recall_ci95": [
+     0.13884132420091325,
+     0.32950980392156853
+    ],
+    "precision_ci95": [
+     0.2161679536679537,
+     0.5483870967741935
+    ]
+   },
+   {
+    "rule": "budget_10",
+    "threshold": 0.1863275156503922,
+    "flagged": 97,
+    "flag_rate": 0.13342503438789546,
+    "caught": 33,
+    "missed": 40,
+    "false_alarms": 64,
+    "precision": 0.3402061855670103,
+    "recall": 0.4520547945205479,
+    "recall_ci95": [
+     0.3372489959839357,
+     0.5694940476190475
+    ],
+    "precision_ci95": [
+     0.24323012332721072,
+     0.45348837209302323
+    ]
+   },
+   {
+    "rule": "budget_15",
+    "threshold": 0.1289491810664154,
+    "flagged": 134,
+    "flag_rate": 0.1843191196698762,
+    "caught": 40,
+    "missed": 33,
+    "false_alarms": 94,
+    "precision": 0.29850746268656714,
+    "recall": 0.547945205479452,
+    "recall_ci95": [
+     0.43243243243243246,
+     0.6624458874458874
+    ],
+    "precision_ci95": [
+     0.2183032404956052,
+     0.39051158301158295
+    ]
+   },
+   {
+    "rule": "budget_20",
+    "threshold": 0.10082146160885579,
+    "flagged": 157,
+    "flag_rate": 0.21595598349381018,
+    "caught": 45,
+    "missed": 28,
+    "false_alarms": 112,
+    "precision": 0.28662420382165604,
+    "recall": 0.6164383561643836,
+    "recall_ci95": [
+     0.49332876712328766,
+     0.7386889730639731
+    ],
+    "precision_ci95": [
+     0.21637031768610715,
+     0.37243889131383673
+    ]
+   }
+  ],
+  "recommendation": "Most promising onset improvement so far: a threshold flagging ~10% of healthy borrowers (set on validation) catches 33 of 73 onsets instead of 6, with precision 34%. Not deployed: validation had only 18 onsets and the test window was inspected before; confirm on fiscal-2026 outcomes first."
+ },
+ "findings": [
+  "No experimental network beats the deployed one by a statistically clear margin on overall stress; the three-year GRU is +0.015 PR-AUC with an interval that includes zero.",
+  "Training only on healthy borrowers made the networks worse, not better: 65 training onsets are too few.",
+  "The deployed network already ranks new onsets about as well as the specialist models; its low onset recall comes from a single alert threshold set for a population where most stress is persistent.",
+  "A separate watch-list threshold for healthy borrowers is the most promising next step (research only)."
+ ],
+ "limitations": [
+  "One held-out window (2021-25), inspected several times; no later outcomes yet.",
+  "Accounting-stress proxy, not default; U.S. non-financial SEC filers with revenue of USD 50m or more.",
+  "Onset results rest on 73 test onsets (65 in training, 18 in validation), so intervals are wide."
+ ],
+ "sources": {
+  "mlp_v1": "training/experiments/mlp_v1/",
+  "baselines_v1": "training/experiments/baselines_v1/",
+  "mlp_history_v1": "training/experiments/mlp_history_v1/",
+  "gru_history_v1": "training/experiments/gru_history_v1/",
+  "gru_onset_v1": "training/experiments/gru_onset_v1/",
+  "onset_watchlist_v1": "training/experiments/onset_watchlist_v1/"
+ }
+}

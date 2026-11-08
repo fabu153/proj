@@ -17,12 +17,13 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
 | 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| v1.5 | Canonical onset statistics; watch-list threshold research; Experimental research in Model X-Ray | ✅ |
 | v1.4 | Search any U.S. public company (server-side SEC, five clear outcomes); fiscal-year columns by heading; negative-EBITDA stress; PASS / BREACH / NOT TESTABLE covenants; no outdated memo export | ✅ |
 | v1.3 | Stage E finished memo (header block, compact sections, semantic sentence checks), source trails for four headline figures, three-minute demo; Stage F stress heatmap from the Python engine | ✅ |
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.4.0** — 291 automated tests + 16 browser tests, 307 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
+**Release v1.5.0** — 300 automated tests + 17 browser tests, 317 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -122,12 +123,18 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
-## Research: onset-specific GRU (not deployed)
+## v1.5 — Onset research (Model X-Ray, section 4)
 
-`training/experiments/gru_onset_v1/report.md` asks whether a three-year GRU trained only on currently healthy
-companies spots new stress better. It does not: test PR-AUC 0.254, against 0.319 for the deployed network on the
-same 727 rows (73 onsets) and 0.346 for the onset XGBoost. The training set holds just 65 onsets. The report
-recommends against deployment and lists what would make the idea worth revisiting.
+- **One onset definition.** "New stress" always means the canonical `label_onset` population: confirmed not
+  stressed in the filing year. The deployed network catches 6 of those 73 onsets at its threshold. The figure
+  quoted before v1.5, "15 of 96", also counted 60 company-years whose status could not be determined.
+- **Onset-specific GRU** (`training/experiments/gru_onset_v1/report.md`): test PR-AUC 0.254 against 0.319 for the
+  deployed network on the same 727 rows; not deployed.
+- **Watch-list threshold** (`training/experiments/onset_watchlist_v1/report.md`): flagging the top ~10% of healthy
+  borrowers by the deployed score catches 33 of 73 onsets instead of 6. Research only; to be confirmed on
+  fiscal-2026 outcomes.
+- **Model X-Ray** shows all of this in an *Experimental research* section, with overall-stress and onset-only
+  results in separate tables and deployed versus experimental models marked. No new score in the app.
 
 ## v1.4 — Any U.S. public company
 
@@ -156,8 +163,9 @@ recommends against deployment and lists what would make the idea worth revisitin
 
 - **Model X-Ray (`/model`).** Three layers: what the network learned (target, input groups, architecture, data
   windows), how it performed (PR-AUC 0.805, ROC-AUC 0.904, Brier 0.113, matched baselines with XGBoost's higher
-  point estimate stated) and where it fails. The network caught 214 of 226 persisting cases but only 15 of 96 new
-  stress onsets, and 66 of its 84 false alarms were recoveries.
+  point estimate stated) and where it fails. The network caught 214 of 226 persisting cases but only 6 of 73 new
+  stress onsets from confirmed-healthy accounts (written "15 of 96" before v1.5, see below), and 66 of its 84 false
+  alarms were recoveries.
 - **Historical Model Replay (`/replay`).** Held-out 2021–25 company-years show the frozen forecast first. The
   next-year outcome is revealed on request, from `GET /replay/cases/{id}/outcome`. The forecast endpoints carry no
   outcome fields.
@@ -212,7 +220,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 291 tests (+16 browser tests with E2E_BASE_URL)
+pytest -q                                        # 300 tests (+17 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

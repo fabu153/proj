@@ -1,8 +1,8 @@
 {
  "experiment": "mlp_history_v1",
  "status": "experiment only; not deployed",
- "run_at": "2026-11-07 22:40 UTC",
- "minutes": 0.8,
+ "run_at": "2026-11-08 14:03 UTC",
+ "minutes": 1.0,
  "inputs": {
   "v1": 31,
   "this_run": 51,
@@ -180,12 +180,12 @@
   }
  },
  "onset": {
-  "rows": 787,
-  "stressed": 96,
-  "v1_pr_auc": 0.3946025052241721,
-  "history_pr_auc": 0.40234311833667663,
-  "v1_caught": 15,
-  "history_caught": 19
+  "rows": 727,
+  "stressed": 73,
+  "v1_pr_auc": 0.31930569056161323,
+  "history_pr_auc": 0.3228108301822657,
+  "v1_caught": 6,
+  "history_caught": 8
  },
  "persistent": {
   "rows": 299,
@@ -195,13 +195,22 @@
   "v1_caught": 214,
   "history_caught": 216
  },
+ "status_undetermined_in_t": {
+  "rows": 60,
+  "stressed": 23,
+  "v1_pr_auc": 0.5802407590137572,
+  "history_pr_auc": 0.6065293317157144,
+  "v1_caught": 9,
+  "history_caught": 11
+ },
+ "onset_definition": "label_onset (canonical)",
  "paired_on_onsets": {
-  "mean_diff": 0.008354006291215974,
+  "mean_diff": 0.003189268859077283,
   "ci95": [
-   -0.02299301695319905,
-   0.04501886772897751
+   -0.038456074352438904,
+   0.05033221832374075
   ],
-  "share_a_better": 0.666
+  "share_a_better": 0.531
  },
  "calibration_test": {
   "v1": [

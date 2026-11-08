@@ -15,24 +15,32 @@ A prior year is used only if it is the consecutive fiscal year of the same compa
 year *t* was filed. A control run of the same pipeline with v1 inputs reproduces the deployed model exactly
 (paired difference 0.000; `mlp_history_v1/control_v1_inputs/`).
 
-| Model (test, n = 1,086) | Inputs | PR-AUC | ROC-AUC | Brier | Flags at validation threshold | New-stress onsets caught (of 96) |
+| Model (test, n = 1,086) | Inputs | PR-AUC | ROC-AUC | Brier | Flags at validation threshold | New onsets caught (of 73)* |
 |---|---|---|---|---|---|---|
-| **v1, deployed** — MLP | year *t* + 1-year changes (62) | 0.805 | 0.904 | 0.113 | 229 correct, 84 false | 15 |
-| **A** — same MLP + history inputs | + t-1, t-2 of 8 ratios, 4 multi-year summaries (102) | 0.804 | 0.905 | 0.111 | 227 correct, 72 false | 19 |
-| **B** — GRU over t-2, t-1, t | 3 × (62 + presence flag) | **0.821** | 0.904 | 0.112 | 220 correct, 66 false | 17 |
+| **v1, deployed** — MLP | year *t* + 1-year changes (62) | 0.805 | 0.904 | 0.113 | 229 correct, 84 false | 6 |
+| **A** — same MLP + history inputs | + t-1, t-2 of 8 ratios, 4 multi-year summaries (102) | 0.804 | 0.905 | 0.111 | 235 correct, 80 false | 8 |
+| **B** — GRU over t-2, t-1, t | 3 × (62 + presence flag) | **0.821** | 0.904 | 0.112 | 220 correct, 66 false | 5 |
 | XGBoost benchmark (v1 inputs) | year *t* | 0.825 | 0.906 | 0.109 | — | — |
+
+\* Canonical onset population (`label_onset`): the 727 test rows confirmed **not stressed** in the filing year,
+73 of which became stressed. Until v1.4 this column read "of 96" (v1 15, A 19, B 17): that earlier definition
+also counted 60 company-years whose filing-year status could not be determined as healthy (23 of them became
+stressed). Both experiments were re-run with the canonical definition on 2026-11-08; their predictions are
+byte-identical to the original runs, so only the onset breakdown changed. The A row's flags previously read
+"227 correct, 72 false", which did not match its saved results (235 / 80); corrected. See `docs/defects.md` DF-47.
 
 **Paired differences against v1** (resampling whole companies, 1,000 draws):
 - A − v1: PR-AUC −0.001 (95% interval −0.022 to +0.019).
 - B − v1: PR-AUC +0.015 (−0.002 to +0.034); B is better in 96% of resamples.
-- On new-stress onsets only, PR-AUC: v1 0.395, A 0.406, B 0.419; neither difference is significant.
+- On the 727 confirmed-healthy rows only (73 onsets), PR-AUC: v1 0.319, A 0.323, B 0.317; neither difference is
+  significant (A − v1 +0.004, 95% interval −0.038 to +0.050; B − v1 −0.003, −0.060 to +0.055).
 
 **Reading.**
 - History in hand-made lag inputs (A) changes almost nothing.
 - Letting a recurrent network read three years (B) raises PR-AUC to within 0.004 of XGBoost and cuts false alarms
   by a fifth.
-- None of the models becomes an early-warning tool: all catch fewer than 1 in 5 new onsets, because new stress
-  usually comes from events one annual report does not show.
+- None of the models becomes an early-warning tool at its alert threshold: each catches at most 8 of 73 new
+  onsets. The ranking is better than that suggests; the threshold is the bottleneck (`onset_watchlist_v1`).
 
 **Caveats before adopting B.**
 1. The test window has now been used to compare three models. Picking the best of them on that window

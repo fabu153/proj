@@ -144,7 +144,10 @@ def main():
     groups = te["cik"].to_numpy()
     thr = max_f1_threshold(yva, p_va)
     thr_v1 = json.loads(Path("backend/models/stress_mlp_v1/xray.json").read_text())["threshold_test"]["threshold"]
-    onset = (te["stress_conditions_t"].fillna(0) < 2).to_numpy()
+    # canonical populations (label_onset): confirmed healthy in t / already stressed in t / status undeterminable.
+    # Until v1.4 "onset" was stress_conditions_t.fillna(0) < 2, which also counted the undeterminable years.
+    onset = te["label_onset"].notna().to_numpy()
+    undetermined = te["stress_t"].isna().to_numpy()
 
     def subset(mask):
         y = yte[mask]
@@ -165,7 +168,8 @@ def main():
         "test_ci95": {"gru": cluster_bootstrap(yte, p_te, groups, 1000, 7)},
         "paired_gru_minus_v1": paired_bootstrap(yte, p_te, p_v1, groups, 1000, 7),
         "at_validation_threshold": {"v1": threshold_metrics(yte, p_v1, thr_v1), "gru": threshold_metrics(yte, p_te, thr)},
-        "onset": subset(onset), "persistent": subset(~onset),
+        "onset": subset(onset), "persistent": subset((te["stress_t"] == 1).to_numpy()),
+        "status_undetermined_in_t": subset(undetermined), "onset_definition": "label_onset (canonical)",
         "paired_on_onsets": paired_bootstrap(yte[onset], p_te[onset], p_v1[onset], groups[onset], 1000, 7),
         "calibration_test": calibration_table(yte, p_te).to_dict(orient="records"),
     }

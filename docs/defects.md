@@ -52,6 +52,7 @@ blueprint's risk table: **High** = could show a wrong number or block the demo; 
 | DF-44 | v1.4 search build | Medium | SEC's company list returned 403 | SEC requires a contact email in the User-Agent for www.sec.gov | `SEC_USER_AGENT` set on Render; a 403 is reported as "SEC refused the request (set SEC_USER_AGENT)". `test_sec_refusing_the_user_agent_is_explained` |
 | DF-45 | v1.4 search build | High | A searched bank (e.g. JPMorgan) would have received a neural score | The model's gates did not check industry; the training universe excluded SIC 6000–6799 | The training universe rule is shared with the app; financial, shell and unclassified filers are withheld with a reason. `test_financial_sector_filer_is_analysed_but_never_scored` |
 | DF-46 | v1.4 axe scan | Medium | Memo citation numbers below 4.5:1 contrast | Teal on light teal at 10.5 px | Darker citation text. `test_search_keyboard_only_to_memo_pdf` runs axe after the memo |
+| DF-47 | v1.5 review | Medium | Onset statistics used two definitions: "15 of 96" (X-Ray, model card, history experiments) versus 73 onsets (baselines, onset models) | The error analysis and history experiments defined "not stressed in t" as `stress_conditions_t.fillna(0) < 2`, which counts 60 undeterminable company-years as healthy | One canonical population (`label_onset`): 6 of 73. History experiments re-run (predictions byte-identical, onset breakdown corrected); X-Ray reads the canonical breakdown and labels the frozen figure. The A row of `HISTORY_EXPERIMENT.md` also misquoted its flags (227/72 vs saved 235/80). `test_research_onset_consistency.py` |
 
 ## Known limitations (accepted, documented, not defects)
 
@@ -61,7 +62,8 @@ blueprint's risk table: **High** = could show a wrong number or block the demo; 
   reconciled line by line against the original 10-Ks (`docs/manual_cross_check.md`).
 - The neural screen keeps its v1.0 input definitions (model basis) so its frozen evaluation stays valid; the
   credit ratios use the corrected v1.1 credit basis. Retraining on the corrected definitions needs a new model version.
-- The network catches only 15 of 96 new stress onsets on the test window; it is mainly a persistence detector
-  (Model X-Ray, "Where it fails").
+- The network catches only 6 of 73 new stress onsets (confirmed-healthy borrowers) at its alert threshold on the
+  test window; it is mainly a persistence detector (Model X-Ray, "Where it fails"). A watch-list threshold is under
+  research (`onset_watchlist_v1`), not deployed.
 - United Rentals tags no single capex line, so its simple free cash flow is shown as not available.
 - Render free tier sleeps after ~15 minutes idle; first request can take up to a minute.

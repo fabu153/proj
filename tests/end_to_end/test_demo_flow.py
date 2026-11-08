@@ -419,3 +419,25 @@ def test_searched_company_outcomes(page):
     page.click("text=Try again")
     page.wait_for_selector("[data-outcome=full]", timeout=60000)
     assert [e for e in page.errors if "502" not in e] == []            # only the injected SEC failure
+
+
+# ------------------------------------------------------------------ v1.5: onset definitions + research in Model X-Ray
+def test_model_xray_research_section(page):
+    page.goto(BASE + "/model", wait_until="networkidle")
+    page.wait_for_selector("#research", timeout=90000)
+    fails = page.inner_text("#where-it-fails")
+    assert "6 of 73" in fails and "214 of 226" in fails and "15 of 96" in fails     # canonical, with the old figure labelled
+    sec = page.locator("#research")
+    assert "Not used in the app" in sec.inner_text()
+    tables = sec.locator("table.research-table")
+    assert tables.count() == 2                                                    # overall and onset kept apart
+    for i in range(2):
+        assert tables.nth(i).locator(".kind.deployed").count() == 1
+    assert "1,086" in sec.inner_text() and "727 company-years" in sec.inner_text()
+    for name in ("Onset-specific GRU", "Onset-specific MLP", "General three-year GRU", "XGBoost benchmark"):
+        assert name in sec.inner_text()
+    assert "33" in sec.locator("table.research-wl").inner_text()
+    # no new live score anywhere: the workspace still shows exactly one neural screen
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []
+    assert page.errors == []

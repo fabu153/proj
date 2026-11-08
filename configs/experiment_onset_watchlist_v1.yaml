@@ -1,0 +1,17 @@
+# Research only — FROZEN before evaluation. A separate monitoring ("watch-list") threshold for currently healthy
+# borrowers, applied to the DEPLOYED network's unchanged scores. No retraining, no new score, nothing deployed.
+experiment: onset_watchlist_v1
+base_config: configs/experiment_baselines_v1.yaml     # rows, filters, chronological split + purge
+model: backend/models/stress_mlp_v1                   # frozen; scores recomputed with the app's numpy inference
+population: label_onset                              # confirmed not stressed in t, t+1 determinable (canonical)
+
+original_threshold: "xray.json threshold_test.threshold (validation max-F1 on the general population, 0.446)"
+alert_budgets: [0.05, 0.10, 0.15, 0.20]
+threshold_rule: >
+  For budget b, the threshold is the (1 - b) quantile of the deployed network's scores on the VALIDATION onset
+  cohort (filed 2019-20; 295 rows, 18 onsets). It uses validation scores only, not validation or test outcomes,
+  and is then applied unchanged to the test onset cohort.
+bootstrap: {resamples: 1000, cluster: cik, seed: 7}
+test_set_status: >
+  The 2021-2025 test window was inspected in earlier experiments (and its onset ranking in gru_onset_v1), so test
+  figures here are exploratory, not confirmation. Outcomes for fiscal 2026 would be the first untouched check.

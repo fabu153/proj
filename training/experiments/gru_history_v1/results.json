@@ -1,8 +1,8 @@
 {
  "experiment": "gru_history_v1",
  "status": "experiment only; not deployed",
- "run_at": "2026-11-07 22:42 UTC",
- "minutes": 1.7,
+ "run_at": "2026-11-08 14:02 UTC",
+ "minutes": 2.1,
  "architecture": "GRU(63 -> 64) over t-2, t-1, t; LayerNorm, dropout 0.25, Linear(64,32), ReLU, Linear(32,1)",
  "years_present_test": {
   "1": 18,
@@ -108,12 +108,12 @@
   }
  },
  "onset": {
-  "rows": 787,
-  "stressed": 96,
-  "v1_pr_auc": 0.3946025052241721,
-  "gru_pr_auc": 0.4186758215994778,
-  "v1_caught": 15,
-  "gru_caught": 17
+  "rows": 727,
+  "stressed": 73,
+  "v1_pr_auc": 0.31930569056161323,
+  "gru_pr_auc": 0.3167725659408952,
+  "v1_caught": 6,
+  "gru_caught": 5
  },
  "persistent": {
   "rows": 299,
@@ -123,13 +123,22 @@
   "v1_caught": 214,
   "gru_caught": 203
  },
+ "status_undetermined_in_t": {
+  "rows": 60,
+  "stressed": 23,
+  "v1_pr_auc": 0.5802407590137572,
+  "gru_pr_auc": 0.6712565490484967,
+  "v1_caught": 9,
+  "gru_caught": 12
+ },
+ "onset_definition": "label_onset (canonical)",
  "paired_on_onsets": {
-  "mean_diff": 0.02151453586107776,
+  "mean_diff": -0.0038419950531375633,
   "ci95": [
-   -0.03002503611346422,
-   0.07298352303109745
+   -0.060092513848316244,
+   0.05541491202367628
   ],
-  "share_a_better": 0.791
+  "share_a_better": 0.442
  },
  "calibration_test": [
   {

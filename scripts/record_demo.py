@@ -76,7 +76,7 @@ def main():
         cap("PR-AUC 0.805 against 0.825 for XGBoost: XGBoost's point estimate is higher, the difference is within the margin "
             "of error, and we say so.", 4600)
         scroll_to("#where-it-fails", -40)
-        cap("Where it fails: it catches stress that persists, but only 15 of 96 new stress onsets.", 3800)
+        cap("Where it fails: it catches stress that persists, but only 6 of 73 new onsets from healthy accounts.", 3800)
 
         # 1:10-1:50 — EUR 100m facility with an explicit FX rate, stressed
         pg.goto(BASE + "/workspace?company=0000080424", wait_until="networkidle")

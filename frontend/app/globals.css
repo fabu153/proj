@@ -432,3 +432,19 @@ input[aria-invalid="true"] { border-color: var(--red); box-shadow: inset 0 0 0 1
 .sec-banner { margin-bottom: 20px; }
 .sec-banner.score_withheld, .sec-banner.partial { border-left-color: var(--amber); background: var(--amber-soft); }
 .sec-banner.full { border-left-color: var(--teal); background: var(--teal-soft); }
+/* Model X-Ray: experimental research */
+.research-note { margin-bottom: 14px; }
+.research-table th[scope=row] { font-weight: 600; text-align: left; }
+.research-table td, .research-table th { vertical-align: top; text-align: left; }
+.research-table { min-width: 760px; }
+.research-wl td { white-space: nowrap; }
+.research-wl { min-width: 680px; }
+.research-table td.num, .research-table th.num { text-align: right; white-space: nowrap; }
+.research-table caption { caption-side: top; text-align: left; padding: 0 0 6px; }
+tr.is-deployed { background: var(--teal-soft); }
+.kind { display: inline-block; font-size: 12px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; border: 1px solid var(--rule); }
+.kind.deployed { background: var(--teal); color: #fff; border-color: var(--teal); }
+.kind.experiment { background: var(--amber-soft); border-color: var(--amber); }
+.kind.benchmark, .kind.reference { background: var(--sheet); }
+.plain-list { margin: 0; padding-left: 18px; font-size: 14px; }
+.plain-list li { margin-bottom: 6px; }

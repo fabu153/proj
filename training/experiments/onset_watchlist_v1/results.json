@@ -1,0 +1,268 @@
+{
+ "experiment": "onset_watchlist_v1",
+ "status": "research only; threshold not deployed",
+ "test_set_status": "The 2021-2025 test window was inspected in earlier experiments (and its onset ranking in gru_onset_v1), so test figures here are exploratory, not confirmation. Outcomes for fiscal 2026 would be the first untouched check.",
+ "run_at": "2026-11-08 13:59 UTC",
+ "provenance": {
+  "panel_sha256": "794ccc3c358cec1b3d4b00466f5527be7d13dfcdd828ab04814abda925c49661",
+  "config_sha256": "f5ca23e9855f4efa5554dd659cb3ac541a3ede4a00b7ae23fdd493c9ef668f83",
+  "weights_sha256": "eadaca645fb13d26d17b6d93f081a2af0e4f7a6fc65107d479f651b845e50736",
+  "test_parity_max_abs_diff": 1.1102230246251565e-16
+ },
+ "population": {
+  "definition": "label_onset: year-t status determinable and not stressed; t+1 determinable",
+  "validation": {
+   "rows": 295,
+   "onsets": 18,
+   "companies": 143
+  },
+  "test": {
+   "rows": 727,
+   "onsets": 73,
+   "companies": 205
+  }
+ },
+ "thresholds": {
+  "original": 0.44648106515671243,
+  "budget_5": 0.3041627463615068,
+  "budget_10": 0.1863275156503922,
+  "budget_15": 0.1289491810664154,
+  "budget_20": 0.10082146160885579
+ },
+ "validation": {
+  "original": {
+   "flagged": 6,
+   "flag_rate": 0.020338983050847456,
+   "caught": 3,
+   "false_alarms": 3,
+   "missed": 15,
+   "correct_all_clear": 274,
+   "precision": 0.5,
+   "recall": 0.16666666666666666
+  },
+  "budget_5": {
+   "flagged": 15,
+   "flag_rate": 0.05084745762711865,
+   "caught": 4,
+   "false_alarms": 11,
+   "missed": 14,
+   "correct_all_clear": 266,
+   "precision": 0.26666666666666666,
+   "recall": 0.2222222222222222
+  },
+  "budget_10": {
+   "flagged": 30,
+   "flag_rate": 0.1016949152542373,
+   "caught": 5,
+   "false_alarms": 25,
+   "missed": 13,
+   "correct_all_clear": 252,
+   "precision": 0.16666666666666666,
+   "recall": 0.2777777777777778
+  },
+  "budget_15": {
+   "flagged": 45,
+   "flag_rate": 0.15254237288135594,
+   "caught": 6,
+   "false_alarms": 39,
+   "missed": 12,
+   "correct_all_clear": 238,
+   "precision": 0.13333333333333333,
+   "recall": 0.3333333333333333
+  },
+  "budget_20": {
+   "flagged": 59,
+   "flag_rate": 0.2,
+   "caught": 9,
+   "false_alarms": 50,
+   "missed": 9,
+   "correct_all_clear": 227,
+   "precision": 0.15254237288135594,
+   "recall": 0.5
+  }
+ },
+ "test": {
+  "original": {
+   "flagged": 14,
+   "flag_rate": 0.01925722145804677,
+   "caught": 6,
+   "false_alarms": 8,
+   "missed": 67,
+   "correct_all_clear": 646,
+   "precision": 0.42857142857142855,
+   "recall": 0.0821917808219178
+  },
+  "budget_5": {
+   "flagged": 47,
+   "flag_rate": 0.06464924346629987,
+   "caught": 17,
+   "false_alarms": 30,
+   "missed": 56,
+   "correct_all_clear": 624,
+   "precision": 0.3617021276595745,
+   "recall": 0.2328767123287671
+  },
+  "budget_10": {
+   "flagged": 97,
+   "flag_rate": 0.13342503438789546,
+   "caught": 33,
+   "false_alarms": 64,
+   "missed": 40,
+   "correct_all_clear": 590,
+   "precision": 0.3402061855670103,
+   "recall": 0.4520547945205479
+  },
+  "budget_15": {
+   "flagged": 134,
+   "flag_rate": 0.1843191196698762,
+   "caught": 40,
+   "false_alarms": 94,
+   "missed": 33,
+   "correct_all_clear": 560,
+   "precision": 0.29850746268656714,
+   "recall": 0.547945205479452
+  },
+  "budget_20": {
+   "flagged": 157,
+   "flag_rate": 0.21595598349381018,
+   "caught": 45,
+   "false_alarms": 112,
+   "missed": 28,
+   "correct_all_clear": 542,
+   "precision": 0.28662420382165604,
+   "recall": 0.6164383561643836
+  }
+ },
+ "test_ci95": {
+  "original": {
+   "recall": [
+    0.0273972602739726,
+    0.1493014578271433
+   ],
+   "precision": [
+    0.16666666666666666,
+    0.7272727272727273
+   ],
+   "fa_per_100": [
+    0.4248693292901887,
+    2.232226021928891
+   ],
+   "d_recall": [
+    0.0,
+    0.0
+   ],
+   "d_caught": [
+    0.0,
+    0.0
+   ],
+   "d_false_alarms": [
+    0.0,
+    0.0
+   ]
+  },
+  "budget_5": {
+   "recall": [
+    0.13884132420091325,
+    0.32950980392156853
+   ],
+   "precision": [
+    0.2161679536679537,
+    0.5483870967741935
+   ],
+   "fa_per_100": [
+    2.2864116131662837,
+    7.142857142857143
+   ],
+   "d_recall": [
+    0.06578947368421054,
+    0.2405420579828501
+   ],
+   "d_caught": [
+    5.0,
+    18.0
+   ],
+   "d_false_alarms": [
+    11.0,
+    34.02499999999998
+   ]
+  },
+  "budget_10": {
+   "recall": [
+    0.3372489959839357,
+    0.5694940476190475
+   ],
+   "precision": [
+    0.24323012332721072,
+    0.45348837209302323
+   ],
+   "fa_per_100": [
+    6.564697785008134,
+    13.05155174169007
+   ],
+   "d_recall": [
+    0.2567567567567568,
+    0.4915449804432855
+   ],
+   "d_caught": [
+    18.0,
+    38.0
+   ],
+   "d_false_alarms": [
+    37.0,
+    75.0
+   ]
+  },
+  "budget_15": {
+   "recall": [
+    0.43243243243243246,
+    0.6624458874458874
+   ],
+   "precision": [
+    0.2183032404956052,
+    0.39051158301158295
+   ],
+   "fa_per_100": [
+    10.258931865699177,
+    18.616171617161715
+   ],
+   "d_recall": [
+    0.3561643835616438,
+    0.5833603896103895
+   ],
+   "d_caught": [
+    23.0,
+    46.0
+   ],
+   "d_false_alarms": [
+    61.0,
+    112.0
+   ]
+  },
+  "budget_20": {
+   "recall": [
+    0.49332876712328766,
+    0.7386889730639731
+   ],
+   "precision": [
+    0.21637031768610715,
+    0.37243889131383673
+   ],
+   "fa_per_100": [
+    12.815679006993815,
+    21.58804809052334
+   ],
+   "d_recall": [
+    0.423046875,
+    0.6576400080580176
+   ],
+   "d_caught": [
+    28.0,
+    52.0
+   ],
+   "d_false_alarms": [
+    78.0,
+    131.0
+   ]
+  }
+ }
+}

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import ApiStatus from "@/components/ApiStatus";
 import NetworkDiagram from "@/components/NetworkDiagram";
+import ResearchSection from "@/components/ResearchSection";
 import TopBar from "@/components/TopBar";
 import { api } from "@/lib/api";
 import { featureLabel } from "@/lib/labels";
@@ -44,7 +45,8 @@ export default function ModelXRay() {
       </>
     );
   }
-  const { metadata: m, xray: x, held_out: h, feature_groups: groups } = data;
+  const { metadata: m, xray: x, held_out: h, feature_groups: groups, research } = data;
+  const rg = research?.reconciliation?.groups;          // canonical year-t status breakdown (label_onset)
   const tm = m.test_metrics_calibrated;
   const ci = m.test_bootstrap;
   const cal = (x.calibration_test as any[]).map((r) => ({ pred: +(r.mean_pred * 100).toFixed(1), obs: +(r.observed * 100).toFixed(1) }));
@@ -75,6 +77,7 @@ export default function ModelXRay() {
           <a href="#what-it-learned">1. What the network learned</a>
           <a href="#how-it-performed">2. How it performed</a>
           <a href="#where-it-fails">3. Where it fails</a>
+          {research && <a href="#research">4. Experimental research</a>}
           <a href="#how-chosen">How it was chosen</a>
         </nav>
 
@@ -284,12 +287,29 @@ export default function ModelXRay() {
                 <div className="fail-grid">
                   <div className="sheet">
                     <h3 className="sub">It mostly detects stress that persists</h3>
-                    <p>
-                      Of companies already meeting two conditions that stayed stressed, it caught{" "}
-                      <b>{sn.already_stressed_in_t.caught} of {sn.already_stressed_in_t.n}</b>. Of companies that <em>became</em> stressed from
-                      healthier accounts, it caught only <b>{sn.new_stress_onset.caught} of {sn.new_stress_onset.n}</b>. New stress usually
-                      comes from events in the following year that one annual report does not show.
-                    </p>
+                    {rg ? (
+                      <>
+                        <p>
+                          Of companies already stressed in the filing year that stayed stressed, it caught{" "}
+                          <b>{rg.already_stressed.caught} of {rg.already_stressed.stressed_next_year}</b>. Of companies{" "}
+                          <em>confirmed healthy</em> in the filing year that became stressed, it caught only{" "}
+                          <b>{rg.confirmed_healthy.caught} of {rg.confirmed_healthy.stressed_next_year}</b>. New stress usually comes from events in
+                          the following year that one annual report does not show.
+                        </p>
+                        <p className="fine">
+                          A further {rg.status_undetermined.rows} company-years had a filing-year status that could not be determined;{" "}
+                          {rg.status_undetermined.stressed_next_year} became stressed and {rg.status_undetermined.caught} were caught. Earlier
+                          versions counted them as healthy and quoted &ldquo;{research.reconciliation.legacy_onset.caught} of{" "}
+                          {research.reconciliation.legacy_onset.stressed_next_year}&rdquo;.
+                        </p>
+                      </>
+                    ) : (
+                      <p>
+                        Of companies already meeting two conditions that stayed stressed, it caught{" "}
+                        <b>{sn.already_stressed_in_t.caught} of {sn.already_stressed_in_t.n}</b>. Of companies that <em>became</em> stressed from
+                        healthier accounts, it caught only <b>{sn.new_stress_onset.caught} of {sn.new_stress_onset.n}</b>.
+                      </p>
+                    )}
                   </div>
                   <div className="sheet">
                     <h3 className="sub">False alarms are mostly recoveries</h3>
@@ -339,6 +359,8 @@ export default function ModelXRay() {
                 </ul>
               </section>
             )}
+
+            {research && <ResearchSection r={research} />}
 
             <section className="block" id="how-chosen" aria-labelledby="h-chosen">
               <h2 id="h-chosen">How it was chosen</h2>

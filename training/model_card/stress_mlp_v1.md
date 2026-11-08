@@ -50,12 +50,21 @@ threshold count for count), and it is saved as `training/experiments/mlp_v1/test
 | elevated (15%–40%) | 120 | 26.0% | 34.2% |
 | high (40%–100%) | 332 | 70.1% | 72.0% |
 
-**Persistence versus onset.** Of the stressed company-years that already met two conditions in the filing year, the
-network caught 214 of 226. Of those that *became*
-stressed from healthier accounts, it caught 15 of 96.
-66 of the 84 false alarms were companies already
-stressed that recovered. The network is mainly a persistence detector, so it should not be presented as an early
-warning of new stress.
+**Persistence versus onset.** The 1,086 test rows split by filing-year status:
+
+| Filing-year status | Rows | Stressed next year | Caught at the 0.446 threshold | False alarms |
+|---|---:|---:|---:|---:|
+| Already stressed (2+ conditions met) | 299 | 226 | 214 | 66 |
+| Confirmed not stressed (canonical onset population, `label_onset`) | 727 | 73 | 6 | 8 |
+| Status could not be determined (one condition met, others unreported) | 60 | 23 | 9 | 10 |
+
+So it caught 214 of 226 persisting cases but only **6 of 73 new onsets** from confirmed-healthy accounts. Earlier
+versions of this card said "15 of 96": that figure also counted the 60 undeterminable company-years as healthy
+(96 = 73 + 23; 15 = 6 + 9). The frozen evaluation files are unchanged; only the population label was corrected
+(v1.5). 66 of the 84 false alarms were companies already stressed that recovered. The network is mainly a persistence detector, so it should not be presented as an early
+warning of new stress. Its *ranking* of healthy borrowers is about as good as specialist onset models
+(PR-AUC 0.319 versus 0.300–0.346); the single threshold is the bottleneck. A separate watch-list threshold is under
+research and not deployed (`training/experiments/onset_watchlist_v1/report.md`).
 
 The Historical Model Replay (`/replay`) shows held-out cases selected by a fixed rule
 (`backend/data/replay/replay_v1.json`, `selection_rule`).

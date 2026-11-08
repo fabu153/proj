@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.5.0 — One onset definition; watch-list research; experimental research in Model X-Ray
+
+No model, calibration, replay or release-manifest file changed (manifest 1.2.0, 27 hashes still verified).
+
+### Onset statistics corrected
+- Every onset figure now uses the canonical `label_onset` population: companies **confirmed not stressed** in the
+  filing year. On the 1,086 held-out rows: 299 already stressed (226 stayed stressed, 214 caught), 727 confirmed
+  healthy (73 onsets, **6 caught**), 60 with an undeterminable filing-year status (23 stressed, 9 caught).
+- The earlier "15 of 96" counted those 60 undeterminable company-years as healthy (96 = 73 + 23; 15 = 6 + 9). The
+  frozen replay file keeps that figure; Model X-Ray now shows the canonical breakdown and labels the old figure.
+- `mlp_history_v1` and `gru_history_v1` were re-run with the canonical definition. Their predictions are
+  byte-identical to the original runs; only the onset breakdown changed. `HISTORY_EXPERIMENT.md`, the model card,
+  README, demo script and defect log were updated (DF-47). One misquoted row in `HISTORY_EXPERIMENT.md` was
+  corrected (227/72 → 235/80 flags).
+
+### Research: watch-list threshold for healthy borrowers (not deployed)
+- `training/experiments/onset_watchlist_v1/`: the deployed network's unchanged scores, with thresholds fixed on
+  validation scores to flag 5/10/15/20% of healthy borrowers. At 10% it catches 33 of 73 onsets instead of 6
+  (precision 34%, 64 false alarms instead of 8). Recommendation: confirm on fiscal-2026 outcomes before any use.
+
+### Model X-Ray: section 4, Experimental research
+- Two separate tables: next-year stress on all 1,086 rows, and new stress on the 727 healthy rows. Deployed,
+  experimental, benchmark and reference rows are marked; paired differences against the deployed network with
+  company-clustered intervals; key findings and limitations; the watch-list research. No new live score.
+- Data: `backend/data/research/research_v1.json`, built by `training/ml/export_research.py` from the saved
+  experiment results (not a model artifact, not in the release manifest).
+
 ## Research — gru_onset_v1 (not deployed)
 - A three-year GRU trained only on companies not stressed in year t, to detect new stress
   (`training/experiments/gru_onset_v1/report.md`). Canonical `label_onset` cohort: 886 / 295 / 727 rows with

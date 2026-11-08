@@ -44,7 +44,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -329,6 +329,9 @@ def model_card():
         out["held_out"] = replay.model_evidence()
     except FileNotFoundError:
         out["held_out"] = None
+    # experiments and the canonical onset breakdown (not a model artifact; nothing here produces a score)
+    rp = Path(__file__).resolve().parents[2] / "data" / "research" / "research_v1.json"
+    out["research"] = json.loads(rp.read_text()) if rp.exists() else None
     return out
 
 
