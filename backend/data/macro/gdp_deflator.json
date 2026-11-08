@@ -1,0 +1,39 @@
+{
+ "series": "GDPDEF (U.S. BEA, GDP implicit price deflator, index 2017=100, quarterly, seasonally adjusted) via FRED",
+ "url": "https://fred.stlouisfed.org/series/GDPDEF",
+ "retrieved": "2026-11-09",
+ "source_sha256": "30bb0472781765e94efbbeaf63f0056106c5ff3786f6713485d3daff182b6010",
+ "note": "annual average of four quarters, rebased to 1968 = 100 as in Ohlson (1980); years with fewer than four published quarters are omitted",
+ "index_1968_100": {
+  "1968": 100.0,
+  "2000": 397.8607,
+  "2001": 406.8418,
+  "2002": 413.1571,
+  "2003": 421.2874,
+  "2004": 432.6143,
+  "2005": 446.1899,
+  "2006": 459.9653,
+  "2007": 472.4206,
+  "2008": 481.5618,
+  "2009": 484.5108,
+  "2010": 490.3829,
+  "2011": 500.5034,
+  "2012": 509.8333,
+  "2013": 518.4984,
+  "2014": 527.5219,
+  "2015": 532.4351,
+  "2016": 537.4865,
+  "2017": 547.1009,
+  "2018": 559.6452,
+  "2019": 568.8739,
+  "2020": 576.4653,
+  "2021": 602.5524,
+  "2022": 645.6948,
+  "2023": 669.9175,
+  "2024": 687.0891,
+  "2025": 705.1676
+ },
+ "partial_years_omitted": {
+  "2026": 3
+ }
+}

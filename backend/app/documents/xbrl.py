@@ -75,6 +75,15 @@ SUPPLEMENTAL_REGISTRY: dict[str, tuple[str, list[str]]] = {
                                         "CostOfServicesDepreciationAndAmortization",
                                         "CostOfGoodsSoldDepreciationAndAmortization"]),
     "interest_net_pl": ("duration", ["InterestIncomeExpenseNonoperatingNet", "InterestIncomeExpenseNet"]),
+    # v1.6 credit-only disclosures: the debt maturity schedule (principal of long-term debt by year) and retained
+    # earnings for the Altman Z'' textbook score. Never model inputs.
+    "debt_maturity_y1": ("instant", ["LongTermDebtMaturitiesRepaymentsOfPrincipalInNextTwelveMonths"]),
+    "debt_maturity_y2": ("instant", ["LongTermDebtMaturitiesRepaymentsOfPrincipalInYearTwo"]),
+    "debt_maturity_y3": ("instant", ["LongTermDebtMaturitiesRepaymentsOfPrincipalInYearThree"]),
+    "debt_maturity_y4": ("instant", ["LongTermDebtMaturitiesRepaymentsOfPrincipalInYearFour"]),
+    "debt_maturity_y5": ("instant", ["LongTermDebtMaturitiesRepaymentsOfPrincipalInYearFive"]),
+    "debt_maturity_after5": ("instant", ["LongTermDebtMaturitiesRepaymentsOfPrincipalAfterYearFive"]),
+    "retained_earnings": ("instant", ["RetainedEarningsAccumulatedDeficit"]),
 }
 
 

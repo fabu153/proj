@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import ApiStatus from "@/components/ApiStatus";
 import CreditProfile from "@/components/CreditProfile";
 import EvidenceRail, { type Citation } from "@/components/EvidenceRail";
+import ClassicScores from "@/components/ClassicScores";
 import LoanLab, { type LabState } from "@/components/LoanLab";
+import MaturityWall from "@/components/MaturityWall";
 import MemoPanel from "@/components/MemoPanel";
 import Progress, { type StepKey, type StepState } from "@/components/Progress";
 import RiskScreen from "@/components/RiskScreen";
@@ -247,6 +249,17 @@ export default function Workspace() {
                   </section>
                 )}
 
+                {analysis.credit_extras?.maturities && (
+                  <section className="block" aria-labelledby="h-maturities">
+                    <h2 id="h-maturities">Debt maturities</h2>
+                    <p className="lede">
+                      When the debt falls due, and whether cash plus a year of free cash flow covers what comes due first. Figures are the
+                      maturity schedule the company tags in its 10-K.
+                    </p>
+                    <MaturityWall wall={analysis.credit_extras.maturities} cik={analysis.company_id} currency={analysis.currency} />
+                  </section>
+                )}
+
                 <section className="block" aria-labelledby="h-risk">
                   <h2 id="h-risk">Neural screen</h2>
                   <p className="lede">
@@ -255,6 +268,9 @@ export default function Workspace() {
                     default.
                   </p>
                   <RiskScreen risk={analysis.risk_model} fiscalYearEnd={analysis.fiscal_year_end} />
+                  {analysis.credit_extras && !analysis.credit_extras.not_applicable && (
+                    <ClassicScores z={analysis.credit_extras.altman_z2} o={analysis.credit_extras.ohlson_o} bands={analysis.peers?.bands} />
+                  )}
                 </section>
 
                 <section className="block" aria-labelledby="h-lab">

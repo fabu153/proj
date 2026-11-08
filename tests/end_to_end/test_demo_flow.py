@@ -469,3 +469,26 @@ def test_heatmap_opens_on_interest_cover(page):
     assert "reprice only floating-rate debt" in page.inner_text(".heat-hint")
     page.click("[role=radio]:has-text('Net debt / EBITDA')")
     assert "does not depend on interest rates" in page.inner_text(".heat-hint")
+
+
+# ------------------------------------------------------------------ v1.6: peers, maturity wall, textbook scores
+def test_v16_peers_maturities_and_textbook_scores(page):
+    page.goto(BASE + "/workspace?company=0001067701", wait_until="networkidle")
+    page.wait_for_selector("text=Current · snapshot", timeout=90000)
+    ledger = page.inner_text("section[aria-labelledby=h-profile]")
+    assert "Peers" in ledger and "SIC 73" in ledger and "percentile" in page.locator("td.peer .sr-only").first.inner_text()
+    mat = page.inner_text("section[aria-labelledby=h-maturities]")
+    assert "1,577" in mat and "5,420" in mat and "Liquidity runway" in mat
+    assert page.locator("section[aria-labelledby=h-maturities] a[href*='sec.gov/Archives/edgar/data/1067701/']").count() >= 1
+    classic = page.inner_text(".classic")
+    assert "Altman Z″" in classic and "Ohlson O" in classic and "not CreditLens" in classic
+    page.goto(BASE + "/model", wait_until="networkidle")
+    page.wait_for_selector("#research", timeout=60000)
+    assert page.locator("#research .kind.textbook").count() == 4                 # Z'' and O in both tables
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []
+    page.goto(BASE + "/workspace?company=0001067701", wait_until="networkidle")
+    page.wait_for_selector(".classic", timeout=90000)
+    page.add_script_tag(path=str(AXE))
+    assert _axe(page) == []
+    assert page.errors == []

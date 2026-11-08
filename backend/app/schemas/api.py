@@ -92,6 +92,8 @@ class AnalysisResponse(BaseModel):
     review_required: bool = True
     industry: Optional[dict] = None          # SEC SIC for searched companies; financial=True -> industrial metrics n/a
     loan_lab: Optional[dict] = None          # {"available": bool, "reason": str|None, "missing": [...]}
+    credit_extras: Optional[dict] = None     # v1.6: maturity wall, Altman Z'', Ohlson O (finance/credit_extras.py)
+    peers: Optional[dict] = None             # v1.6: percentile bands against the panel (finance/peers.py)
 
 
 class PredictRequest(BaseModel):

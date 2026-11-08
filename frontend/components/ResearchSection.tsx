@@ -7,8 +7,8 @@
  */
 
 type Diff = { mean_diff: number; ci95?: [number, number]; share_a_better?: number } | null;
-type Row = { model: string; kind: "deployed" | "experiment" | "benchmark" | "reference"; inputs: string; trained_on: string;
-  pr_auc: number; pr_auc_ci95: [number, number] | null; vs_deployed: Diff; source: string };
+type Row = { model: string; kind: "deployed" | "experiment" | "benchmark" | "textbook" | "reference"; inputs: string; trained_on: string;
+  pr_auc: number; pr_auc_ci95: [number, number] | null; vs_deployed: Diff; source: string; note?: string | null };
 type WRow = { rule: string; threshold: number; flagged: number; flag_rate: number; caught: number; missed: number;
   false_alarms: number; precision: number | null; recall: number; recall_ci95: [number, number] | null;
   precision_ci95: [number, number] | null };
@@ -16,7 +16,7 @@ type WRow = { rule: string; threshold: number; flagged: number; flag_rate: numbe
 const f3 = (v: number) => v.toFixed(3);
 const pc = (v: number | null) => (v == null ? "–" : `${Math.round(v * 100)}%`);
 const sgn = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(3)}`;
-const KIND: Record<Row["kind"], string> = { deployed: "Deployed", experiment: "Experiment", benchmark: "Benchmark", reference: "Reference" };
+const KIND: Record<Row["kind"], string> = { deployed: "Deployed", experiment: "Experiment", benchmark: "Benchmark", textbook: "Textbook", reference: "Reference" };
 
 function Table({ rows, caption, label }: { rows: Row[]; caption: string; label: string }) {
   return (
@@ -36,7 +36,10 @@ function Table({ rows, caption, label }: { rows: Row[]; caption: string; label: 
         <tbody>
           {rows.map((r) => (
             <tr key={r.model} className={r.kind === "deployed" ? "is-deployed" : undefined}>
-              <th scope="row">{r.model}</th>
+              <th scope="row">
+                {r.model}
+                {r.note ? <span className="fine row-note">{r.note}</span> : null}
+              </th>
               <td><span className={`kind ${r.kind}`}>{KIND[r.kind]}</span></td>
               <td>{r.inputs}</td>
               <td>{r.trained_on}</td>

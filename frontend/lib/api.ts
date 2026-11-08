@@ -100,11 +100,34 @@ export type RiskModel = {
   };
 };
 
+export type PeerBandT = { percentile: number; peers: number; group: string; years: string; p25: number; median: number; p75: number; stronger: "lower" | "higher" };
+export type Evid = { tag: string; accession: string; form?: string; filed: string; period_end?: string };
+export type MaturityWall =
+  | { available: false; reason: string; version: string }
+  | {
+      available: true; version: string;
+      buckets: { key: string; label: string; value: number | null; evidence: Evid | null }[];
+      schedule_total: number; long_term_debt_balance: number | null; short_term_borrowings: number | null;
+      cash: number | null; fcf: number | null; within_two_years_share: number | null;
+      coverage_12m: number | null; due_12m?: number; liquidity?: number; runway_through: number | null;
+      formula?: string; runway_formula?: string; notes: string[];
+    };
+export type ClassicScore = {
+  available: boolean; value?: number; zone?: "safe" | "grey" | "distress"; probability?: number; missing?: string[];
+  reason?: string; formula?: string; version: string; components?: Record<string, number>; terms?: Record<string, number>;
+  price_index?: { value: number; year: string };
+};
+export type CreditExtras = { not_applicable?: string; maturities?: MaturityWall; altman_z2?: ClassicScore; ohlson_o?: ClassicScore };
+
 export type Analysis = {
   /** searched companies: SEC industry; financial=true means industrial credit metrics do not apply */
   industry?: { sic: string | null; sic_description: string | null; financial: boolean; note: string | null } | null;
   /** whether the loan lab, heatmap and memo can run for this year (decided by the server) */
   loan_lab?: { available: boolean; reason: string | null; missing: string[] } | null;
+  /** v1.6: debt maturity wall and textbook scores (backend/app/finance/credit_extras.py) */
+  credit_extras?: CreditExtras | null;
+  /** v1.6: percentile bands against the training panel (backend/app/finance/peers.py) */
+  peers?: { bands: Record<string, PeerBandT>; min_peers: number; basis: string; population: string; sic: number | string | null } | null;
   company_id: string;
   company_name: string;
   fiscal_year_end: string;

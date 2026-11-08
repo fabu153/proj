@@ -17,13 +17,14 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
 | 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| v1.6 | Peer percentiles; debt maturity wall and liquidity runway; Altman Z″ and Ohlson O as textbook benchmarks | ✅ |
 | v1.5 | Canonical onset statistics; watch-list threshold research; Experimental research in Model X-Ray | ✅ |
 | v1.4 | Search any U.S. public company (server-side SEC, five clear outcomes); fiscal-year columns by heading; negative-EBITDA stress; PASS / BREACH / NOT TESTABLE covenants; no outdated memo export | ✅ |
 | v1.3 | Stage E finished memo (header block, compact sections, semantic sentence checks), source trails for four headline figures, three-minute demo; Stage F stress heatmap from the Python engine | ✅ |
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.5.1** — 301 automated tests + 19 browser tests, 320 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
+**Release v1.6.0** — 323 automated tests + 20 browser tests, 343 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -123,6 +124,20 @@ Without an API key the memo is written from templates; to use a language model s
 
 Only the package (labels, formatted values, source descriptions) is sent to the provider, never an uploaded document.
 
+## v1.6 — Credit-analyst views
+
+- **Peers.** Each ledger ratio shows its percentile among comparable companies (same SIC group and fiscal year,
+  widened until there are 15 peers). It is descriptive only.
+- **Debt maturities.** Principal due by year from the 10-K schedule, a liquidity runway, and how many years cash
+  plus free cash flow covers. Every figure links to its filing.
+- **Textbook scores.** Altman Z″ and Ohlson O sit beside the neural screen as references. On the held-out years
+  they rank stress clearly worse than the network (Model X-Ray, section 4).
+- **Not built: "Ask the filing" chat.** The production API has no LLM key: memos use the deterministic template
+  writer, by design and at no cost. A chat would need a paid key, per-question cost, rate limits and defences
+  against prompt injection. Most "why did X change" questions are already answered by the year columns, the
+  formula and source trail behind every figure, and the memo. If an LLM is added later, the validator and
+  `{{item}}` references already enforce the rule that no number is invented.
+
 ## v1.5 — Onset research (Model X-Ray, section 4)
 
 - **One onset definition.** "New stress" always means the canonical `label_onset` population: confirmed not
@@ -220,7 +235,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 301 tests (+19 browser tests with E2E_BASE_URL)
+pytest -q                                        # 323 tests (+20 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

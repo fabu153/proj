@@ -59,7 +59,8 @@
     0.8531550311125679
    ],
    "vs_deployed": null,
-   "source": "mlp_v1"
+   "source": "mlp_v1",
+   "note": null
   },
   {
    "model": "Network + two prior years (MLP)",
@@ -79,7 +80,8 @@
     ],
     "share_a_better": 0.45
    },
-   "source": "mlp_history_v1"
+   "source": "mlp_history_v1",
+   "note": null
   },
   {
    "model": "General three-year GRU",
@@ -99,7 +101,8 @@
     ],
     "share_a_better": 0.962
    },
-   "source": "gru_history_v1"
+   "source": "gru_history_v1",
+   "note": null
   },
   {
    "model": "XGBoost benchmark",
@@ -119,7 +122,50 @@
     ],
     "share_a_better": 0.9390000000000001
    },
-   "source": "baselines_v1"
+   "source": "baselines_v1",
+   "note": null
+  },
+  {
+   "model": "Altman Z'' (1995)",
+   "kind": "textbook",
+   "inputs": "4 balance-sheet and profit ratios",
+   "trained_on": "original coefficients (not refitted)",
+   "pr_auc": 0.6350392995800951,
+   "pr_auc_ci95": [
+    0.5427072969500534,
+    0.7114246189814486
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.18287209944947513,
+    "ci95": [
+     -0.259572415916727,
+     -0.11726065684192331
+    ],
+    "share_a_better": 0.0
+   },
+   "source": "classic_scores_v1",
+   "note": "1,023 rows with all inputs (94%); network on them: 0.818"
+  },
+  {
+   "model": "Ohlson O (1980)",
+   "kind": "textbook",
+   "inputs": "9 ratios and indicators",
+   "trained_on": "original coefficients (not refitted)",
+   "pr_auc": 0.6259070936740785,
+   "pr_auc_ci95": [
+    0.541063773038857,
+    0.7138279687909042
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.18205131260058716,
+    "ci95": [
+     -0.24825770391217902,
+     -0.11965619338197851
+    ],
+    "share_a_better": 0.0
+   },
+   "source": "classic_scores_v1",
+   "note": "1,034 rows with all inputs (95%); network on them: 0.808"
   },
   {
    "model": "No skill (base rate)",
@@ -129,7 +175,8 @@
    "pr_auc": 0.2965009208103131,
    "pr_auc_ci95": null,
    "vs_deployed": null,
-   "source": "baselines_v1"
+   "source": "baselines_v1",
+   "note": null
   }
  ],
  "onset": [
@@ -144,7 +191,8 @@
     0.44259617816302793
    ],
    "vs_deployed": null,
-   "source": "gru_onset_v1"
+   "source": "gru_onset_v1",
+   "note": null
   },
   {
    "model": "General three-year GRU",
@@ -164,7 +212,8 @@
     ],
     "share_a_better": 0.442
    },
-   "source": "gru_onset_v1"
+   "source": "gru_onset_v1",
+   "note": null
   },
   {
    "model": "Onset-specific MLP",
@@ -184,7 +233,8 @@
     ],
     "share_a_better": 0.299
    },
-   "source": "mlp_v1 (reproduced in gru_onset_v1)"
+   "source": "mlp_v1 (reproduced in gru_onset_v1)",
+   "note": null
   },
   {
    "model": "Onset-specific GRU",
@@ -204,7 +254,8 @@
     ],
     "share_a_better": 0.035
    },
-   "source": "gru_onset_v1"
+   "source": "gru_onset_v1",
+   "note": null
   },
   {
    "model": "Onset XGBoost benchmark",
@@ -224,7 +275,50 @@
     ],
     "share_a_better": 0.732
    },
-   "source": "baselines_v1"
+   "source": "baselines_v1",
+   "note": null
+  },
+  {
+   "model": "Altman Z'' (1995)",
+   "kind": "textbook",
+   "inputs": "4 balance-sheet and profit ratios",
+   "trained_on": "original coefficients (not refitted)",
+   "pr_auc": 0.2028506859781874,
+   "pr_auc_ci95": [
+    0.13782551475473706,
+    0.3178868112819723
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.11027145017334733,
+    "ci95": [
+     -0.21595521799332842,
+     0.0015214236736799162
+    ],
+    "share_a_better": 0.027
+   },
+   "source": "classic_scores_v1",
+   "note": "688 rows with all inputs (95%); network on them: 0.313"
+  },
+  {
+   "model": "Ohlson O (1980)",
+   "kind": "textbook",
+   "inputs": "9 ratios and indicators",
+   "trained_on": "original coefficients (not refitted)",
+   "pr_auc": 0.18239070325435353,
+   "pr_auc_ci95": [
+    0.12546510812296974,
+    0.2845599984503332
+   ],
+   "vs_deployed": {
+    "mean_diff": -0.13465147453498133,
+    "ci95": [
+     -0.23574588380860667,
+     -0.028625783575302446
+    ],
+    "share_a_better": 0.008
+   },
+   "source": "classic_scores_v1",
+   "note": "698 rows with all inputs (96%); network on them: 0.317"
   },
   {
    "model": "No skill (base rate)",
@@ -234,7 +328,8 @@
    "pr_auc": 0.10041265474552957,
    "pr_auc_ci95": null,
    "vs_deployed": null,
-   "source": "baselines_v1"
+   "source": "baselines_v1",
+   "note": null
   }
  ],
  "watchlist": {
@@ -354,7 +449,8 @@
   "No experimental network beats the deployed one by a statistically clear margin on overall stress; the three-year GRU is +0.015 PR-AUC with an interval that includes zero.",
   "Training only on healthy borrowers made the networks worse, not better: 65 training onsets are too few.",
   "The deployed network already ranks new onsets about as well as the specialist models; its low onset recall comes from a single alert threshold set for a population where most stress is persistent.",
-  "A separate watch-list threshold for healthy borrowers is the most promising next step (research only)."
+  "A separate watch-list threshold for healthy borrowers is the most promising next step (research only).",
+  "The textbook scores (Altman Z'', Ohlson O) rank next-year stress clearly worse than the network: about 0.18 lower PR-AUC on the same rows, with intervals well below zero."
  ],
  "limitations": [
   "One held-out window (2021-25), inspected several times; no later outcomes yet.",
@@ -367,6 +463,7 @@
   "mlp_history_v1": "training/experiments/mlp_history_v1/",
   "gru_history_v1": "training/experiments/gru_history_v1/",
   "gru_onset_v1": "training/experiments/gru_onset_v1/",
-  "onset_watchlist_v1": "training/experiments/onset_watchlist_v1/"
+  "onset_watchlist_v1": "training/experiments/onset_watchlist_v1/",
+  "classic_scores_v1": "training/experiments/classic_scores_v1/"
  }
 }

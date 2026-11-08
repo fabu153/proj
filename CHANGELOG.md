@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.6.0 — Peer percentiles, debt maturity wall, textbook scores
+
+No model, calibration, replay or release-manifest file changed (manifest 1.2.0, 27 hashes still verified). The new
+XBRL tags are credit-only (`SUPPLEMENTAL_REGISTRY`), and a test proves the model inputs and scores are identical.
+
+- **Peer percentiles in the ledger.** Each ratio shows its percentile among comparable companies in the training
+  panel's lending population (4,435 company-years, 479 companies). The group is the same SIC major group in the
+  same fiscal year, widened to the SIC division or all industries, and to three years, until at least 15 peers
+  report the ratio. Each peer counts once. Hovering shows the group, the quartiles and which direction is stronger
+  (`backend/app/finance/peers.py`, `backend/data/peers/peers_v1.json`).
+- **Debt maturities.** A new workspace section built from the 10-K maturity schedule
+  (`LongTermDebtMaturitiesRepaymentsOfPrincipal…`). It shows principal due by year, cash, the liquidity runway
+  ((cash + max(FCF, 0)) / amount due in 12 months), how many scheduled years cash plus FCF covers, and the schedule
+  against the balance sheet. Each figure links to its source filing; untagged years show as "n/r".
+- **Textbook scores.** Altman Z″ (1995) and Ohlson O (1980) appear beside the neural screen as references, with
+  their peer percentiles. In Model X-Ray they are benchmark rows: on the same held-out rows they rank next-year
+  stress about 0.18 PR-AUC below the network (`training/experiments/classic_scores_v1/report.md`).
+- **Data.** The frozen sample files are untouched; the new tags for them sit in
+  `backend/data/curated/supplement/` and are merged at load time. Retained earnings for the benchmark come from
+  SEC companyconcept with the point-in-time rule. The GDP deflator comes from FRED.
+- **Considered, not built: "Ask the filing" chat.** See the README section on v1.6.
+
 ## 1.5.1 — Review polish
 
 - **Banks and insurers.** For financial-sector filers (SIC 6000–6799) the workspace now says that industrial

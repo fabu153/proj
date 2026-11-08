@@ -85,9 +85,22 @@ def main():
     for r in (hist["test"]["history"], gru["test"]["gru"]):
         assert r["n"] == overall_n["rows"] and r["positives"] == overall_n["positives"], "overall rows differ"
 
-    def row(model, kind, inputs, trained_on, pr, ci=None, diff=None, source=""):
+    def row(model, kind, inputs, trained_on, pr, ci=None, diff=None, source="", note=None):
         return {"model": model, "kind": kind, "inputs": inputs, "trained_on": trained_on, "pr_auc": pr,
-                "pr_auc_ci95": ci, "vs_deployed": diff, "source": source}
+                "pr_auc_ci95": ci, "vs_deployed": diff, "source": source, "note": note}
+
+    cl = _j(EXP / "classic_scores_v1/results.json")
+
+    def classic_rows(pop):
+        out_ = []
+        for k, name, inputs in (("altman_z2", "Altman Z'' (1995)", "4 balance-sheet and profit ratios"),
+                                ("ohlson_o", "Ohlson O (1980)", "9 ratios and indicators")):
+            r = cl[pop][k]
+            out_.append(row(name, "textbook", inputs, "original coefficients (not refitted)", r["pr_auc"],
+                            r["pr_auc_ci95"], r["minus_deployed"], "classic_scores_v1",
+                            note=f"{r['rows']:,} rows with all inputs ({r['coverage']:.0%}); network on them: "
+                                 f"{r['deployed_on_same_rows']['pr_auc']:.3f}"))
+        return out_
 
     overall = [
         row("Deployed network (stress_mlp_v1)", "deployed", "year t: 31 measures + missing flags", "all borrowers",
@@ -102,6 +115,7 @@ def main():
             b_nf["xgboost"]["test_bootstrap"]["pr_auc_ci95"],
             {k: -v if k == "mean_diff" else ([-v[1], -v[0]] if k == "ci95" else 1 - v)
              for k, v in mlp["label_next_fy"]["paired_vs_baselines"]["mlp_minus_xgboost"].items()}, "baselines_v1"),
+        *classic_rows("overall"),
         row("No skill (base rate)", "reference", "-", "-", b_nf["no_skill"]["test"]["pr_auc"], None, None, "baselines_v1"),
     ]
     t, ci, pd_ = on["test"], on["test_ci95"], on["paired_gru_onset_minus"]
@@ -119,6 +133,7 @@ def main():
             "gru_onset_v1"),
         row("Onset XGBoost benchmark", "benchmark", "year t", "healthy borrowers only", t["xgboost_onset"]["pr_auc"],
             ci["xgboost_onset"]["pr_auc_ci95"], None, "baselines_v1"),
+        *classic_rows("onset"),
         row("No skill (base rate)", "reference", "-", "-", t["no_skill"]["pr_auc"], None, None, "baselines_v1"),
     ]
     # paired difference against the deployed network on the same 727 rows, company-clustered (seed 7, 1,000 draws)
@@ -160,6 +175,8 @@ def main():
             "The deployed network already ranks new onsets about as well as the specialist models; its low onset recall "
             "comes from a single alert threshold set for a population where most stress is persistent.",
             "A separate watch-list threshold for healthy borrowers is the most promising next step (research only).",
+            "The textbook scores (Altman Z'', Ohlson O) rank next-year stress clearly worse than the network: about "
+            "0.18 lower PR-AUC on the same rows, with intervals well below zero.",
         ],
         "limitations": [
             "One held-out window (2021-25), inspected several times; no later outcomes yet.",
@@ -167,7 +184,8 @@ def main():
             "Onset results rest on 73 test onsets (65 in training, 18 in validation), so intervals are wide.",
         ],
         "sources": {k: f"training/experiments/{k}/" for k in
-                    ("mlp_v1", "baselines_v1", "mlp_history_v1", "gru_history_v1", "gru_onset_v1", "onset_watchlist_v1")},
+                    ("mlp_v1", "baselines_v1", "mlp_history_v1", "gru_history_v1", "gru_onset_v1", "onset_watchlist_v1",
+                     "classic_scores_v1")},
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, indent=1, default=lambda x: float(x) if isinstance(x, np.floating) else x) + "\n")

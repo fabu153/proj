@@ -25,6 +25,8 @@ from .. import replay, store
 from ..documents import pdf_extract, sec_search, uploads
 from ..documents.sec_client import SECError
 from ..features.universe_rules import excluded_sic
+from ..finance import credit_extras
+from ..finance import peers as peer_lib
 from ..documents.xbrl import CompanyYear, build_company_years, engine_inputs
 from ..finance.metrics import compute_all
 from ..memos import service as memo_service
@@ -45,7 +47,7 @@ CORS_ORIGINS = [o.strip() for o in os.environ.get("CREDITLENS_CORS_ORIGINS", "ht
 # Vercel production and preview deployments (https://<project>-<hash>.vercel.app); override with "" to disable
 CORS_ORIGIN_REGEX = os.environ.get("CREDITLENS_CORS_REGEX", r"https://(creditlens|proj)[a-z0-9-]*\.vercel\.app") or None
 SCALE = 1_000_000  # display / scenario scale: millions
-VERSION = "1.5.1"
+VERSION = "1.6.0"
 
 log = logging.getLogger("creditlens")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -108,6 +110,16 @@ def _curated() -> dict[str, dict]:
         with opener(p, "rt") as fh:
             data = json.load(fh)
         out[str(data.get("cik", p.stem)).zfill(10)] = data
+    # v1.6 credit-only tags (debt maturities, retained earnings) for the frozen sample files, merged here so the
+    # frozen files themselves stay byte-identical; only SUPPLEMENTAL_REGISTRY tags, never model inputs
+    for p in sorted((CURATED_DIR / "supplement").glob("supplement_*.json.gz")):
+        with gzip.open(p, "rt") as fh:
+            sup = json.load(fh)
+        cf = out.get(str(sup["cik"]).zfill(10))
+        if cf is not None:
+            ug = cf.setdefault("facts", {}).setdefault("us-gaap", {})
+            for tag, v in sup["facts"]["us-gaap"].items():
+                ug.setdefault(tag, v)
     return out
 
 
@@ -304,7 +316,9 @@ def analyses(req: AnalysisRequest):
         sec_check=cf.get("sec_check", "SEC XBRL is the source" if "unavailable_critical" not in cf else None),
         warnings=cy.warnings, hard_failures=cy.hard_failures,
         risk_model=risk_service.score(cf, cy.fiscal_year_end, req.as_of),
-        industry=_industry(cf), loan_lab=_lab_status(cf, cy))
+        industry=_industry(cf), loan_lab=_lab_status(cf, cy),
+        credit_extras=(ex := _extras(cf, cy, prior, vals, prior_vals, metrics)),
+        peers=_peers(cf, cy, prior, ex))
 
 
 @app.post("/predict")
@@ -401,6 +415,41 @@ def _industry(cf: dict) -> Optional[dict]:
 
 FINANCIAL_LAB = ("The loan lab and memo are not available for financial-sector filers: their leverage and coverage "
                  "tests are built for operating companies and would be misleading for a bank or insurer.")
+
+
+def _extras(cf: dict, cy, prior, vals: dict, prior_vals: Optional[dict], metrics) -> dict:
+    """Debt maturity wall and textbook scores (finance/credit_extras.py), all from this year's XBRL facts."""
+    if (_industry(cf) or {}).get("financial"):
+        return {"not_applicable": "Industrial credit measures do not apply to financial-sector filers."}
+    re_fact = cy.supplemental.get("retained_earnings")
+    v = {**vals, "retained_earnings": re_fact.value / SCALE if re_fact else None}
+    z = credit_extras.altman_z2(v)
+    if re_fact:
+        z["retained_earnings_evidence"] = {"tag": re_fact.tag, "accession": re_fact.accession, "filed": re_fact.filed}
+    wall = (credit_extras.maturity_wall(cy.supplemental, vals, metrics["fcf_simple"].value, SCALE)
+            if cf.get("source") != "Uploaded annual report" else
+            {"available": False, "version": credit_extras.EXTRAS_VERSION,
+             "reason": "The debt maturity schedule is not extracted from uploaded PDFs; search the company to load it from SEC."})
+    return {"maturities": wall,
+            "altman_z2": z, "ohlson_o": credit_extras.ohlson_o(vals, prior_vals, cy.fiscal_year_end)}
+
+
+def _peers(cf: dict, cy, prior, extras: dict) -> Optional[dict]:
+    """Percentile bands against the training panel's lending population (finance/peers.py)."""
+    if (_industry(cf) or {}).get("financial") or not cy.scorable:
+        return None
+    mv = _scaled(engine_inputs(cy, basis="model"))
+    mp = _scaled(engine_inputs(prior, basis="model")) if prior else None
+    m = compute_all(mv, mp, cash_basis=cy.cash_basis)
+    values = {k: m[k].value for k in ("revenue_growth", "ebitda_margin", "gross_leverage", "net_leverage",
+                                       "ebit_interest_cover", "ebitda_interest_cover", "current_ratio")}
+    for k in ("altman_z2", "ohlson_o"):
+        values[k] = extras.get(k, {}).get("value") if extras.get(k, {}).get("available") else None
+    cik = str(cf.get("cik", "")).zfill(10)
+    sic = cf.get("sic") or (cf.get("sec_meta") or {}).get("sic") or peer_lib.sic_of(cik)
+    out = peer_lib.percentiles(values, cik, sic, cy.fiscal_year_end)
+    out["sic"] = sic
+    return out
 
 
 def _lab_status(cf: dict, cy) -> dict:

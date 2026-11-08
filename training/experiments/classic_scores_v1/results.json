@@ -1,0 +1,116 @@
+{
+ "experiment": "classic_scores_v1",
+ "status": "textbook benchmarks; research only",
+ "run_at": "2026-11-08 21:59 UTC",
+ "provenance": {
+  "panel_sha256": "794ccc3c358cec1b3d4b00466f5527be7d13dfcdd828ab04814abda925c49661",
+  "inputs_sha256": "8169b06727ec9973bd467f4f44470a7c654f8f9a748ee61954cf734c989ca558",
+  "deflator": "backend/data/macro/gdp_deflator.json"
+ },
+ "conventions": {
+  "altman_z2": "Altman (1995) Z'' four ratios, no constant; EBIT = operating income; lower = riskier",
+  "ohlson_o": "Ohlson (1980) model 1; total assets in USD millions; GDP deflator (1968 = 100) for the GNP index; FFO = operating cash flow; higher = riskier. Ranking metrics do not depend on the units of total assets."
+ },
+ "retained_earnings_coverage_panel": 0.884102564102564,
+ "overall": {
+  "altman_z2": {
+   "rows": 1023,
+   "coverage": 0.9419889502762431,
+   "positives": 305,
+   "pr_auc": 0.6350392995800951,
+   "roc_auc": 0.7758573450842505,
+   "pr_auc_ci95": [
+    0.5427072969500534,
+    0.7114246189814486
+   ],
+   "deployed_on_same_rows": {
+    "pr_auc": 0.8179113990295702,
+    "roc_auc": 0.9081327914516644
+   },
+   "minus_deployed": {
+    "mean_diff": -0.18287209944947513,
+    "ci95": [
+     -0.259572415916727,
+     -0.11726065684192331
+    ],
+    "share_a_better": 0.0
+   },
+   "no_skill": 0.2981427174975562
+  },
+  "ohlson_o": {
+   "rows": 1034,
+   "coverage": 0.9521178637200737,
+   "positives": 305,
+   "pr_auc": 0.6259070936740785,
+   "roc_auc": 0.7796802266747622,
+   "pr_auc_ci95": [
+    0.541063773038857,
+    0.7138279687909042
+   ],
+   "deployed_on_same_rows": {
+    "pr_auc": 0.8079584062746656,
+    "roc_auc": 0.9064966605950213
+   },
+   "minus_deployed": {
+    "mean_diff": -0.18205131260058716,
+    "ci95": [
+     -0.24825770391217902,
+     -0.11965619338197851
+    ],
+    "share_a_better": 0.0
+   },
+   "no_skill": 0.29497098646034814
+  }
+ },
+ "onset": {
+  "altman_z2": {
+   "rows": 688,
+   "coverage": 0.9463548830811555,
+   "positives": 67,
+   "pr_auc": 0.2028506859781874,
+   "roc_auc": 0.6859422693296802,
+   "pr_auc_ci95": [
+    0.13782551475473706,
+    0.3178868112819723
+   ],
+   "deployed_on_same_rows": {
+    "pr_auc": 0.3131221361515347,
+    "roc_auc": 0.8007787151200519
+   },
+   "minus_deployed": {
+    "mean_diff": -0.11027145017334733,
+    "ci95": [
+     -0.21595521799332842,
+     0.0015214236736799162
+    ],
+    "share_a_better": 0.027
+   },
+   "no_skill": 0.09738372093023256
+  },
+  "ohlson_o": {
+   "rows": 698,
+   "coverage": 0.9601100412654745,
+   "positives": 68,
+   "pr_auc": 0.18239070325435353,
+   "roc_auc": 0.6846638655462185,
+   "pr_auc_ci95": [
+    0.12546510812296974,
+    0.2845599984503332
+   ],
+   "deployed_on_same_rows": {
+    "pr_auc": 0.31704217778933486,
+    "roc_auc": 0.8020774976657329
+   },
+   "minus_deployed": {
+    "mean_diff": -0.13465147453498133,
+    "ci95": [
+     -0.23574588380860667,
+     -0.028625783575302446
+    ],
+    "share_a_better": 0.008
+   },
+   "no_skill": 0.09742120343839542
+  }
+ },
+ "test_set_status": "2021-25 test window, already inspected in earlier experiments: exploratory"
+}

@@ -53,14 +53,39 @@ type Props = {
   onSelect: (key: string) => void;
 };
 
+const ord = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+
+type Band = { percentile: number; peers: number; group: string; years: string; p25: number; median: number; p75: number; stronger: "lower" | "higher" };
+
+/** v1.6: where the company sits among peers (finance/peers.py). The bar shows the percentile; the text says which way is stronger. */
+function PeerBand({ b, label, unit }: { b?: Band; label: string; unit: RowDef["unit"] }) {
+  if (!b) return <td className="na peer">–</td>;
+  const stronger = b.stronger === "lower" ? 100 - b.percentile : b.percentile;
+  const sentence = `${label}: ${ord(b.percentile)} percentile of ${b.peers} peers (${b.group}, ${b.years}); ${b.stronger} is stronger, so it is stronger than about ${stronger}% of them. Peer quartiles ${fmt(b.p25, unit)}, ${fmt(b.median, unit)}, ${fmt(b.p75, unit)}.`;
+  return (
+    <td className="peer" title={sentence}>
+      <span className="sr-only">{sentence}</span>
+      <span aria-hidden="true" className="peer-cell">
+        <span className="peer-bar">
+          <span className="peer-mark" style={{ left: `${b.percentile}%` }} />
+        </span>
+        <span className="peer-pct">{ord(b.percentile)}</span>
+      </span>
+    </td>
+  );
+}
+
 export default function CreditProfile({ analysis, history, selected, onSelect }: Props) {
   const upto = history.filter((h) => h.fiscal_year_end <= analysis.fiscal_year_end).slice(-4);
   const latest = analysis.fiscal_year_end;
+  const bands: Record<string, Band> = (analysis.peers?.bands ?? {}) as Record<string, Band>;
+  const anyBand = Object.values(bands)[0];
   return (
     <div className="sheet scroll-x" tabIndex={0} role="region" aria-label="Credit profile table">
       <table className="ledger num">
         <caption style={{ textAlign: "left", padding: "10px 12px 0", fontSize: 12.5, color: "var(--slate)" }}>
           {analysis.currency} millions, annual 10-K data. Select a row to see its formula and source filing.
+          {anyBand ? " Peers: percentile among comparable companies in the training panel (hover for the group and quartiles)." : ""}
         </caption>
         <thead>
           <tr>
@@ -70,11 +95,12 @@ export default function CreditProfile({ analysis, history, selected, onSelect }:
                 {fyLabel(h.fiscal_year_end)}
               </th>
             ))}
+            {anyBand && <th scope="col" className="peer">Peers</th>}
           </tr>
         </thead>
         <tbody>
           {ROWS.map((g) => (
-            <Group key={g.group} group={g.group} cols={upto.length + 1}>
+            <Group key={g.group} group={g.group} cols={upto.length + 1 + (anyBand ? 1 : 0)}>
               {g.rows.map((r) => {
                 const m = analysis.metrics[r.key];
                 return (
@@ -101,6 +127,7 @@ export default function CreditProfile({ analysis, history, selected, onSelect }:
                         </td>
                       );
                     })}
+                    {anyBand && <PeerBand b={bands[r.key]} label={r.label} unit={r.unit} />}
                   </tr>
                 );
               })}
@@ -108,6 +135,13 @@ export default function CreditProfile({ analysis, history, selected, onSelect }:
           ))}
         </tbody>
       </table>
+      {anyBand && (
+        <p className="fine peer-note">
+          Peers: {anyBand.group}, {anyBand.years}, {anyBand.peers} companies (rows may use a wider group when fewer than{" "}
+          {analysis.peers?.min_peers} peers report the ratio). Each peer counts once; ratios on the training-panel basis, before the
+          credit adjustments R5–R7, so a few values can differ slightly from the column above. Descriptive only.
+        </p>
+      )}
     </div>
   );
 }

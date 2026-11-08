@@ -456,3 +456,39 @@ tr.is-deployed { background: var(--teal-soft); }
 .sector-details > summary { cursor: pointer; font-size: 14px; color: var(--slate); margin-bottom: 10px; }
 .sector-rail { margin: 0 0 6px; padding: 4px 8px; background: var(--amber-soft); border-left: 3px solid var(--amber); }
 .heat-hint { margin: 6px 0 0; }
+.kind.textbook { background: var(--paper); border-style: dashed; }
+.research-table .row-note { display: block; font-weight: 400; margin-top: 2px; max-width: 260px; }
+
+/* v1.6: peers, maturity wall, textbook scores */
+th.peer, td.peer { width: 96px; text-align: left !important; }
+.peer-cell { display: inline-flex; align-items: center; gap: 6px; }
+.peer-bar { position: relative; width: 44px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--rule) 0 25%, var(--rule-strong) 25% 75%, var(--rule) 75% 100%); }
+.peer-mark { position: absolute; top: -3px; width: 3px; height: 12px; margin-left: -1.5px; background: var(--teal); border-radius: 1px; }
+.peer-pct { font-size: 12px; color: var(--slate); min-width: 30px; }
+.peer-note { padding: 0 12px 10px; margin: 0; }
+.maturity { padding: 16px 18px; }
+.maturity-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 760px) { .maturity-grid { grid-template-columns: 1fr; } }
+.maturity-chart { margin: 0; }
+.maturity-chart .bars { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; align-items: end; border-bottom: 1px solid var(--ink); }
+.maturity-chart .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.maturity-chart .bar { width: 70%; background: var(--teal); border-radius: 2px 2px 0 0; }
+.maturity-chart .bar.first { background: var(--ink); }
+.maturity-chart .bar.missing { background: var(--rule-strong); }
+.maturity-chart .bar-val { font-size: 12px; font-variant-numeric: tabular-nums; margin-bottom: 3px; color: var(--ink); }
+.maturity-chart .bar-labels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; font-size: 11.5px; color: var(--slate); text-align: center; margin-top: 4px; }
+.maturity-chart .cash-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--amber); pointer-events: none; }
+.maturity-chart .cash-line span { position: absolute; left: 0; top: -16px; font-size: 11px; color: var(--slate); background: var(--sheet); padding: 0 3px; }
+.maturity-facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; }
+.maturity-facts dt { color: var(--slate); }
+.maturity-facts dd { margin: 0; }
+.maturity-facts dd .fine { display: block; }
+.classic { margin-top: 14px; padding: 14px 18px; }
+.classic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 700px) { .classic-grid { grid-template-columns: 1fr; } }
+.classic-name { font-weight: 600; }
+.classic-val { font-size: 22px; margin: 2px 0; }
+.zone { font-size: 12px; padding: 1px 6px; border-radius: 3px; vertical-align: middle; border: 1px solid var(--rule); }
+.zone.safe { background: var(--teal-soft); }
+.zone.grey { background: var(--amber-soft); }
+.zone.distress { background: var(--red-soft, #f6dcdc); }
