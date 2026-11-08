@@ -3,7 +3,8 @@
 ## 1.6.2 — Alignment
 
 - Debt maturities footer: wrapped text stays in its own column, aligned with the first line.
-- Textbook scores: both peer gauges sit on the same line, whatever the length of the text above them.
+- Textbook scores: both peer gauges sit on the same line, whatever the length of the text above them; the Ohlson O
+  note is shortened to "Higher is riskier" (the reason only its rank is shown stays in the classic-scores report).
 
 ## 1.6.1 — Layout polish
 

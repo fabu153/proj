@@ -70,7 +70,7 @@ export default function ClassicScores({ z, o, bands }: { z?: ClassicScore; o?: C
           {o?.available ? (
             <>
               <div className="classic-val"><b>{o.value!.toFixed(2)}</b></div>
-              <div className="fine">Higher is riskier. Only its rank is shown: the 1970s probability calibration does not carry over.</div>
+              <div className="fine">Higher is riskier.</div>
               {po && <PeerGauge b={po} />}
             </>
           ) : (
