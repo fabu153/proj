@@ -87,14 +87,17 @@ export default function MaturityWall({ wall, cik, currency }: { wall: Wall; cik:
       <div className="maturity-foot">
         <p>
           <span className="foot-label">Schedule vs balance sheet</span>
-          {fmt(wall.schedule_total, "amount")} scheduled vs {fmt(wall.long_term_debt_balance, "amount")} long-term debt on the balance
-          sheet; differences come from discounts, issuance costs and finance leases.
+          <span>
+            {fmt(wall.schedule_total, "amount")} scheduled vs {fmt(wall.long_term_debt_balance, "amount")} long-term debt on the balance
+            sheet; differences come from discounts, issuance costs and finance leases.
+          </span>
         </p>
         {wall.notes.map((n) => (
-          <p key={n}><span className="foot-label">Note</span>{n}</p>
+          <p key={n}><span className="foot-label">Note</span><span>{n}</span></p>
         ))}
         <p>
           <span className="foot-label">Source</span>
+          <span>
           {accessions.map((a, i) => {
             const [acc, filed] = a.split("|");
             return (
@@ -105,6 +108,7 @@ export default function MaturityWall({ wall, cik, currency }: { wall: Wall; cik:
             );
           })}
           . Runway formula v{wall.version}: {wall.formula}.
+          </span>
         </p>
       </div>
     </div>

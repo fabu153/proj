@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.2 — Alignment
+
+- Debt maturities footer: wrapped text stays in its own column, aligned with the first line.
+- Textbook scores: both peer gauges sit on the same line, whatever the length of the text above them.
+
 ## 1.6.1 — Layout polish
 
 - Debt maturities: four headline tiles (due within 12 months, liquidity runway with a coloured status edge,
