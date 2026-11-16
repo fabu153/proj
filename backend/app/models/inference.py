@@ -61,6 +61,11 @@ class StressModel:
         meta = json.loads((path / "metadata.json").read_text())
         if meta["features"] != FEATURES:
             raise RuntimeError("Artifact feature list does not match code FEATURES — retrain or bump version")
+        # the preprocessor and every network must expect the same inputs, in the same order (values + missing flags)
+        if pre.features != FEATURES:
+            raise RuntimeError("Preprocessor feature list does not match code FEATURES — retrain or bump version")
+        if not seeds or any(w["W1"].shape[1] != 2 * len(FEATURES) for w in seeds):
+            raise RuntimeError("Network input width does not match 2 x len(FEATURES) — retrain or bump version")
         return cls(seeds, pre, cal["a"], cal["b"], meta)
 
     # ------------------------------------------------------------------ scoring
@@ -105,7 +110,7 @@ class StressModel:
         if g["require_scorable"] and not panel_row.get("scorable"):
             reasons.append("hard data-quality checks failed")
         rev = panel_row.get("v_revenue")
-        if rev is None or rev < g["min_revenue_usd_m"]:
+        if rev is None or pd.isna(rev) or rev < g["min_revenue_usd_m"]:   # NaN: missing, as in training
             reasons.append(f"outside model population (revenue < USD {g['min_revenue_usd_m']}m or missing)")
         if panel_row.get("critical_coverage", 0) < g["min_critical_coverage"]:
             reasons.append("too few critical financial facts available")

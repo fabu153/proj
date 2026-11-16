@@ -5,10 +5,10 @@ is made from exactly the same row definition the model was trained on.
 """
 from __future__ import annotations
 
-from datetime import date
 from typing import Optional
 
-from backend.app.documents.xbrl import HELPER_FIELDS, TAG_REGISTRY, build_company_years, engine_inputs
+from backend.app.documents.xbrl import (HELPER_FIELDS, TAG_REGISTRY, build_company_years, consecutive, engine_inputs,
+                                        prior_year)
 from backend.app.finance.metrics import compute_all
 from backend.app.labels.stress_label import LABEL_VERSION, onset_label, stress_label
 
@@ -18,10 +18,6 @@ METRICS = ["ebitda", "gross_debt", "net_debt", "fcf_simple", "ebitda_margin", "g
            "ebit_interest_cover", "ebitda_interest_cover", "current_ratio", "debt_to_assets", "revenue_growth"]
 CRITICAL = ["revenue", "operating_income", "interest_expense", "depreciation_amortization",
             "operating_cash_flow", "long_term_debt", "total_assets"]
-
-
-def _d(s: str) -> date:
-    return date.fromisoformat(s)
 
 
 def _label_inputs(vals: dict, m: dict) -> dict:
@@ -35,8 +31,8 @@ def panel_rows(companyfacts: dict, meta: Optional[dict] = None, as_of: Optional[
     for i, cy in enumerate(years):
         vals = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(cy, basis="model").items()}
         prior = None
-        if i > 0 and 330 <= (_d(cy.fiscal_year_end) - _d(years[i - 1].fiscal_year_end)).days <= 400:
-            prior = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(years[i - 1], basis="model").items()}
+        if (p := prior_year(years, i)) is not None:
+            prior = {k: (v / SCALE if v is not None else None) for k, v in engine_inputs(p, basis="model").items()}
         comp.append((cy, vals, compute_all(vals, prior)))
 
     rows = []
@@ -51,8 +47,7 @@ def panel_rows(companyfacts: dict, meta: Optional[dict] = None, as_of: Optional[
         row.update({f"m_{k}": m[k].value for k in METRICS})
         row.update(stress_t=cur.label, cond_cov_t=cur.coverage_weak, cond_lev_t=cur.leverage_high,
                    cond_cfo_t=cur.cash_flow_weak)
-        nxt_ok = (i + 1 < len(comp) and
-                  330 <= (_d(comp[i + 1][0].fiscal_year_end) - _d(cy.fiscal_year_end)).days <= 400)
+        nxt_ok = i + 1 < len(comp) and consecutive(cy.fiscal_year_end, comp[i + 1][0].fiscal_year_end)
         if nxt_ok and comp[i + 1][0].scorable:
             ncy, nvals, nm = comp[i + 1]
             nxt = stress_label(_label_inputs(nvals, nm))

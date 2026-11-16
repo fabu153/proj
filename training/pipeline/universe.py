@@ -67,7 +67,7 @@ def main():
         seen += 1
         try:
             meta = client.submissions_meta(c["cik"])
-        except Exception as e:  # noqa: BLE001
+        except Exception:  # noqa: BLE001
             reasons["submissions_error"] = reasons.get("submissions_error", 0) + 1
             continue
         why = excluded_sic(meta.get("sic"))

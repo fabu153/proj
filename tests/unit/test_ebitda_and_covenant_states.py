@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app.api import main
-from backend.app.scenarios.loan import ENGINE_VERSION, Baseline, Covenants, CovenantState, Facility, Shock, run_scenario
+from backend.app.scenarios.loan import ENGINE_VERSION, Baseline, Covenants, CovenantState, Shock, run_scenario
 
 ROOT = Path(__file__).parents[2]
 COV = Covenants(max_net_leverage=3.5, min_ebitda_interest_cover=3.0)

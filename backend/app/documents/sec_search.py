@@ -47,10 +47,10 @@ def client() -> SECClient:
 
 def set_client(c: Optional[SECClient]) -> None:
     """Tests inject a client whose HTTP transport is mocked; no test talks to SEC."""
-    global _client, _index
+    global _client, _index, _index_due
     with _client_lock:
         _client = c
-    _index = None
+    _index, _index_due = None, 0.0
     _loaded.clear()
 
 
@@ -129,35 +129,45 @@ class CompanyIndex:
                  "exchanges": e["exchanges"], "match": how} for _, e, how in ranked[:limit]]
 
 
+INDEX_RETRY_S = 5 * 60               # after a failed refresh, how long until SEC is asked again
+STALE_SOURCE = "SEC EDGAR company list (cached copy; SEC unreachable)"
+
 _index: Optional[CompanyIndex] = None
-_index_at = 0.0
+_index_due = 0.0                     # when SEC is next asked for a fresh list
 _index_lock = threading.Lock()
 
 
 def index() -> CompanyIndex:
-    """SEC's list, refreshed daily. If SEC cannot be reached, a list fetched earlier is used and labelled as such."""
-    global _index, _index_at
+    """SEC's list, refreshed daily. If SEC cannot be reached, a list fetched earlier is used and labelled as such,
+    and SEC is asked again only after INDEX_RETRY_S: during an outage searches answer at once from the earlier list
+    instead of each one waiting for SEC's timeouts (the cost: companies listed in the last day may be missing)."""
+    global _index, _index_due
     with _index_lock:
-        if _index is not None and time.time() - _index_at < INDEX_TTL_S:
+        if _index is not None and time.time() < _index_due:
             return _index
         c = client()
         try:
             raw = c.company_tickers(max_age_s=INDEX_TTL_S)
             _index = CompanyIndex(raw, "SEC EDGAR company list", _mtime(c, "company_tickers_exchange"))
+            _index_due = time.time() + INDEX_TTL_S
         except SECError:
-            if _index is not None:               # serve yesterday's list rather than nothing; retry next call
-                return _index
-            stale = c.cache_dir / "company_tickers_exchange.json.gz"
-            if not stale.exists():
+            earlier = _index or _index_from_disk(c)
+            if earlier is None:
                 raise
-            import gzip
-            import json
-            with gzip.open(stale, "rt") as fh:
-                _index = CompanyIndex(json.load(fh), "SEC EDGAR company list (cached copy; SEC unreachable)",
-                                      _mtime(c, "company_tickers_exchange"))
-            return _index
-        _index_at = time.time()
+            earlier.source = STALE_SOURCE
+            _index, _index_due = earlier, time.time() + INDEX_RETRY_S
         return _index
+
+
+def _index_from_disk(c: SECClient) -> Optional[CompanyIndex]:
+    """The last list saved to disk, however old; None if there is none or it cannot be read."""
+    import gzip
+    import json
+    try:
+        with gzip.open(c.cache_dir / "company_tickers_exchange.json.gz", "rt") as fh:
+            return CompanyIndex(json.load(fh), STALE_SOURCE, _mtime(c, "company_tickers_exchange"))
+    except (OSError, EOFError, ValueError, AttributeError, TypeError):    # missing or damaged
+        return None
 
 
 def _mtime(c: SECClient, name: str) -> Optional[str]:

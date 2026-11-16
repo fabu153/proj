@@ -25,7 +25,7 @@ import pandas as pd
 import torch
 import yaml
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
+from sklearn.metrics import average_precision_score
 
 from backend.app.features.feature_set import FEATURES, build_features
 from backend.app.features.preprocess import Preprocessor
@@ -72,7 +72,7 @@ def add_history(feats: pd.DataFrame) -> pd.DataFrame:
 
 
 def load(base_cfg: dict) -> pd.DataFrame:
-    """Same row filters as training/ml/run_baselines.load_dataset; history added before filtering."""
+    """Same row filters as training/ml/dataset.load_dataset; history added before filtering."""
     panel = pd.read_csv(base_cfg["panel"], dtype={"cik": str})
     rf = base_cfg["row_filters"]
     feats = add_history(build_features(panel))

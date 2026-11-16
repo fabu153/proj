@@ -35,7 +35,7 @@ from backend.app.features.preprocess import Preprocessor
 from training.ml.onset_data import TARGET, YEARS, history_index, onset_cohort, sequences  # noqa: F401
 from training.ml.evaluate import calibration_table, cluster_bootstrap, max_f1_threshold, point_metrics, threshold_metrics
 from training.ml.mlp import logits, set_seed, train_one
-from training.ml.run_baselines import load_dataset, sha256_file
+from training.ml.dataset import load_dataset, sha256_file
 from training.ml.splits import SplitSpec, assign_splits
 from training.ml.train_mlp import grouped_holdout, sigmoid
 

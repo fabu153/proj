@@ -231,7 +231,9 @@ def test_upload_review_analyse(page):
     page.goto(BASE + "/upload", wait_until="networkidle")
     page.set_input_files("input[type=file]", str(PDF))
     page.fill("input[placeholder='As it should appear in the memo']", "E2E B&G Foods")
-    page.click("text=Extract figures")
+    with page.expect_response("**/documents/upload") as up:
+        page.click("text=Extract figures")
+    doc_id = up.value.json()["id"]                                   # the private id, only the uploader has it
     page.wait_for_selector("text=Check the extracted figures", timeout=60000)
     assert page.locator("button:has-text('Analyse reviewed figures')").is_disabled()
     page.locator("tr.needs-review button:has-text('Accept')").first.click()
@@ -241,11 +243,12 @@ def test_upload_review_analyse(page):
     page.wait_for_selector("h1:has-text('uploaded report')", timeout=60000)
     assert "11.59x" in page.inner_text("table.ledger")
     assert "from the uploaded report, page" in page.inner_text(".rail")
-    # clean up through the API
+    # clean up through the API: the shareable analysis link cannot delete the upload, its private id can
     cid = page.url.split("company=")[1]
     import httpx
-    doc = httpx.get(f"{API}/documents/{cid}").json()
-    assert httpx.delete(f"{API}/documents/{doc['id']}").status_code == 200
+    assert httpx.post(f"{API}/analyses", json={"company_id": cid}).status_code == 200      # a live analysis link
+    assert httpx.delete(f"{API}/documents/{cid}").status_code == 404
+    assert httpx.delete(f"{API}/documents/{doc_id}").status_code == 200
 
 
 def test_data01_unlabelled_report_needs_confirmation(page):
@@ -253,7 +256,9 @@ def test_data01_unlabelled_report_needs_confirmation(page):
     page.goto(BASE + "/upload", wait_until="networkidle")
     page.set_input_files("input[type=file]", str(PDF_C))
     page.fill("input[placeholder='As it should appear in the memo']", "E2E unlabelled")
-    page.click("text=Extract figures")
+    with page.expect_response("**/documents/upload") as up:
+        page.click("text=Extract figures")
+    doc_id = up.value.json()["id"]
     page.wait_for_selector("text=Check the extracted figures", timeout=60000)
     assert "4 missing" in page.inner_text(".review-summary")
     assert page.locator("tbody tr").first.get_attribute("class") == "missing"     # exceptions first
@@ -279,9 +284,7 @@ def test_data01_unlabelled_report_needs_confirmation(page):
     page.wait_for_url("**/workspace?company=doc*", timeout=60000)
     page.wait_for_selector("text=Not checked against SEC", timeout=60000)
     import httpx
-    cid = page.url.split("company=")[1]
-    doc = httpx.get(f"{API}/documents/{cid}").json()
-    assert httpx.delete(f"{API}/documents/{doc['id']}").status_code == 200
+    assert httpx.delete(f"{API}/documents/{doc_id}").status_code == 200
     assert page.errors == []
 
 

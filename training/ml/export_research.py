@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from training.ml.run_baselines import load_dataset
+from training.ml.dataset import load_dataset
 from training.ml.splits import SplitSpec, assign_splits
 
 OUT = Path("backend/data/research/research_v1.json")

@@ -5,17 +5,20 @@
 * Throttled to <= 4 requests/second (SEC limit is 10).
 * companyfacts are cached in COMPACT form: only the us-gaap tags in TAG_REGISTRY are kept,
   which shrinks each file ~20-50x while preserving every field the pipeline uses. The raw
-  response hash is logged so the compaction is auditable.
+  response hash is logged so the compaction is auditable, and the tag list is saved in the file:
+  a file cut with fewer tags than the code now reads is reported, never silently used as complete.
 """
 from __future__ import annotations
 
 import gzip
 import hashlib
 import json
+import logging
 import os
 import threading
 import time
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import httpx
@@ -24,7 +27,12 @@ BASE = "https://data.sec.gov"
 WWW = "https://www.sec.gov"
 DEFAULT_CACHE = Path(os.environ.get("CREDITLENS_DATA", "training/data")) / "raw" / "sec"
 MIN_INTERVAL_S = 0.25
+MAX_RETRY_AFTER_S = 10           # SEC asking for a longer pause is answered at once, not waited out
 DEFAULT_UA = "CreditLens-Capstone academic research project"
+TAGS_KEY = "cached_tags"          # the XBRL tag list a compact companyfacts file was cut with
+
+log = logging.getLogger("creditlens")
+_warned: set = set()
 
 
 class SECError(Exception):
@@ -34,6 +42,49 @@ class SECError(Exception):
     def __init__(self, kind: str, message: str):
         super().__init__(message)
         self.kind = kind
+
+
+def _check_tags(cached: list | None, needed: set, name: str) -> None:
+    """A cached file keeps only the tags read when it was saved. If the code now reads more, those figures would be
+    silently unavailable for the company; say so loudly (once per run for each kind) and leave the re-download to
+    the operator: refresh=True, e.g. `build_panel --refresh`. Nothing is fetched automatically, because a new
+    download brings the filings made since and can change a frozen panel."""
+    if cached is None:
+        key = "untracked"
+        msg = (f"{name}.json.gz (and possibly other cached companyfacts files) was saved before cache files recorded "
+               "their XBRL tag list, so it may lack tags added to TAG_REGISTRY or SUPPLEMENTAL_REGISTRY since; their "
+               "figures would read as unavailable. If tags were added, re-download with refresh=True "
+               "(build_panel --refresh).")
+    else:
+        missing = needed - set(cached)
+        if not missing:
+            return
+        key = frozenset(missing)
+        msg = (f"{name}.json.gz (and possibly other cached companyfacts files) was saved before these XBRL tags were "
+               f"read: {', '.join(sorted(missing))}. Their figures read as unavailable until the file is downloaded "
+               "again with refresh=True (build_panel --refresh).")
+    if key not in _warned:
+        _warned.add(key)
+        log.warning(msg)
+
+
+def _retry_after(r: httpx.Response, default: float) -> float:
+    """Seconds SEC asks us to wait (Retry-After, in seconds or as an HTTP date), or our own backoff when it does not
+    say."""
+    value = r.headers.get("retry-after")
+    if value is None:
+        return default
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return default
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
 
 
 class SECClient:
@@ -52,7 +103,7 @@ class SECClient:
     # ------------------------------------------------------------------ low level
     def _fetch(self, url: str) -> tuple[dict, str]:
         with self._lock:
-            for attempt in range(self.retries):
+            for attempt in range(max(1, self.retries)):        # retries=0 still makes the request
                 wait = MIN_INTERVAL_S - (time.monotonic() - self._last)
                 if wait > 0:
                     time.sleep(wait)
@@ -66,8 +117,9 @@ class SECClient:
                     raise SECError("unavailable", f"SEC EDGAR could not be reached ({type(e).__name__}).") from e
                 self._last = time.monotonic()
                 if r.status_code in (429, 503):
-                    if attempt + 1 < self.retries:
-                        time.sleep(self.backoff_s * 2 ** attempt)
+                    pause = _retry_after(r, self.backoff_s * 2 ** attempt)
+                    if attempt + 1 < self.retries and pause <= MAX_RETRY_AFTER_S:
+                        time.sleep(pause)
                         continue
                     raise SECError("throttled", "SEC EDGAR is limiting requests right now; try again in a minute.")
                 if r.status_code == 404:
@@ -86,15 +138,25 @@ class SECClient:
     def _cached(self, url: str, name: str, refresh: bool, transform=None, max_age_s: float | None = None) -> dict:
         """On-disk cache. max_age_s=None keeps a file forever (training snapshots); the live app passes a TTL."""
         path = self.cache_dir / f"{name}.json.gz"
-        fresh = path.exists() and (max_age_s is None or time.time() - path.stat().st_mtime < max_age_s)
+        # abs(): a file stamped in the future (clock change) is not fresh forever
+        fresh = path.exists() and (max_age_s is None or abs(time.time() - path.stat().st_mtime) < max_age_s)
         if fresh and not refresh:
-            with gzip.open(path, "rt") as fh:
-                return json.load(fh)
+            try:
+                with gzip.open(path, "rt") as fh:
+                    return json.load(fh)
+            except (OSError, EOFError, ValueError):     # damaged file (e.g. a write cut short): fetch it again
+                pass
         data, sha = self._fetch(url)
         if transform:
             data = transform(data)
-        with gzip.open(path, "wt") as fh:
-            json.dump(data, fh)
+        # written next to the target and renamed into place, so a reader never sees a half-written file
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+        try:
+            with gzip.open(tmp, "wt") as fh:
+                json.dump(data, fh)
+            os.replace(tmp, path)
+        finally:
+            tmp.unlink(missing_ok=True)           # gone after the rename; removed if writing failed
         with (self.cache_dir / "access_log.jsonl").open("a") as log:
             log.write(json.dumps({"url": url, "file": path.name, "raw_sha256": sha,
                                   "retrieved_at": datetime.now(timezone.utc).isoformat()}) + "\n")
@@ -109,10 +171,13 @@ class SECClient:
             ug = d.get("facts", {}).get("us-gaap", {})
             return {"cik": d.get("cik"), "entityName": d.get("entityName"),
                     "facts": {"us-gaap": {t: {"units": {"USD": v.get("units", {}).get("USD", [])}}
-                                          for t, v in ug.items() if t in keep}}}
+                                          for t, v in ug.items() if t in keep}},
+                    TAGS_KEY: sorted(keep)}
         cik10 = str(cik).zfill(10)
-        return self._cached(f"{BASE}/api/xbrl/companyfacts/CIK{cik10}.json", f"companyfacts_{cik10}", refresh, compact,
-                            max_age_s)
+        name = f"companyfacts_{cik10}"
+        data = self._cached(f"{BASE}/api/xbrl/companyfacts/CIK{cik10}.json", name, refresh, compact, max_age_s)
+        _check_tags(data.get(TAGS_KEY), keep, name)
+        return {k: v for k, v in data.items() if k != TAGS_KEY}
 
     def submissions_meta(self, cik: str | int, refresh: bool = False, max_age_s: float | None = None) -> dict:
         """Only the identity fields (SIC, name, tickers, state) — filing lists are dropped."""

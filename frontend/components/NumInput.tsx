@@ -56,20 +56,39 @@ export default function NumInput({ value, onCommit, min, max, step, scale = 1, a
       onFocus={() => (focused.current = true)}
       onChange={(e) => {
         setText(e.target.value);
-        const n = parse(e.target.value);
+        // text the browser cannot read as a number (a lone "-" or ".", "1e") arrives as "": it is invalid, not empty
+        const n = e.target.validity.badInput ? undefined : parse(e.target.value);
         setInvalid(n === undefined);
         onPending?.(n === undefined);
         if (n !== undefined) onCommit(n === null ? null : n / scale);
       }}
-      onBlur={() => {
+      onInput={(e) => {
+        // unreadable text typed into an empty field leaves the value "", so no change event reports it
+        if (e.currentTarget.validity.badInput) {
+          setInvalid(true);
+          onPending?.(true);
+        } else if (e.currentTarget.value === "" && text === "") {
+          // ...and deleting that text leaves "" again, still without a change event: the field is now empty
+          const n = parse("");
+          setInvalid(n === undefined);
+          onPending?.(n === undefined);
+          if (n === null && value !== null) onCommit(null);
+        }
+      }}
+      onBlur={(e) => {
         focused.current = false;
-        let n = parse(text);
+        const bad = e.currentTarget.validity.badInput;
+        let n = bad ? undefined : parse(text);
         if (n === undefined && text.trim() !== "" && Number.isFinite(Number(text))) {
           // out of range: clamp to the nearest limit
           n = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, integer ? Math.round(Number(text)) : Number(text)));
           onCommit(n / scale);
         }
-        setText(show(n === undefined ? value : n === null ? null : n / scale, scale));
+        if (n === null && value !== null) onCommit(null);       // an emptied optional field means "not set"
+        const restored = show(n === undefined ? value : n === null ? null : n / scale, scale);
+        // unreadable text also reads as "", so React would leave it on screen when the restored text is "" too
+        if (bad) e.currentTarget.value = restored;
+        setText(restored);
         setInvalid(false);
         onPending?.(false);
       }}

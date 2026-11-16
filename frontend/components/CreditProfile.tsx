@@ -1,6 +1,6 @@
 "use client";
 
-import type { Analysis, HistoryPoint } from "@/lib/api";
+import type { Analysis, HistoryPoint, Metric } from "@/lib/api";
 import { fmt, fyLabel } from "@/lib/api";
 
 export type RowDef = {
@@ -75,6 +75,20 @@ function PeerBand({ b, label, unit }: { b?: Band; label: string; unit: RowDef["u
   );
 }
 
+/** Amber: an approximation or qualified value; grey: undefined or not available. Colour alone is not enough, so it is also said in text. */
+function StatusDot({ m }: { m?: Metric }) {
+  if (!m) return null;
+  const meaning = m.status === "ok_with_warning" ? "Approximation or qualified value" : m.status === "undefined" ? "Undefined"
+    : m.status === "not_available" ? "Not available" : null;
+  if (!meaning) return null;
+  return (
+    <>
+      <span className={`status-dot ${m.status === "ok_with_warning" ? "warn" : "undef"}`} title={m.reason ? `${meaning}: ${m.reason.replace(/_/g, " ")}` : meaning} aria-hidden="true" />
+      <span className="sr-only"> ({meaning.toLowerCase()})</span>
+    </>
+  );
+}
+
 export default function CreditProfile({ analysis, history, selected, onSelect }: Props) {
   const upto = history.filter((h) => h.fiscal_year_end <= analysis.fiscal_year_end).slice(-4);
   const latest = analysis.fiscal_year_end;
@@ -108,16 +122,13 @@ export default function CreditProfile({ analysis, history, selected, onSelect }:
                     key={r.key}
                     className="row"
                     tabIndex={0}
-                    aria-selected={selected === r.key}
+                    aria-current={selected === r.key ? "true" : undefined}
                     onClick={() => onSelect(r.key)}
                     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onSelect(r.key))}
                   >
                     <td>
                       {r.label}
-                      {m && m.status === "ok_with_warning" && <span className="status-dot warn" title={m.reason ?? ""} />}
-                      {m && (m.status === "undefined" || m.status === "not_available") && (
-                        <span className="status-dot undef" title={m.reason ?? ""} />
-                      )}
+                      <StatusDot m={m} />
                     </td>
                     {upto.map((h) => {
                       const v = r.source === "values" ? h.values[r.key] : h.metrics[r.key];

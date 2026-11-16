@@ -93,7 +93,7 @@ export default function ResearchSection({ r }: { r: any }) {
         caption={`${pop.onset.rows} company-years confirmed not stressed in the filing year, ${pop.onset.positives} of which became stressed (base rate ${pc(pop.onset.positives / pop.onset.rows)}). Onset-specific models had ${pop.onset.training_onsets} onsets to learn from. Do not compare these PR-AUCs with the table above.`}
       />
       <p className="fine">
-        Each row's “versus deployed” is a paired difference on the same rows; an interval is shown where it was bootstrapped by company.
+        Each row&apos;s “versus deployed” is a paired difference on the same rows; an interval is shown where it was bootstrapped by company.
         Sources: {Object.values(r.sources).join(", ")}.
       </p>
 

@@ -11,6 +11,8 @@ const METRICS: { key: MetricKey; label: string; needs?: keyof Covenants }[] = [
   { key: "headroom_lev", label: "Headroom: max net debt / EBITDA", needs: "max_net_leverage" },
   { key: "headroom_cov", label: "Headroom: min EBITDA / interest", needs: "min_ebitda_interest_cover" },
 ];
+/** Shown in the cell and its legend key next to the colour; "passes" has no mark. */
+const MARK = { breach: "×", tight: "!", untestable: "?" } as const;
 
 type Props = {
   companyId: string;
@@ -113,17 +115,21 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
                     const active = Math.abs(c.ebitda_shock - current.ebitda) < 1e-9 && c.rate_shock_bps === current.bps;
                     const cls = c.error ? "err" : breached(c) ? "breach" : untestable(c) ? "untestable" : tight(c) ? "tight" : "ok";
                     const why = c.reasons?.[covKey === "state_cov" ? "min_ebitda_interest_cover" : "max_net_leverage"];
+                    const mark = cls === "breach" || cls === "tight" || cls === "untestable" ? MARK[cls] : null;
                     return (
                       <td key={c.ebitda_shock}>
                         <button
                           type="button"
                           className={`cell ${cls} ${active ? "active" : ""}`}
                           aria-pressed={active}
-                          title={c.error ?? `EBITDA ${Math.round(c.ebitda_shock * 100)}%, rates +${c.rate_shock_bps} bp${breached(c) ? ": covenant breached" : untestable(c) ? `: not testable (${why})` : ""}`}
+                          title={c.error ?? `EBITDA ${Math.round(c.ebitda_shock * 100)}%, rates +${c.rate_shock_bps} bp${breached(c) ? ": covenant breached" : untestable(c) ? `: not testable (${why})` : tight(c) ? ": passes, within 0.5x of the limit" : ""}`}
                           onClick={() => onPick(c.ebitda_shock, c.rate_shock_bps)}
                         >
                           {fmt(c)}
+                          {/* a symbol as well as a colour, so the state does not depend on telling colours apart */}
+                          {mark && <span className="mark" aria-hidden="true">{mark}</span>}
                           {breached(c) && <span className="sr-only"> (covenant breached)</span>}
+                          {tight(c) && <span className="sr-only"> (passes, within 0.5x of the limit)</span>}
                           {untestable(c) && <span className="sr-only"> (covenant not testable)</span>}
                         </button>
                       </td>
@@ -148,10 +154,10 @@ export default function StressHeatmap({ companyId, fiscalYear, facility, covenan
         </p>
       ) : null}
       <p className="fine heat-legend">
-        <span className="item"><span className="key breach" /> breach</span>
-        <span className="item"><span className="key tight" /> passes, within 0.5x of the limit</span>
-        <span className="item"><span className="key ok" /> passes</span>
-        <span className="item"><span className="key untestable" /> not testable (ratio undefined; not a breach)</span>
+        <span className="item"><span className="key breach" aria-hidden="true">{MARK.breach}</span> breach</span>
+        <span className="item"><span className="key tight" aria-hidden="true">{MARK.tight}</span> passes, within 0.5x of the limit</span>
+        <span className="item"><span className="key ok" aria-hidden="true" /> passes</span>
+        <span className="item"><span className="key untestable" aria-hidden="true">{MARK.untestable}</span> not testable (ratio undefined; not a breach)</span>
         {grid ? <span className="item">loan engine v{grid.engine_version}</span> : null}
       </p>
     </section>

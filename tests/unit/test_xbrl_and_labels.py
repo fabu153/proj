@@ -2,7 +2,6 @@
 import json
 from pathlib import Path
 
-import pytest
 
 from backend.app.documents.xbrl import build_company_years, engine_inputs, is_annual
 from backend.app.labels.stress_label import onset_label, stress_label

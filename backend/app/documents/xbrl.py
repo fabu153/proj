@@ -342,6 +342,18 @@ def run_quality_checks(cy: CompanyYear, tolerance: float = 0.01) -> None:
         cy.warnings.append("interest_expense missing: coverage not available (not invented)")
 
 
+def consecutive(earlier_fye: str, later_fye: str) -> bool:
+    """Two fiscal year-ends one year apart (330-400 days, so 52/53-week years count). The one rule for 'prior year'
+    and 'next year' in the panel, the API and the memo: across a gap year, growth is not year on year."""
+    return 330 <= (date.fromisoformat(later_fye) - date.fromisoformat(earlier_fye)).days <= 400
+
+
+def prior_year(years: list[CompanyYear], idx: int) -> Optional[CompanyYear]:
+    if idx > 0 and consecutive(years[idx - 1].fiscal_year_end, years[idx].fiscal_year_end):
+        return years[idx - 1]
+    return None
+
+
 def engine_inputs(cy: CompanyYear, basis: str = "credit") -> dict[str, Optional[float]]:
     """Canonical values ready for finance.metrics.compute_all (zero-fill only the flagged debt buckets).
 

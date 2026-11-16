@@ -24,7 +24,8 @@ def test_r1_debt_current_fills_current_bucket():
 
 
 def test_real_issuer_r1_supersedes_zero_fill_warning():
-    import gzip, json
+    import gzip
+    import json
     from pathlib import Path
     from backend.app.documents.xbrl import build_company_years
     p = Path(__file__).parents[2] / "backend" / "data" / "curated" / "companyfacts_0001067701.json.gz"
@@ -61,7 +62,6 @@ def test_assets_vs_liabilities_and_equity_mismatch_is_hard_failure():
 
 
 def test_cash_interest_fallback_is_flagged():
-    cy = CompanyYear("1", "T", "2025-12-31")
     from backend.app.documents.xbrl import build_company_years
     cf = {"cik": 1, "entityName": "T", "facts": {"us-gaap": {
         "Revenues": {"units": {"USD": [{"start": "2025-01-01", "end": "2025-12-31", "val": 100, "accn": "a",

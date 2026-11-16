@@ -33,7 +33,7 @@ from backend.app.models.inference import forward
 from training.ml.evaluate import (calibration_table, cluster_bootstrap, max_f1_threshold, plot_pr_and_calibration,
                                   point_metrics, threshold_metrics)
 from training.ml.mlp import export_weights, logits, train_one
-from training.ml.run_baselines import load_dataset, sha256_file
+from training.ml.dataset import load_dataset, sha256_file
 from training.ml.splits import SplitSpec, assign_splits
 
 ARTIFACT = Path("backend/models/stress_mlp_v1")

@@ -7,12 +7,10 @@ from typing import Optional
 import pandas as pd
 
 from ..features.feature_set import build_features
-from ..features.panel import panel_rows
+from ..features.panel import CRITICAL as CRITICAL_INPUTS, panel_rows   # one list, as the model's population
 from ..features.universe_rules import REASONS as UNIVERSE_REASONS, excluded_sic
 from .inference import ARTIFACT_DIR, get_model
 
-CRITICAL_INPUTS = ["revenue", "operating_income", "interest_expense", "depreciation_amortization",
-                   "operating_cash_flow", "long_term_debt", "total_assets"]
 NAMES = {"revenue": "revenue", "operating_income": "operating income", "interest_expense": "interest expense",
          "depreciation_amortization": "depreciation and amortization", "operating_cash_flow": "operating cash flow",
          "long_term_debt": "long-term debt", "total_assets": "total assets"}

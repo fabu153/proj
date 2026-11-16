@@ -54,7 +54,7 @@ def test_ml02_saved_predictions_reproduce_the_frozen_evaluation():
 
 
 def test_ml02_replay_forecasts_equal_frozen_model_and_saved_predictions():
-    from training.ml.run_baselines import load_dataset
+    from training.ml.dataset import load_dataset
     df = load_dataset(yaml.safe_load((ROOT / "configs/experiment_baselines_v1.yaml").read_text()))
     model = StressModel.load()
     for c in DATA["cases"]:

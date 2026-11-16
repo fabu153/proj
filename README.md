@@ -108,7 +108,8 @@ the three statements, detects scale, currency and fiscal year-end, reads the lat
 source line of every figure with a confidence level. With a CIK, figures are cross-checked against SEC XBRL. Analysis
 is blocked until every critical figure that is not high-confidence has been accepted, corrected or rejected. Reviewed
 figures then run through the same engines and model as SEC data. The PDF is parsed in memory and never stored; extracted
-figures expire after 24 hours or on `DELETE /documents/{id}`. Tested on two layouts (`tests/fixtures/*.pdf`, rendered
+figures expire after 24 hours or on `DELETE /documents/{id}`, together with any memo written about them. Tested on two
+layouts (`tests/fixtures/*.pdf`, rendered
 from real reported figures); both reproduce SEC XBRL values exactly.
 
 **Memo** (`POST /memos`, PDF at `/memos/{id}/pdf`): built from a `CreditAnalysisPackage` of ~45 sourced items. Writers
@@ -235,7 +236,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 323 tests (+20 browser tests with E2E_BASE_URL)
+pytest -q                                        # 399 tests (+20 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ApiStatus from "@/components/ApiStatus";
 import { featureValue } from "@/components/RiskScreen";
 import Ruler from "@/components/Ruler";
@@ -26,6 +26,7 @@ export default function Replay() {
   const [out, setOut] = useState<ReplayOutcome | null>(null);
   const [busy, setBusy] = useState<"case" | "outcome" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const caseSeq = useRef(0);            // bumped whenever the case changes: a late outcome reply never lands on another case
 
   useEffect(() => {
     if (apiState.phase !== "ready") return;
@@ -42,8 +43,10 @@ export default function Replay() {
   useEffect(() => {
     if (!id) return;
     let live = true;
+    caseSeq.current++;
     setFc(null);
     setOut(null);                       // the outcome is hidden again whenever the case changes
+    setError(null);
     setBusy("case");
     replayApi
       .forecast(id)
@@ -60,13 +63,17 @@ export default function Replay() {
 
   const reveal = async () => {
     if (!fc) return;
+    const mine = caseSeq.current;
     setBusy("outcome");
     try {
-      setOut(await replayApi.outcome(fc.id));
+      const o = await replayApi.outcome(fc.id);
+      if (mine !== caseSeq.current) return;
+      setOut(o);
+      setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      if (mine === caseSeq.current) setError((e as Error).message);
     } finally {
-      setBusy(null);
+      if (mine === caseSeq.current) setBusy(null);
     }
   };
 

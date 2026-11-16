@@ -1,9 +1,10 @@
 // Typed client for the CreditLens API. All numbers are computed server-side;
 // the UI only formats them.
 
-/** Where the analysis service actually runs (used only by next.config.mjs to forward /api/...). */
-export const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
-/** What the browser calls: this site's own /api path, forwarded to API_ORIGIN, so ad blockers do not interfere. */
+/**
+ * What the browser calls: this site's own /api path, which next.config.mjs forwards to the analysis service, so ad
+ * blockers do not interfere. The service's own address stays in next.config.mjs and is never sent to the browser.
+ */
 export const API_URL = "/api";
 
 export type Company = {
@@ -237,7 +238,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /**
  * One request with a timeout. Idempotent requests (GET, and the pure calculation POSTs) are retried when the
  * network fails or the host answers 502/503/504, which is what a sleeping free-tier server does while it wakes.
- * Requests never hang: each attempt is aborted after `timeoutMs`.
+ * Requests never hang: each attempt is aborted after `timeoutMs`, or as soon as the caller's own `signal` aborts.
  */
 async function call<T>(path: string, init?: RequestInit & { retries?: number; timeoutMs?: number }): Promise<T> {
   const retries = init?.retries ?? (init?.method && init.method !== "GET" ? 0 : 2);
@@ -246,6 +247,8 @@ async function call<T>(path: string, init?: RequestInit & { retries?: number; ti
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    const cancel = () => ctl.abort();
+    init?.signal?.addEventListener("abort", cancel);
     try {
       const res = await fetch(`${API_URL}${path}`, {
         ...init,
@@ -270,11 +273,12 @@ async function call<T>(path: string, init?: RequestInit & { retries?: number; ti
       }
       return (await res.json()) as T;
     } catch (e) {
-      if (e instanceof ApiError) throw e;
+      if (e instanceof ApiError || init?.signal?.aborted) throw e;
       last = (e as Error).name === "AbortError" ? new ApiError(`The analysis service did not answer within ${timeoutMs / 1000} seconds.`, null) : e;
       if (attempt < retries) await sleep(1500 * (attempt + 1));
     } finally {
       clearTimeout(timer);
+      init?.signal?.removeEventListener("abort", cancel);
     }
   }
   throw last instanceof Error ? last : new ApiError("Request failed", null);
@@ -290,19 +294,24 @@ function formatValidation(detail: unknown): string {
 /**
  * Wake the API (free hosting sleeps when idle; the first request can take up to about a minute).
  * Polls /health until it answers or `budgetMs` runs out; reports progress so the page can say what is happening.
+ * Aborting `signal` (the page unmounted, or the user retried) stops the polling and rejects.
  */
 export async function waitForApi(
   onProgress?: (elapsedS: number, attempt: number, lastError: string | null) => void,
   budgetMs = 90000,
+  signal?: AbortSignal,
 ): Promise<void> {
   const start = Date.now();
   let lastError: string | null = null;
+  const stopped = () => new ApiError("Stopped waiting for the analysis service.", null);
   for (let attempt = 1; ; attempt++) {
+    if (signal?.aborted) throw stopped();
     onProgress?.(Math.round((Date.now() - start) / 1000), attempt, lastError);
     try {
-      await call<{ status: string }>(`/health?t=${Date.now()}`, { retries: 0, timeoutMs: 15000 });
+      await call<{ status: string }>(`/health?t=${Date.now()}`, { retries: 0, timeoutMs: 15000, signal });
       return;
     } catch (e) {
+      if (signal?.aborted) throw stopped();
       // "Failed to fetch" arrives at once when the request is blocked (extension, network filter, DNS);
       // a timeout means the server is reachable but still starting
       lastError = (e as Error).message;
@@ -310,7 +319,15 @@ export async function waitForApi(
       if (Date.now() - start > budgetMs) {
         throw new ApiError(`The analysis service at ${API_URL} did not wake up within ${Math.round(budgetMs / 1000)} seconds (${lastError}).`, null);
       }
-      await sleep(2000);
+      await new Promise<void>((resolve) => {
+        const done = () => {
+          clearTimeout(t);
+          signal?.removeEventListener("abort", done);
+          resolve();
+        };
+        const t = setTimeout(done, 2000);
+        signal?.addEventListener("abort", done);
+      });
     }
   }
 }
@@ -327,7 +344,7 @@ export const api = {
   scenarios: (body: {
     company_id: string;
     fiscal_year_end?: string;
-    facility: Facility;
+    facility: Facility | null; // null: no new facility (the company as reported)
     shocks: Shock[];
     covenants: Covenants;
     existing_floating_share: number;
@@ -338,7 +355,12 @@ export const api = {
 };
 
 // ---------------------------------------------------------------- formatting
-const nf = (d: number) => new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const formatters = new Map<number, Intl.NumberFormat>();   // one formatter per number of decimals, built once
+const nf = (d: number) => {
+  let f = formatters.get(d);
+  if (!f) formatters.set(d, (f = new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d })));
+  return f;
+};
 
 export function fmt(v: number | null | undefined, unit: string): string {
   if (v === null || v === undefined || Number.isNaN(v)) return "n/a";
@@ -347,8 +369,13 @@ export function fmt(v: number | null | undefined, unit: string): string {
       return `${nf(1).format(v * 100)}%`;
     case "x":
       return `${nf(2).format(v)}x`;
-    case "amount":
-      return v < 0 ? `(${nf(0).format(-v)})` : nf(0).format(v);
+    case "amount": {
+      // whole millions, except that a non-zero amount that would round to "0" gets the decimals it needs (amounts are
+      // whole currency units, so 6 always suffice)
+      const zero = (d: number) => nf(d).format(Math.abs(v)) === nf(d).format(0);
+      const d = v !== 0 && zero(0) ? ([1, 2, 3, 4, 5, 6].find((k) => !zero(k)) ?? 0) : 0;
+      return v < 0 ? `(${nf(d).format(-v)})` : nf(d).format(v);
+    }
     default:
       return nf(2).format(v);
   }

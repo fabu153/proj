@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LabState } from "./LoanLab";
 import type { Citation } from "./EvidenceRail";
-import type { Memo, PackageItem, Sentence } from "@/lib/api";
+import type { Memo, Sentence } from "@/lib/api";
 import { memos } from "@/lib/api";
 
 type Props = {
@@ -128,7 +128,8 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
         </div>
       )}
       {memo && (
-        <div className={!current ? "stale-results" : undefined} aria-hidden={outdated || undefined}>
+        // inert, not aria-hidden: an outdated memo's citation and edit buttons must not take keyboard focus either
+        <div className={!current ? "stale-results" : undefined} inert={outdated || undefined}>
           <p className="fine" style={{ margin: "4px 0 12px" }}>
             {memo.summary.sentences} sentences citing {memo.summary.cited_items} sourced items.{" "}
             {memo.summary.flagged
@@ -145,7 +146,7 @@ export default function MemoPanel({ companyId, fiscalYear, lab, blocked, onCite,
                   {sec.sentences.map((s, i) => (
                     <SentenceView
                       first={i === 0}
-                      key={s.id}
+                      key={`${memo.id}:${s.id}`} /* sentence ids repeat across memos: a redraft gets fresh editors */
                       s={s}
                       order={order}
                       memo={memo}
@@ -232,6 +233,7 @@ function SentenceView({
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(s.text);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   if (editing) {
     return (
       <span className="sentence-edit">
@@ -243,16 +245,24 @@ function SentenceView({
             disabled={saving}
             onClick={async () => {
               setSaving(true);
-              await onSave(text);
-              setSaving(false);
-              setEditing(false);
+              setSaveError(null);
+              try {
+                await onSave(text);
+                setEditing(false);
+              } catch (e) {
+                // e.g. the text is too long, or the memo has expired: keep the edit open and say why
+                setSaveError(`The sentence could not be saved: ${(e as Error).message}`);
+              } finally {
+                setSaving(false);
+              }
             }}
           >
             Save and check
           </button>
-          <button type="button" className="link" onClick={() => { setText(s.text); setEditing(false); }}>Cancel</button>
+          <button type="button" className="link" onClick={() => { setText(s.text); setSaveError(null); setEditing(false); }}>Cancel</button>
           <span className="fine">Clear the text to remove the sentence.</span>
         </span>
+        {saveError && <span className="notice error" role="alert" style={{ display: "block", marginTop: 6 }}>{saveError}</span>}
       </span>
     );
   }

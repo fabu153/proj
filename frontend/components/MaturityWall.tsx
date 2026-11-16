@@ -31,7 +31,8 @@ export default function MaturityWall({ wall, cik, currency }: { wall: Wall; cik:
           <span className="kpi-label">Due within 12 months</span>
           <span className="kpi-value">{wall.due_12m != null ? fmt(wall.due_12m, "amount") : "n/a"}</span>
           <span className="kpi-sub">
-            {fmt(wall.buckets[0].value, "amount")} scheduled + {fmt(wall.short_term_borrowings ?? 0, "amount")} short-term borrowings
+            {fmt(wall.buckets[0].value, "amount")} scheduled +{" "}
+            {wall.short_term_borrowings == null ? "short-term borrowings not reported" : `${fmt(wall.short_term_borrowings, "amount")} short-term borrowings`}
           </span>
         </div>
         <div className={`kpi ${tone}`}>
@@ -107,7 +108,7 @@ export default function MaturityWall({ wall, cik, currency }: { wall: Wall; cik:
               </span>
             );
           })}
-          . Runway formula v{wall.version}: {wall.formula}.
+          .{wall.formula ? ` Runway formula v${wall.version}: ${wall.formula}.` : ""}
           </span>
         </p>
       </div>

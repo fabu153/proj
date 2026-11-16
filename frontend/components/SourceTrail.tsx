@@ -12,7 +12,7 @@ export type Trail = {
     rule: string | null;
     note: string | null;
     basis: "reported" | "credit" | "derived";
-    source: { kind: "sec" | "upload" | "none"; tag?: string | null; accession?: string; form?: string; filed?: string; url?: string; page?: number; method?: string; derived?: boolean };
+    source: { kind: "sec" | "upload" | "none"; tag?: string | null; accession?: string; form?: string; filed?: string; url?: string; page?: number | null; method?: string; derived?: boolean };
   }[];
   steps: { metric: string; label: string; formula: string; version: string; expression: string; status: string; note: string | null }[];
 };
@@ -43,7 +43,8 @@ export default function SourceTrail({ trail, statement }: { trail: Trail; statem
               )}
               {f.source.kind === "upload" && f.as_filed && (
                 <>
-                  {raw(f.as_filed.value)} {f.as_filed.unit} from the uploaded report, page {f.source.page} ({f.source.method})
+                  {raw(f.as_filed.value)} {f.as_filed.unit} from the uploaded report,{" "}
+                  {f.source.page ? `page ${f.source.page} (${f.source.method})` : "entered by the analyst (no page reference)"}
                 </>
               )}
               {f.source.kind === "none" && <>not reported in this filing</>}

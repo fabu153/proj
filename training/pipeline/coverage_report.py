@@ -38,7 +38,7 @@ def write_report(df: pd.DataFrame, universe: list[dict], failures: list[dict], p
     df["fy"] = df["fiscal_year_end"].str[:4].astype(int)
     df["division"] = df["sic"].map(sic_division)
     lab = df[df["label_next_fy"].notna()]
-    out = [f"# CreditLens dataset coverage report & label audit",
+    out = ["# CreditLens dataset coverage report & label audit",
            f"_Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC from SEC XBRL companyfacts. "
            f"Label version: {df['label_version'].iloc[0]}._", "",
            "## Universe and panel",

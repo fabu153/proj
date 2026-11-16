@@ -11,14 +11,15 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from ..documents.xbrl import build_company_years, engine_inputs
+from ..documents.xbrl import build_company_years, engine_inputs, prior_year
 from ..finance.metrics import compute_all
 from .trail import HEADLINE, build_trail
 from ..models import risk as risk_service
-from ..scenarios.loan import Covenants, Facility, Shock, UseOfProceeds, run_scenario
-from ..scenarios.snapshot import FIXED_CASES, case_key, credit_baseline, make_snapshot
+from ..scenarios.loan import DEFAULT_CASES, Covenants, Facility, Shock, UseOfProceeds, run_scenario
+from ..scenarios.snapshot import case_key, credit_baseline, make_snapshot
 
 SCALE = 1_000_000
+VOLATILE_ITEMS = {"meta.generated_at"}       # printed in the memo, left out of the package hash
 FACT_FIELDS = ["revenue", "operating_income", "net_income", "interest_expense", "depreciation_amortization",
                "operating_cash_flow", "capital_expenditures", "cash", "total_assets"]
 FACT_LABELS = {"revenue": "Revenue", "operating_income": "Operating income", "net_income": "Net income",
@@ -83,7 +84,9 @@ class Package:
         return self.items[item_id]["value"] if item_id in self.items else None
 
     def sha256(self) -> str:
-        return hashlib.sha256(json.dumps(self.items, sort_keys=True, default=str).encode()).hexdigest()
+        """Hash of what the package says, not when it was built: the same filings and inputs give the same hash."""
+        content = {k: v for k, v in self.items.items() if k not in VOLATILE_ITEMS}
+        return hashlib.sha256(json.dumps(content, sort_keys=True, default=str).encode()).hexdigest()
 
 
 def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional[str], facility: Optional[Facility],
@@ -95,7 +98,7 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
     idx = len(years) - 1 if fiscal_year_end is None else next(
         i for i, y in enumerate(years) if y.fiscal_year_end == fiscal_year_end)
     cy = years[idx]
-    prior = years[idx - 1] if idx > 0 else None
+    prior = prior_year(years, idx)
     ccy = companyfacts.get("currency", "USD")
     pk = Package(ccy)
     src_kind = companyfacts.get("source", "SEC XBRL companyfacts")
@@ -177,8 +180,10 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                {"kind": "model"})
 
     # ---------------- facility and scenarios (one snapshot shared with the loan lab and the PDF)
-    cases = shocks or FIXED_CASES
-    snap_base, _ = credit_baseline(cy, ccy, existing_floating_share)
+    cases = shocks or DEFAULT_CASES
+    # as /scenarios: a year that failed the hard data checks gets no loan scenarios
+    snap_base, missing = (credit_baseline(cy, ccy, existing_floating_share) if cy.scorable
+                          else (None, []))
     snap = make_snapshot(company_id, cy.fiscal_year_end, snap_base, facility, covenants, cases, cy.cash_basis)
     pk.snapshot = snap
     pk.add("meta.snapshot", "Analysis snapshot", snap["id"], "text",
@@ -193,7 +198,7 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                ("floating-rate " if facility.floating else "fixed-rate ") +
                ("bullet" if facility.annual_amortization == 0 else "amortizing"), "text", amt_src)
         pk.add("facility.use", "Use of proceeds", USE_TEXT[UseOfProceeds(facility.use_of_proceeds).value], "text", amt_src)
-        base, missing = credit_baseline(cy, ccy, existing_floating_share)
+        base = snap_base
         if base is not None:
             if covenants:
                 if covenants.max_net_leverage is not None:
@@ -233,8 +238,13 @@ def build_package(companyfacts: dict, company_id: str, fiscal_year_end: Optional
                         if a.state.value == "breach" and a.headroom is not None:
                             pk.add(f"scen.{name}.{item}_shortfall", f"{case} case covenant shortfall ({what})",
                                    -a.headroom, "x", src)
+                        elif a.state.value == "breach":           # breached by the agreement's definition, no ratio
+                            pk.add(f"scen.{name}.{item}_policy", f"{case} case: why the covenant is breached ({what})",
+                                   a.reason, "text", {**src, "covenant_reason": a.reason})
         else:
-            pk.add("scen.unavailable", "Scenario inputs missing", ", ".join(missing), "text", {"kind": "data_checks"})
+            why = (f"these inputs are not available: {', '.join(m.replace('_', ' ') for m in missing)}" if missing
+                   else "this year's figures failed the hard data checks")
+            pk.add("scen.unavailable", "Why the stress cases were not run", why, "text", {"kind": "data_checks"})
     pk.add("meta.generated_at", "Package built", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"), "text",
            {"kind": "identity"})
     return pk
