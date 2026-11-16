@@ -38,7 +38,7 @@ from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_s
 from backend.app.features.feature_set import FEATURE_DICTIONARY
 from backend.app.labels.stress_label import EBIT_COVER_MAX, LEVERAGE_MAX, stress_label
 from backend.app.models.inference import ARTIFACT_DIR, StressModel
-from training.ml.run_baselines import load_dataset
+from training.ml.dataset import load_dataset
 from training.ml.splits import SplitSpec, assign_splits
 
 TARGET = "label_next_fy"

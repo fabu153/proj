@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import httpx
-import pytest
 
 from backend.app.memos import service, writer
 from backend.app.scenarios.loan import Covenants, Facility

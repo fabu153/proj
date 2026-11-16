@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 
 from backend.app.models.inference import ARTIFACT_DIR
-from training.ml.run_baselines import load_dataset
+from training.ml.dataset import load_dataset
 from training.ml.splits import SplitSpec, assign_splits
 
 
@@ -100,9 +100,44 @@ recall {e['test_at_val_threshold']['recall_sensitivity']:.2f}, flag rate {e['tes
 ## Limitations
 """ + "\n".join(f"- {x}" for x in xray["limitations"]) + "\n"
     Path("training/model_card").mkdir(exist_ok=True)
-    Path("training/model_card/stress_mlp_v1.md").write_text(card)
+    out = Path("training/model_card/stress_mlp_v1.md")
+    out.write_text(keep_hand_sections(card, out.read_text() if out.exists() else ""))
     print("wrote xray.json, training_ciks.json, model card;", len(train_ciks), "training companies")
 
+
+
+def _sections(md: str) -> list[tuple[str, str]]:
+    """(heading, text) for each "## " section; the text before the first one has the heading ""."""
+    out, head, buf = [], "", []
+    for line in md.splitlines(keepends=True):
+        if line.startswith("## "):
+            out.append((head, "".join(buf)))
+            head, buf = line.strip(), []
+        buf.append(line)
+    out.append((head, "".join(buf)))
+    return out
+
+
+def keep_hand_sections(new: str, old: str) -> str:
+    """Sections written by hand into the card (e.g. the v1.2 error analysis) are kept where they were, after the
+    generated section they followed, so re-running this export never deletes them. A section is generated when its
+    heading matches one this export writes, ignoring any "(...)" part, so rewording a generated heading replaces the
+    old section instead of keeping both. Hand edits inside a generated section are replaced: give notes their own
+    "## " section."""
+    base = lambda h: h.split(" (")[0].strip()  # noqa: E731
+    generated = {base(h) for h, _ in _sections(new)}
+    extra: dict[str, list[str]] = {}
+    prev = ""
+    for h, text in _sections(old):
+        if base(h) in generated:
+            prev = base(h)
+        else:
+            extra.setdefault(prev, []).append(text.rstrip("\n") + "\n\n")
+    out = []
+    for h, text in _sections(new):
+        kept = extra.get(base(h), [])
+        out.append((text.rstrip("\n") + "\n\n" if kept and not text.endswith("\n\n") else text) + "".join(kept))
+    return "".join(out).rstrip("\n") + "\n" if extra else "".join(out)
 
 if __name__ == "__main__":
     main()

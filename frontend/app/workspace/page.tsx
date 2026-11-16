@@ -26,6 +26,8 @@ export default function Workspace() {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [selected, setSelected] = useState("net_leverage");
   const [error, setError] = useState<string | null>(null);
+  // kept apart from `error`, which loading the substitute company clears: stays until the user picks a company
+  const [notice, setNotice] = useState<string | null>(null);
   const [lab, setLab] = useState<LabState | null>(null);
   const [memoSnapshot, setMemoSnapshot] = useState<string | null>(null);
   const [citation, setCitation] = useState<Citation | null>(null);
@@ -73,7 +75,7 @@ export default function Workspace() {
       setCompanies(list);
       const first = list.find((c) => c.company_id === wanted) ?? list[0];
       if (wanted && first.company_id !== wanted) {
-        setError("That uploaded report is no longer available (uploads are deleted after 24 hours). Showing a sample company instead.");
+        setNotice("That uploaded report is no longer available (uploads are deleted after 24 hours). Showing a sample company instead.");
       }
       setCompanyId(first.company_id);
       setFiscalYear(first.fiscal_years[first.fiscal_years.length - 1]);
@@ -106,6 +108,7 @@ export default function Workspace() {
   const changeCompany = (id: string) => {
     const c = companies?.find((x) => x.company_id === id);
     if (resolution?.company?.company_id !== id) setResolution(null);
+    setNotice(null);
     setCompanyId(id);
     if (c) setFiscalYear(c.fiscal_years[c.fiscal_years.length - 1]);
     const url = new URL(window.location.href);
@@ -144,6 +147,11 @@ export default function Workspace() {
       />
       <main className="page" id="top">
         <ApiStatus state={apiState} onRetry={apiState.retry} />
+        {notice && (
+          <div className="notice error" role="alert" style={{ marginBottom: 16 }}>
+            {notice}
+          </div>
+        )}
         {error && (
           <div className="notice error" role="alert" style={{ marginBottom: 16 }}>
             {error}{" "}

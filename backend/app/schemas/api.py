@@ -6,7 +6,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..scenarios.loan import Covenants, Facility, ScenarioResult, Shock
+from ..scenarios.loan import Baseline, Covenants, Facility, ScenarioResult, Shock
+
+MAX_CASES = 12          # stress cases per request (the loan lab sends 4)
 
 
 class CompanySummary(BaseModel):
@@ -113,10 +115,11 @@ class HistoryPoint(BaseModel):
 class ScenarioRequest(BaseModel):
     company_id: Optional[str] = None
     fiscal_year_end: Optional[str] = None
-    baseline_override: Optional[dict] = Field(None, description="Use explicit Baseline fields instead of a company")
+    baseline_override: Optional[Baseline] = Field(None, description="Use explicit Baseline fields instead of a company")
     existing_floating_share: float = Field(0.0, ge=0, le=1)
-    facility: Optional[Facility] = Field(default_factory=lambda: Facility(amount=100.0))
-    shocks: Optional[list[Shock]] = None
+    facility: Optional[Facility] = Field(None, description="Omitted: 100m in the reporting currency. "
+                                                           "null: no new facility (the company as reported)")
+    shocks: Optional[list[Shock]] = Field(None, max_length=MAX_CASES)
     covenants: Optional[Covenants] = None
 
 
@@ -184,7 +187,8 @@ class MemoRequest(BaseModel):
     facility: Optional[Facility] = Field(None, description="Defaults to 100m in the reporting currency")
     covenants: Optional[Covenants] = None
     existing_floating_share: float = Field(0.0, ge=0, le=1)
-    shocks: Optional[list[Shock]] = Field(None, description="The loan lab's cases, including 'Your case'")
+    shocks: Optional[list[Shock]] = Field(None, max_length=MAX_CASES,
+                                          description="The loan lab's cases, including 'Your case'")
     use_llm: bool = True
 
 

@@ -34,7 +34,6 @@ const STATUS_TEXT: Record<Fact["status"], string> = {
   manual: "Entered by you",
   unavailable: "Marked unavailable",
 };
-const SCALE_FACTOR: Record<string, number> = { units: 1, thousands: 1e3, millions: 1e6, billions: 1e9 };
 const n1 = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 1 });
 /** Stored values are in base currency units once the scale is confirmed, and as printed before that. */
 const shownValue = (v: number | null, scaled: boolean) => (v === null ? "n/a" : scaled ? n1(v / 1e6) : v.toLocaleString("en-US"));
@@ -411,7 +410,8 @@ function FactRow({
 }) {
   const [editing, setEditing] = useState(false);
   const start = f.reviewed_value ?? f.value;
-  const [val, setVal] = useState(start === null ? "" : String(start / 1e6));
+  const startText = start === null ? "" : String(start / 1e6);
+  const [val, setVal] = useState(startText);
   const shown = effective(f);
   const tone = f.status === "needs_review" ? "#7a4a06" : f.status === "rejected" || f.status === "unavailable" ? "var(--red)" : "var(--teal)";
   const manual = f.status === "manual" || f.status === "unavailable";
@@ -433,7 +433,7 @@ function FactRow({
             {!manual && f.status !== "accepted" && f.status !== "auto_accepted" && (
               <button type="button" className="link" disabled={busy} onClick={() => onReview(f, "accept")}>Accept</button>
             )}
-            <button type="button" className="link" disabled={busy || !scaled} title={scaled ? undefined : "Confirm the units first"} onClick={() => setEditing(true)}>
+            <button type="button" className="link" disabled={busy || !scaled} title={scaled ? undefined : "Confirm the units first"} onClick={() => { setVal(startText); setEditing(true); }}>
               {manual ? "Change" : "Correct"}
             </button>
             {!manual && f.status !== "rejected" && (

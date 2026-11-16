@@ -267,6 +267,31 @@ def test_a_cached_list_is_used_when_sec_goes_down(tmp_path):
     assert r["results"][0]["cik"] == PATK and "cached copy" in r["index"]["source"]
 
 
+def test_during_an_outage_searches_use_the_earlier_list_without_waiting_for_sec(monkeypatch):
+    import os
+    import time
+    from types import SimpleNamespace
+    _search("patk")                                          # the list is loaded (and saved to disk) today
+    cache = sec_search.client().cache_dir
+    down = []
+    down_client = SECClient(cache_dir=cache, retries=1, backoff_s=0, transport=httpx.MockTransport(
+        lambda req: (down.append(str(req.url)), httpx.Response(503))[1]))
+    sec_search._client = down_client           # SEC goes down; the loaded list stays (the fixture resets the client)
+    old = time.time() - 3 * 86400
+    os.utime(cache / "company_tickers_exchange.json.gz", (old, old))
+    clock = {"now": time.time() + 2 * 86400}                 # two days later: the list is due, and SEC is down
+    monkeypatch.setattr(sec_search, "time", SimpleNamespace(time=lambda: clock["now"]))
+    for _ in range(3):
+        r = _search("patk").json()
+        assert r["results"][0]["cik"] == PATK and "cached copy" in r["index"]["source"]
+    assert len(down) == 1, down                              # SEC was asked once, not by every search
+    # SEC answers again: after the retry wait the fresh list replaces the cached copy
+    assert sec_search.client() is down_client
+    sec_search._client = SECClient(cache_dir=cache, retries=1, backoff_s=0, transport=transport(FIX))
+    clock["now"] += sec_search.INDEX_RETRY_S + 1
+    assert _search("patk").json()["index"]["source"] == "SEC EDGAR company list"
+
+
 # ------------------------------------------------------------------ nothing else changes
 def test_curated_samples_and_uploads_untouched(mocked_sec):
     cs = client.get("/companies").json()

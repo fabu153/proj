@@ -1,0 +1,16 @@
+# The image needs only requirements-api.txt, backend/ and configs/ (see Dockerfile); leaving the rest out keeps
+# the build context small (no frontend, training data, release video or test fixtures are sent to the builder).
+.git
+.github
+.venv
+venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+frontend
+training
+tests
+docs
+release
+scripts
+*.db

@@ -38,8 +38,8 @@ def _num(v: Optional[float], unit: str) -> str:
 def _source(cf: dict, f) -> dict:
     if f is None:
         return {"kind": "none"}
-    if f.page:
-        return {"kind": "upload", "page": f.page, "method": f.extraction_method, "filed": f.filed}
+    if f.page or (f.accession or "").startswith("upload-"):     # an analyst-entered figure may have no page
+        return {"kind": "upload", "page": f.page or None, "method": f.extraction_method, "filed": f.filed}
     cik = str(cf.get("cik", "")).lstrip("0") or "0"
     return {"kind": "sec", "tag": f.tag, "accession": f.accession, "form": f.form, "filed": f.filed,
             "period_end": f.period_end,

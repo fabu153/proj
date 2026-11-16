@@ -27,6 +27,8 @@ def _source_text(it: dict) -> str:
     if k == "filing":
         if s.get("page"):
             return f"Uploaded report p.{s['page']} ({s.get('method', 'PDF')})"
+        if str(s.get("accession") or "").startswith("upload-"):
+            return "Uploaded report, entered by the analyst (no page reference)"
         if s.get("accession"):
             return f"10-K XBRL {s.get('tag')}, accession {s['accession']}, filed {s.get('filed')}"
         return "Not reported"
@@ -81,7 +83,6 @@ def _stress_table(pk: dict, small) -> list:
         return []
     names = {"base": "Base", "downside": "Downside", "severe": "Severe", "custom": "Your case"}
     d = lambda k: pk[k]["display"] if k in pk and pk[k]["value"] is not None else "n/a"   # noqa: E731
-    strip = lambda x: x.replace(f"{pk['meta.company'].get('ccy', '')}", "")                # noqa: E731
 
     def hr(c, item):
         st = pk.get(f"scen.{c}.{item}_state", {}).get("value")
@@ -90,6 +91,8 @@ def _stress_table(pk: dict, small) -> list:
         if st == "not testable":
             return "not testable (N/A)"
         v = pk[f"scen.{c}.{item}"]["value"]
+        if v is None:                                  # breached by the agreement's definition: no ratio, no headroom
+            return "breach (contractual)" if st == "breach" else "—"
         return f"breach {-v:.2f}x" if st == "breach" else f"pass +{v:.2f}x"
     rows = [["", "Before loan"] + [names[c] for c in cases],
             ["Assumptions", "reported"] + [d(f"scen.{c}.assumptions").replace("no EBITDA or rate shock", "no shock") for c in cases],
@@ -103,7 +106,7 @@ def _stress_table(pk: dict, small) -> list:
     if any(f"scen.{c}.headroom_cov_state" in pk for c in cases):
         rows.append(["Headroom: min EBITDA / interest", "—"] + [hr(c, "headroom_cov") for c in cases])
     rows = [[Paragraph(f"<font color='#b3262e'><b>{escape(str(x))}</b></font>" if str(x).startswith("breach")
-                       else escape(strip(str(x))), small) for x in r] for r in rows]
+                       else escape(str(x)), small) for x in r] for r in rows]
     w = 170 * mm
     t = Table(rows, colWidths=[42 * mm] + [(w - 42 * mm) / (len(cases) + 1)] * (len(cases) + 1), repeatRows=1)
     style = [("LINEBELOW", (0, 0), (-1, 0), 0.6, INK), ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.HexColor("#d4dae1")),
@@ -135,7 +138,8 @@ def _trails(memo: dict, pk: dict, h2, small, num) -> list:
             elif src.get("kind") == "sec":
                 where = f"derived by rule from accession {src['accession']}"
             elif src.get("kind") == "upload":
-                where = f"uploaded report p.{src['page']}"
+                where = (f"uploaded report p.{src['page']}" if src.get("page")
+                         else "uploaded report, entered by the analyst (no page reference)")
             else:
                 where = "not reported"
             norm = "n/a" if f["normalized"] is None else f"{f['normalized']:,.1f}m"

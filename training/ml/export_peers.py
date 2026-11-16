@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from training.ml.run_baselines import sha256_file
+from training.ml.dataset import sha256_file
 
 OUT = Path("backend/data/peers/peers_v1.json")
 METRICS = {  # ledger key -> (panel column, label, which direction is stronger credit)

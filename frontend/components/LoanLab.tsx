@@ -88,12 +88,29 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     () => ({ facility: body.facility, covenants: body.covenants, existing_floating_share: body.existing_floating_share, shocks: body.shocks }),
     [body],
   );
+  // The company as reported, with no new facility and no shock: independent of the facility and of "your case", so it
+  // is fetched again only when the company, year or covenants change, not on every slider move.
+  const beforeBody = useMemo(
+    () => ({
+      company_id: companyId,
+      fiscal_year_end: fiscalYear,
+      facility: null,
+      shocks: [{ name: "Before loan", ebitda_shock: 0, rate_shock_bps: 0 }],
+      covenants: cov,
+      existing_floating_share: 0, // a 0 bp shock reprices nothing, so the floating share cannot change this column
+    }),
+    [companyId, fiscalYear, cov],
+  );
+  const beforeCache = useRef<{ body: typeof beforeBody; result: ScenarioResult } | null>(null);
   const fxMissing = fxNeeded && !fac.fx_rate_to_reporting;
+  // the latest state of the calculation itself (calculating, current or error), whatever the fields hold meanwhile
+  const calc = useRef<LabState | null>(null);
 
-  // Fix 4: a half-typed or invalid field means the inputs on screen are not the ones calculated
+  // Fix 4: a half-typed or invalid field means the inputs on screen are not the ones calculated; once no field is
+  // pending, the calculation's own latest state applies again (current snapshot, still calculating, or error)
   useEffect(() => {
     if (editing) onState?.({ params, snapshotId: null, status: "editing" });
-    else if (res?.snapshot && !busy && !error) onState?.({ params, snapshotId: res.snapshot.id, status: "current" });
+    else if (calc.current) onState?.(calc.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing]);
 
@@ -102,28 +119,34 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
     if (fxMissing) {
       // known to be refused by the API (currencies are never mixed); ask for the rate without a failing request
       setError("fx");
-      onState?.({ params, snapshotId: null, status: "error" });
+      calc.current = { params, snapshotId: null, status: "error" };
+      onState?.(calc.current);
       return;
     }
     let live = true;
     setBusy(true);                          // results on screen are now stale until the new ones arrive
-    onState?.({ params, snapshotId: null, status: "calculating" });
+    calc.current = { params, snapshotId: null, status: "calculating" };
+    onState?.(calc.current);
     const t = setTimeout(async () => {
       setBusy(true);
       try {
+        const cached = beforeCache.current?.body === beforeBody ? beforeCache.current.result : null;
         const [withLoan, statusQuo] = await Promise.all([
           api.scenarios(body),
-          api.scenarios({ ...body, facility: null as unknown as Facility, shocks: [{ name: "Before loan", ebitda_shock: 0, rate_shock_bps: 0 }] }),
+          cached ?? api.scenarios(beforeBody).then((r) => r.results[0]),
         ]);
         if (!live) return;
+        beforeCache.current = { body: beforeBody, result: statusQuo };
         setRes(withLoan);
-        setBefore(statusQuo.results[0]);
+        setBefore(statusQuo);
         setError(null);
-        onState?.({ params, snapshotId: withLoan.snapshot?.id ?? null, status: editingRef.current ? "editing" : "current" });
+        calc.current = { params, snapshotId: withLoan.snapshot?.id ?? null, status: "current" };
+        onState?.(editingRef.current ? { ...calc.current, status: "editing" } : calc.current);
       } catch (e) {
         if (live) {
           setError((e as Error).message);
-          onState?.({ params, snapshotId: null, status: "error" });
+          calc.current = { params, snapshotId: null, status: "error" };
+          onState?.(calc.current);
         }
       } finally {
         if (live) setBusy(false);
@@ -133,7 +156,7 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
       live = false;
       clearTimeout(t);
     };
-  }, [body, params, blocked, fxMissing, onState]);
+  }, [body, beforeBody, params, blocked, fxMissing, onState]);
 
   if (blocked) {
     return <div className="notice error">Loan scenarios are blocked until the data-check failures on the right are resolved.</div>;
@@ -226,18 +249,18 @@ export default function LoanLab({ companyId, fiscalYear, reportingCurrency, bloc
         </fieldset>
       </form>
 
-      <div className="results" aria-live="polite" aria-busy={busy}>
+      <div className="results" aria-busy={busy}>
         {!error && res && (
           busy ? (
             <span className="stale-tag" role="status"><span className="spinner" aria-hidden="true" />Recalculating: the figures below are from the previous inputs</span>
           ) : editing ? (
             <span className="stale-tag" role="status">Waiting for a valid number: the figures below are from the previous inputs</span>
           ) : res.snapshot ? (
-            <span className="ok-tag">Current · snapshot <code className="snap">{res.snapshot.id}</code></span>
+            <span className="ok-tag" role="status">Current · snapshot <code className="snap">{res.snapshot.id}</code></span>
           ) : null
         )}
         {error ? (
-          <div className="notice">
+          <div className="notice" role="status">
             {error === "fx"
               ? `Enter a ${reportingCurrency} per ${fac.currency} rate and its date, or switch the facility to ${reportingCurrency}. Currencies are never mixed silently.`
               : error}

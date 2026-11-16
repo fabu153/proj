@@ -21,6 +21,7 @@ export function useApiReady(budgetMs = 75000) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let live = true;
+    const stop = new AbortController();     // ends this check's /health polling on unmount or retry
     const start = Date.now();
     let lastError: string | null = null;
     let attempts = 0;
@@ -31,6 +32,7 @@ export function useApiReady(budgetMs = 75000) {
       if (Date.now() - start > budgetMs) {
         live = false;
         clearInterval(clock);
+        stop.abort();
         setState({
           phase: "failed",
           elapsed,
@@ -45,7 +47,7 @@ export function useApiReady(budgetMs = 75000) {
     waitForApi((_, attempt, err) => {
       attempts = attempt;
       lastError = err;
-    }, budgetMs)
+    }, budgetMs, stop.signal)
       .then(() => live && setState({ phase: "ready", elapsed: 0, error: null }))
       .catch((e) => live && setState({ phase: "failed", elapsed: 0, error: (e as Error).message, lastError, attempts }))
       .finally(() => {
@@ -55,6 +57,7 @@ export function useApiReady(budgetMs = 75000) {
     return () => {
       live = false;
       clearInterval(clock);
+      stop.abort();
     };
   }, [tick, budgetMs]);
   const retry = useCallback(() => setTick((t) => t + 1), []);

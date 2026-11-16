@@ -18,8 +18,6 @@ from .loan import ENGINE_VERSION, Baseline, Covenants, Facility, Shock
 
 SNAPSHOT_VERSION = "1"
 SCALE = 1_000_000
-FIXED_CASES = [Shock(name="Base"), Shock(name="Downside", ebitda_shock=-0.20, rate_shock_bps=200),
-               Shock(name="Severe", ebitda_shock=-0.35, rate_shock_bps=400)]
 _KEYS = {"base": "base", "downside": "downside", "severe": "severe", "severe_downside": "severe",
          "your case": "custom", "custom": "custom"}
 
@@ -38,6 +36,9 @@ def credit_baseline(cy, currency: str, floating_share: float) -> tuple[Optional[
     needed = {"ebitda": m["ebitda"].value, "gross_debt": m["gross_debt"].value, "cash": v.get("cash"),
               "interest_expense": v.get("interest_expense")}
     missing = [k for k, x in needed.items() if x is None]
+    # reported, but not a value the loan engine can use (e.g. a net interest income); nothing is assumed in its place
+    missing += [f"{k} (reported as negative)" for k in ("gross_debt", "cash", "interest_expense")
+                if needed[k] is not None and needed[k] < 0]
     if missing:
         return None, missing
     return Baseline(currency=currency, existing_floating_share=floating_share, **needed), []

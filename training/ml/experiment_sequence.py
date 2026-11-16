@@ -30,7 +30,7 @@ from backend.app.features.feature_set import FEATURES, build_features
 from backend.app.features.preprocess import Preprocessor
 from training.ml.evaluate import calibration_table, cluster_bootstrap, max_f1_threshold, point_metrics, threshold_metrics
 from training.ml.mlp import set_seed
-from training.ml.run_baselines import load_dataset
+from training.ml.dataset import load_dataset
 from training.ml.splits import SplitSpec, assign_splits
 from training.ml.train_mlp import grouped_holdout, paired_bootstrap, sigmoid
 

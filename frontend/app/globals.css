@@ -88,7 +88,7 @@ table.ledger { width: 100%; border-collapse: collapse; font-size: 14px; }
 .ledger tr.group td { background: var(--paper); color: var(--slate); font-weight: 600; font-size: 13px; text-align: left; padding-top: 12px; }
 .ledger tbody tr.row { cursor: pointer; }
 .ledger tbody tr.row:hover td { background: #f1f6f6; }
-.ledger tbody tr.row[aria-selected="true"] td { background: var(--teal-soft); }
+.ledger tbody tr.row[aria-current="true"] td { background: var(--teal-soft); }
 .ledger td.latest { font-weight: 600; }
 .ledger .na { color: #5f6b78; font-style: italic; }   /* 4.6:1 even on the selected-row tint */
 .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 6px; vertical-align: middle; }
@@ -389,8 +389,11 @@ button.cell.active { border-color: var(--ink); }
 button.cell:hover { border-color: var(--teal); }
 .heat-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
 .heat-legend .item { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-.heat-legend .key { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
-.heat-legend .key.breach { background: #f3d2d4; } .heat-legend .key.tight { background: #f7ecd9; } .heat-legend .key.ok { background: #e1f0ef; }
+.heat-legend .key { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 2px; font-size: 11px; font-weight: 700; line-height: 1; }
+.heat-legend .key.breach { background: #f3d2d4; color: #7d1a20; } .heat-legend .key.tight { background: #f7ecd9; color: #6b4105; } .heat-legend .key.ok { background: #e1f0ef; }
+.heat-legend .key.untestable { color: #3d4855; }
+button.cell { position: relative; }
+button.cell .mark { position: absolute; top: 2px; right: 3px; font-size: 10px; font-weight: 700; line-height: 1; } /* corner badge: adds no width */
 button.cell.untestable { background: repeating-linear-gradient(135deg, #eef0f2, #eef0f2 5px, #e2e6ea 5px, #e2e6ea 10px); color: #3d4855; }
 .heat-legend .key.untestable { background: repeating-linear-gradient(135deg, #eef0f2, #eef0f2 3px, #d4dae1 3px, #d4dae1 6px); }
 .cov-state { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px; }

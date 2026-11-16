@@ -10,7 +10,6 @@ plots and a markdown report. The same seeds + panel reproduce identical numbers.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import platform
 from datetime import datetime, timezone
@@ -24,28 +23,12 @@ import yaml
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score
 
-from backend.app.features.feature_set import FEATURE_VERSION, FEATURES, build_features
+from backend.app.features.feature_set import FEATURE_VERSION, FEATURES
 from training.ml.evaluate import (cluster_bootstrap, max_f1_threshold, plot_pr_and_calibration, point_metrics,
                                   threshold_metrics)
 from backend.app.features.preprocess import Preprocessor
+from training.ml.dataset import load_dataset, sha256_file   # also importable from here, for older scripts
 from training.ml.splits import SplitSpec, assign_splits, audit_splits
-
-
-def sha256_file(path: str) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-
-def load_dataset(cfg: dict) -> pd.DataFrame:
-    panel = pd.read_csv(cfg["panel"], dtype={"cik": str})
-    rf = cfg["row_filters"]
-    feats = build_features(panel)    # built on the full panel so t-1 trends see the prior year
-    if rf.get("min_revenue_usd_m") is not None:
-        rev = panel.set_index(panel.index)["v_revenue"]
-        feats = feats[rev.loc[feats.index] >= rf["min_revenue_usd_m"]]
-    if rf.get("require_scorable"):
-        feats = feats[feats["scorable"] == 1]
-    feats = feats[feats["critical_coverage"] >= rf.get("min_critical_coverage", 0)]
-    return feats.reset_index(drop=True)
 
 
 # ----------------------------------------------------------------------------- models

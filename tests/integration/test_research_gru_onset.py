@@ -11,7 +11,7 @@ from sklearn.metrics import average_precision_score
 
 from backend.app.features.feature_set import build_features
 from training.ml import onset_data as X
-from training.ml.run_baselines import load_dataset
+from training.ml.dataset import load_dataset
 from training.ml.splits import SplitSpec, assign_splits
 
 ROOT = Path(__file__).parents[2]

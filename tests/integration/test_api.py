@@ -30,7 +30,7 @@ def test_point_in_time_analysis():
 
 
 def test_scenario_eur_facility_on_usd_company_is_blocked_without_fx():
-    r = client.post("/scenarios", json={"company_id": CID})
+    r = client.post("/scenarios", json={"company_id": CID, "facility": {"amount": 100, "currency": "EUR"}})
     assert r.status_code == 422 and "FX rate" in r.json()["detail"]
 
 
@@ -39,7 +39,7 @@ def test_scenario_with_fx_returns_three_cases():
         "amount": 100, "currency": "EUR", "fx_rate_to_reporting": 1.08, "fx_rate_date": "2026-11-04"}})
     assert r.status_code == 200
     names = [x["name"] for x in r.json()["results"]]
-    assert names == ["base", "downside", "severe_downside"]
+    assert names == ["Base", "Downside", "Severe"]
 
 
 def test_unknown_company_404():

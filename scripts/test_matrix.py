@@ -5,6 +5,7 @@
 """
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
@@ -59,7 +60,8 @@ MATRIX = [
 
 
 def main():
-    xml = Path("/tmp/creditlens-junit.xml")
+    xml = Path(tempfile.gettempdir()) / "creditlens-junit.xml"
+    xml.unlink(missing_ok=True)            # never build the matrix from an earlier run's results
     rc = subprocess.call([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", f"--junitxml={xml}"])
     cases = []
     for tc in ET.parse(xml).iter("testcase"):
@@ -74,7 +76,8 @@ def main():
     for tid, check, cond, pats in MATRIX:
         hits = [(n, s) for n, s in cases if any(n.startswith(p) or p in n for p in pats)]
         ran = [s for _, s in hits if s != "skipped"]
-        res = "✅ pass" if ran and all(s == "passed" for s in ran) else "❌ fail" if "failed" in ran else "⏭ not run"
+        res = ("❌ fail" if "failed" in ran else "⏭ not run" if not ran else "✅ pass" if len(ran) == len(hits)
+               else f"◐ partial ({len(ran)} of {len(hits)} ran and passed; the rest were skipped)")
         L.append(f"| {tid} | {check} | {cond} | {len(hits)} | {res} |")
     L += ["", "## Release acceptance (Blueprint p.22)", "",
           "| Condition | Evidence |", "|---|---|",

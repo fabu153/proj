@@ -25,10 +25,14 @@ function filingUrl(cik: string, accession: string) {
   return `https://www.sec.gov/Archives/edgar/data/${parseInt(cik, 10)}/${accession.replace(/-/g, "")}/`;
 }
 
+/** Facts from an uploaded report carry a placeholder accession ("upload-…"), not an SEC one. */
+const isUpload = (accession: string | undefined) => !!accession?.startsWith("upload-");
+
 function describeSource(src: Record<string, any>): string {
   switch (src.kind) {
     case "filing":
       if (src.page) return `Uploaded report, page ${src.page} (${src.method ?? "PDF"})`;
+      if (isUpload(src.accession)) return `Uploaded report, no page reference (${src.method ?? "PDF"})`;
       return src.accession ? `10-K XBRL tag ${src.tag}, filed ${src.filed}, accession ${src.accession}` : "Not reported";
     case "formula":
       return `Formula ${src.formula} (v${src.version})${src.note ? `; note: ${String(src.note).replace(/_/g, " ")}` : ""}`;
@@ -61,6 +65,7 @@ export default function EvidenceRail({ analysis, selected, citation: cite }: { a
   const row = ROWS.flatMap((g) => g.rows).find((r) => r.key === selected);
   const metric = analysis.metrics[selected];
   const facts = Array.from(new Set(row?.facts ?? []));
+  const uploaded = analysis.source === "Uploaded annual report";
   return (
     <aside className="rail" aria-label="Source evidence" ref={rail} tabIndex={0}>
       {citation && (
@@ -120,6 +125,8 @@ export default function EvidenceRail({ analysis, selected, citation: cite }: { a
         {facts.map((f) => {
           const ev = analysis.evidence[f];
           const der = analysis.derived[f];
+          // a figure the analyst entered without a page number is still from the upload, never an SEC filing
+          const fromUpload = !!ev && (!!ev.page || uploaded || isUpload(ev.accession));
           return (
             <div className="src" key={f}>
               <strong>{FACT_LABELS[f] ?? f}</strong>
@@ -128,14 +135,14 @@ export default function EvidenceRail({ analysis, selected, citation: cite }: { a
                   {fmt(der.value, "amount")} used in the ratios, by rule {der.rule}
                   {ev && (
                     <div className="fine">
-                      As {ev.page ? `extracted from page ${ev.page}` : <>tagged in XBRL (<code>{ev.tag}</code>)</>}: {fmt(ev.value, "amount")}
+                      As {ev.page ? `extracted from page ${ev.page}` : fromUpload ? "entered from the uploaded report (no page reference)" : <>tagged in XBRL (<code>{ev.tag}</code>)</>}: {fmt(ev.value, "amount")}
                       {der.basis === "credit" ? ". The neural screen keeps the as-tagged value, which is what it was trained on." : "."}
                     </div>
                   )}
                 </div>
-              ) : ev && ev.page ? (
+              ) : ev && fromUpload ? (
                 <div className="num">
-                  {fmt(ev.value, "amount")} from the uploaded report, page {ev.page}
+                  {fmt(ev.value, "amount")} from the uploaded report{ev.page ? `, page ${ev.page}` : " (no page reference)"}
                   <br />
                   <span className="fine">{ev.extraction_method}</span>
                 </div>

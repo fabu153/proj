@@ -61,7 +61,9 @@ SYNONYMS: dict[str, tuple[str, list[tuple[str, str]]]] = {
     "current_liabilities": ("balance", [(r"^total current liabilities$", "exact")]),
 }
 
-NUM = r"\(?-?\$?\s?\d[\d,]*(?:\.\d+)?\)?|—|–"
+# a number, or a dash printed for nil (em, en or a lone hyphen; parse_number reads all three as 0)
+# (a space may follow "$" as in "$ 1,250", never a minus: "- 150" is a nil dash and 150, not -150)
+NUM = r"\(?-?(?:\$\s?)?\d[\d,]*(?:\.\d+)?\)?|—|–|(?<![\w-])-(?![\w-])"
 NUM_RE = re.compile(NUM)
 YEAR_ROW = re.compile(r"^(?:note\s+)?((?:(?:19|20)\d\d\s*){2,4})$", re.I)
 MONTHS = "january february march april may june july august september october november december".split()
@@ -143,7 +145,7 @@ def normalize_label(s: str) -> str:
 
 
 def detect_scale(text: str) -> tuple[Optional[float], Optional[str]]:
-    t = text.lower()
+    t = re.sub(r"\b(?:billions|millions|thousands) of (?:\w+ )?shares", "", text.lower())   # share counts, not amounts
     for word, mult in (("billions", 1e9), ("millions", 1e6), ("thousands", 1e3)):
         if re.search(rf"in {word}|amounts in {word}|\({word}\)|{word} of", t):
             return mult, word
@@ -161,6 +163,9 @@ def detect_currency(text: str) -> Optional[str]:
     return None
 
 
+FULL_DATE = r"(" + "|".join(MONTHS) + r")\s+(\d{1,2}),\s*((?:19|20)\d\d)"
+
+
 def detect_year_end(text: str, latest_year: int) -> tuple[Optional[str], bool]:
     m = re.search(r"(?:years?|fiscal years?|periods?) ended (" + "|".join(MONTHS) + r")\s+(\d{1,2})(?:,\s*(\d{4}))?",
                   text, re.I)
@@ -169,10 +174,21 @@ def detect_year_end(text: str, latest_year: int) -> tuple[Optional[str], bool]:
         if not m2:
             return f"{latest_year}-12-31", True
         m = m2
-    month = MONTHS.index(m.group(1).lower()) + 1
+    month, day = MONTHS.index(m.group(1).lower()) + 1, int(m.group(2))
     year = int(m.group(3)) if m.lastindex and m.lastindex >= 3 and m.group(3) else latest_year
+    if m.lastindex and m.lastindex >= 3 and m.group(3):
+        rest = text[m.end():]
+        # "December 31, 2021, 2022 and 2023": one date, every year listed (a list ends with "and <year>", so
+        # "December 31, 2023, 2025 Senior Notes" is not one); the latest year is the year-end
+        years = re.match(r"(?:\s*,\s*(?:19|20)\d\d)*\s*,?\s*and\s*(?:19|20)\d\d", rest)
+        dates = re.match(r"(?:\s*(?:,\s*and|,|and)\s*" + FULL_DATE + ")+", rest, re.I)
+        if years:
+            year = max([year] + [int(y) for y in re.findall(r"(?:19|20)\d\d", years.group())])
+        elif dates:   # "September 24, 2022, September 30, 2023 and September 28, 2024": the latest date
+            year, month, day = max([(year, month, day)] + [(int(y), MONTHS.index(mo.lower()) + 1, int(d))
+                                                          for mo, d, y in re.findall(FULL_DATE, dates.group(), re.I)])
     try:
-        return date(year, month, int(m.group(2))).isoformat(), False
+        return date(year, month, day).isoformat(), False
     except ValueError:            # e.g. "June 31": not a calendar date -> the analyst must confirm it
         return None, True
 
@@ -186,10 +202,13 @@ def classify_page(text: str) -> Optional[str]:
 
 
 def split_line(line: str, n_cols: int) -> Optional[tuple[str, list[float], list[str]]]:
+    line = line.replace("\u2212", "-")                # a typeset minus sign is a minus sign
     toks = list(NUM_RE.finditer(line))
     if len(toks) < n_cols:
         return None
     last = toks[-n_cols:]
+    if re.search(r"[A-Za-z]{2,}", line[last[0].start():]):
+        return None       # words among the values: a dash inside the label ("Revenue - net 1,000") is not a value
     label = line[: last[0].start()].strip()
     if not re.search(r"[A-Za-z]", label):
         return None

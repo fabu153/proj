@@ -18,12 +18,16 @@ import re
 from .package import Package
 
 PLACEHOLDER = re.compile(r"\{\{\s*([a-z0-9_.]+)\s*\}\}")
-NUMBER = re.compile(r"(?<![\w.])(-?\d[\d,]*(?:\.\d+)?)\s*(%|x\b|bp\b|m\b|bn\b|million\b|billion\b)?", re.I)
+# not right after a letter, "." or "%" (an id like "Q3", a decimal part, the second half of the range "5%-10%")
+NUMBER = re.compile(r"(?<![\w.%])(-?\d[\d,]*(?:\.\d+)?)\s*(%|x\b|bp\b|m\b|bn\b|million\b|billion\b)?", re.I)
 YEAR = re.compile(r"^(19|20)\d\d$")
 RESTRICTED = [r"\binvestment[- ]grade\b", r"\b(aaa|aa|a|bbb|bb)[-+]?[- ]rated\b", r"\bprobability of default\b",
               r"\bdefault probability\b", r"\bguarantee[ds]?\b", r"\bwe (recommend|approve)\b", r"\bapproved?\b",
               r"\bwill default\b", r"\bjunk\b", r"\bpd of\b"]
 SAFE_WORDS = {"10-k", "10-q"}
+# a number glued to a currency code or an abbreviation ("USD500m", "c.500m", "approx.4.0x") is still a number;
+# "Appendix C.2" or "Class C1 notes" are references, not amounts
+GLUED = re.compile(r"\b((?i:USD|EUR|CHF|GBP|CAD|JPY)|(?:c|ca|[Aa]pprox)\.)(?=-?\d)")
 
 
 def _candidates(pk: Package) -> list[tuple[str, float, str]]:
@@ -37,7 +41,10 @@ def _candidates(pk: Package) -> list[tuple[str, float, str]]:
 
 def _matches(num: float, suffix: str, value: float, unit: str) -> bool:
     s = (suffix or "").lower()
-    # signs are often carried by words ("down 5.4%", "falls short by 2.17x"), so magnitudes also match
+    # signs are often carried by words ("down 5.4%", "falls short by 2.17x"), so magnitudes also match; but a
+    # number typed with a minus sign is negative, and never matches a positive value
+    if num < 0 and value > 0:
+        return False
     if unit in ("pct", "prob"):
         return s == "%" and abs(abs(num) - abs(value * 100)) <= 0.051
     if unit == "pp":
@@ -58,12 +65,13 @@ def unlinked_numbers(text: str, pk: Package) -> tuple[list[str], list[str]]:
     stripped = PLACEHOLDER.sub(" ", text)
     for w in SAFE_WORDS:
         stripped = re.sub(re.escape(w), " ", stripped, flags=re.I)
+    stripped = GLUED.sub(r"\1 ", stripped.replace("\u2212", "-"))    # a typeset minus sign is a minus sign
     cands = _candidates(pk)
     linked, bad = [], []
     for m in NUMBER.finditer(stripped):
         raw, suffix = m.group(1), m.group(2)
         clean = raw.replace(",", "")
-        if YEAR.match(clean) and not suffix:
+        if YEAR.match(raw) and not suffix:          # a year has no thousands separator: "2,050" is an amount
             continue
         num = float(clean)
         hit = next((i for i, v, u in cands if _matches(num, suffix, v, u)), None)

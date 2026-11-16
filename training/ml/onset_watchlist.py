@@ -20,7 +20,7 @@ import yaml
 
 from backend.app.models.inference import ARTIFACT_DIR, StressModel
 from training.ml.onset_data import onset_cohort
-from training.ml.run_baselines import load_dataset, sha256_file
+from training.ml.dataset import load_dataset, sha256_file
 from training.ml.splits import SplitSpec, assign_splits
 
 CONFIG = Path("configs/experiment_onset_watchlist_v1.yaml")

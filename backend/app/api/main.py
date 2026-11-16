@@ -6,18 +6,26 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import hmac
 import json
 import logging
+import math
 import os
+import threading
 import time
+import unicodedata
 import uuid
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi.concurrency import run_in_threadpool
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -27,7 +35,7 @@ from ..documents.sec_client import SECError
 from ..features.universe_rules import excluded_sic
 from ..finance import credit_extras
 from ..finance import peers as peer_lib
-from ..documents.xbrl import CompanyYear, build_company_years, engine_inputs
+from ..documents.xbrl import CompanyYear, build_company_years, consecutive, engine_inputs, prior_year
 from ..finance.metrics import compute_all
 from ..memos import service as memo_service
 from ..memos.pdf import render_pdf
@@ -60,14 +68,54 @@ async def lifespan(_app):
 
 app = FastAPI(title="CreditLens AI", version=VERSION, lifespan=lifespan,
               description="Decision-support credit analysis. Not a rating, not a PD, not a loan decision.")
-app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_origin_regex=CORS_ORIGIN_REGEX,
-                   allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"])
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request(_request: Request, exc: RequestValidationError):
+    """FastAPI's 422, except that the rejected input it repeats may be NaN or infinity, which JSON cannot carry (the
+    answer became a 500): such numbers are given back as text."""
+    return JSONResponse({"detail": _finite(jsonable_encoder(exc.errors()))}, status_code=422)
+
+
+def _finite(x):
+    if isinstance(x, float) and not math.isfinite(x):
+        return str(x)
+    if isinstance(x, dict):
+        return {k: _finite(v) for k, v in x.items()}
+    if isinstance(x, list):
+        return [_finite(v) for v in x]
+    return x
+
 
 # ------------------------------------------------------------------ cross-cutting: logging, rate limits
 RATE_LIMITS = {"/documents/upload": (int(os.environ.get("CREDITLENS_UPLOAD_LIMIT", "20")), 3600),
                "/memos": (int(os.environ.get("CREDITLENS_MEMO_LIMIT", "60")), 3600),
                "/companies/resolve": (int(os.environ.get("CREDITLENS_RESOLVE_LIMIT", "120")), 3600)}
 _hits: dict[tuple[str, str], deque] = defaultdict(deque)
+_last_sweep = 0.0
+UPLOAD_MAX_REQUEST_BYTES = pdf_extract.MAX_BYTES + 1024 * 1024     # the PDF limit plus room for the form fields
+
+
+def _sweep_hits(now: float) -> None:
+    """Forget clients with no request inside their window, so the table cannot grow without bound."""
+    global _last_sweep
+    if now - _last_sweep < 60:
+        return
+    _last_sweep = now
+    for key in [k for k, q in _hits.items() if not q or q[-1] < now - RATE_LIMITS[k[0]][1]]:
+        del _hits[key]
+
+
+def _declared_size(request: Request) -> int:
+    try:
+        return int(request.headers.get("content-length") or 0)
+    except ValueError:
+        return 0
+
+
+SECURITY_HEADERS = {"x-content-type-options": "nosniff", "x-frame-options": "DENY", "referrer-policy": "no-referrer",
+                    # nothing is cached anywhere: uploads and memos are private, and the site's proxy (Vercel) must
+                    # always ask the live service
+                    "cache-control": "no-store"}
 
 
 @app.middleware("http")
@@ -75,30 +123,43 @@ async def observe(request: Request, call_next):
     rid = uuid.uuid4().hex[:12]
     start = time.perf_counter()
     path = request.url.path
-    if request.method == "POST" and path in RATE_LIMITS:
+    response = None
+    if path == "/documents/upload" and _declared_size(request) > UPLOAD_MAX_REQUEST_BYTES:
+        # refused before the body is read (and before it counts against the rate limit). A request that does not
+        # declare its size (chunked) is still read in full and refused by the extractor.
+        response = JSONResponse({"detail": f"The file is larger than {pdf_extract.MAX_BYTES // (1024 * 1024)} MB."},
+                                status_code=413)
+    if response is None and request.method == "POST" and path in RATE_LIMITS:
         limit, window = RATE_LIMITS[path]
         ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0]
-        q, now = _hits[(path, ip)], time.time()
+        now = time.time()
+        _sweep_hits(now)
+        q = _hits[(path, ip)]
         while q and q[0] < now - window:
             q.popleft()
         if len(q) >= limit:
-            return JSONResponse({"detail": f"Too many requests to {path}; try again later."}, status_code=429)
-        q.append(now)
-    try:
-        response = await call_next(request)
-    except Exception:  # noqa: BLE001 — log and return a generic error, never a stack trace
-        log.exception(json.dumps({"rid": rid, "path": path, "event": "unhandled_error"}))
-        return JSONResponse({"detail": f"Internal error (reference {rid})."}, status_code=500)
+            response = JSONResponse({"detail": f"Too many requests to {path}; try again later."}, status_code=429)
+        else:
+            q.append(now)
+    if response is None:
+        try:
+            response = await call_next(request)
+        except Exception:  # noqa: BLE001 — log and return a generic error, never a stack trace
+            log.exception(json.dumps({"rid": rid, "path": path, "event": "unhandled_error"}))
+            response = JSONResponse({"detail": f"Internal error (reference {rid})."}, status_code=500)
+    # every response gets these, including the 429s and 500s produced above
     response.headers["x-request-id"] = rid
-    response.headers["x-content-type-options"] = "nosniff"
-    response.headers["x-frame-options"] = "DENY"
-    response.headers["referrer-policy"] = "no-referrer"
-    # nothing is cached anywhere: uploads and memos are private, and the site's proxy (Vercel) must always ask
-    # the live service
-    response.headers["cache-control"] = "no-store"
+    for k, v in SECURITY_HEADERS.items():
+        response.headers[k] = v
     log.info(json.dumps({"rid": rid, "method": request.method, "path": path, "status": response.status_code,
                          "ms": round((time.perf_counter() - start) * 1000, 1)}))
     return response
+
+
+# added after `observe` so it wraps it: the 429s and 500s that `observe` returns carry CORS headers too, so a
+# browser calling the API directly can read their message
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_origin_regex=CORS_ORIGIN_REGEX,
+                   allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"])
 
 
 # ------------------------------------------------------------------ company registry
@@ -123,18 +184,25 @@ def _curated() -> dict[str, dict]:
     return out
 
 
-def _companyfacts() -> dict[str, dict]:
-    """Curated SEC issuers plus finalized uploaded reports (rebuilt from reviewed facts on each call).
+def _upload_cf(company_id: str) -> Optional[dict]:
+    """A finalized uploaded report, rebuilt from its reviewed facts; only the one asked for is read.
 
     A malformed upload is logged and skipped so it can never break other companies (DATA-01)."""
-    out = {**sec_search.loaded(), **_curated()}          # companies fetched from SEC on request, then the samples
-    for row in store.list_finalized():
-        try:
-            doc = store.get_document(row["id"])
-            if doc:
-                out[doc["company_id"]] = uploads.to_companyfacts(doc)
-        except Exception:  # noqa: BLE001
-            log.exception(json.dumps({"event": "skipped_malformed_upload", "document": row["id"]}))
+    if not company_id.startswith("doc"):
+        return None
+    try:
+        doc = store.get_finalized(company_id)
+        return uploads.to_companyfacts(doc) if doc else None
+    except Exception:  # noqa: BLE001
+        log.exception(json.dumps({"event": "skipped_malformed_upload", "company": company_id}))
+        return None
+
+
+def _companyfacts(include: Optional[str] = None) -> dict[str, dict]:
+    """Companies fetched from SEC on request, then the curated samples, plus the uploaded report `include` if any."""
+    out = {**sec_search.loaded(), **_curated()}
+    if include and (cf := _upload_cf(include)) is not None:
+        out[include] = cf
     return out
 
 
@@ -152,7 +220,7 @@ def _sec_load(cik10: str) -> dict:
 
 
 def _cf(company_id: str) -> dict:
-    cf = _companyfacts().get(company_id)
+    cf = _companyfacts(company_id).get(company_id)
     if cf is None and sec_search.is_cik(company_id):
         cf = _sec_load(company_id)                        # e.g. a shared link after the server restarted
     if cf is None:
@@ -170,7 +238,7 @@ def _pick(years: list[CompanyYear], fye: Optional[str]) -> tuple[CompanyYear, Op
     idx = len(years) - 1 if fye is None else next((i for i, y in enumerate(years) if y.fiscal_year_end == fye), None)
     if idx is None:
         raise HTTPException(404, f"Fiscal year end {fye} not available")
-    return years[idx], (years[idx - 1] if idx > 0 else None)
+    return years[idx], prior_year(years, idx)
 
 
 def _scaled(v: dict) -> dict:
@@ -188,7 +256,7 @@ def companies(include: Optional[str] = None):
     """The curated sample issuers. Uploaded reports are private to whoever holds their link, so they are listed
     only when that link's id is passed as `include` — never to every visitor."""
     out = []
-    all_cf = _companyfacts()
+    all_cf = _companyfacts(include)
     if include and include not in all_cf and sec_search.is_cik(include):
         all_cf[include] = _sec_load(include)
     for cid, cf in all_cf.items():
@@ -258,7 +326,7 @@ def company_resolve(req: ResolveRequest):
                                   "Form 20-F or 40-F, funds and trusts, and shells. Nothing is estimated in their place; "
                                   "you can still upload a text-based annual report.")
     summary = next(c for c in companies(include=cik10) if c.company_id == cik10)
-    cy, prior = years[-1], (years[-2] if len(years) > 1 else None)
+    cy, prior = years[-1], prior_year(years, len(years) - 1)
     vals = _scaled(engine_inputs(cy))
     m = compute_all(vals, _scaled(engine_inputs(prior)) if prior else None, cash_basis=cy.cash_basis)
     unavailable = [label for k, label in KEY_METRICS.items() if m[k].status.value == "not_available"]
@@ -380,9 +448,10 @@ def replay_outcome(case_id: str):
 def history(company_id: str):
     years = _years(company_id)
     out, prev = [], None
-    for cy in years:
+    for i, cy in enumerate(years):
         v = _scaled(engine_inputs(cy))
-        m = compute_all(v, prev, cash_basis=cy.cash_basis)
+        m = compute_all(v, prev if i and consecutive(years[i - 1].fiscal_year_end, cy.fiscal_year_end) else None,
+                        cash_basis=cy.cash_basis)
         out.append(HistoryPoint(
             fiscal_year_end=cy.fiscal_year_end, filed=cy.available_as_of, scorable=cy.scorable,
             values={k: v.get(k) for k in ("revenue", "operating_income", "net_income", "interest_expense",
@@ -461,9 +530,14 @@ def _lab_status(cf: dict, cy) -> dict:
         return {"available": False, "reason": "Hard data checks failed for this year.", "missing": []}
     missing = credit_baseline(cy, cf.get("currency", "USD"), 0.0)[1]
     if missing:
+        label = lambda m: m.replace("_", " ").replace("ebitda", "EBITDA")  # noqa: E731
+        absent = [label(m) for m in missing if "(" not in m]
+        unusable = [label(m) for m in missing if "(" in m]       # reported, but not a value the engine can use
+        where = "in the reviewed report" if cf.get("source") == "Uploaded annual report" else "in XBRL"
         return {"available": False, "missing": missing,
-                "reason": "Not reported in XBRL for this year: " + ", ".join(
-                    m.replace("_", " ").replace("ebitda", "EBITDA") for m in missing) + ". Nothing is estimated in its place."}
+                "reason": " ".join(([f"Not reported {where} for this year: {', '.join(absent)}."] if absent else [])
+                                   + ([f"Not usable for the loan lab: {', '.join(unusable)}."] if unusable else []))
+                          + " Nothing is estimated in its place."}
     return {"available": True, "reason": None, "missing": []}
 
 
@@ -482,21 +556,23 @@ def _baseline(company_id: str, fye: Optional[str], floating_share: float) -> tup
 
 @app.post("/scenarios", response_model=ScenarioResponse)
 def scenarios(req: ScenarioRequest):
-    snap = None
+    snap, cy = None, None
     shocks = req.shocks or DEFAULT_CASES
-    if req.baseline_override:
-        base = Baseline(**req.baseline_override)
+    if req.baseline_override is not None:
+        base = req.baseline_override
     elif req.company_id:
         base, cy = _baseline(req.company_id, req.fiscal_year_end, req.existing_floating_share)
-        snap = make_snapshot(req.company_id, cy.fiscal_year_end, base, req.facility, req.covenants, shocks,
-                             cy.cash_basis)
     else:
         raise HTTPException(422, "Provide company_id or baseline_override")
+    # facility omitted: 100m in the reporting currency, as /memos does; facility null: no new facility
+    facility = req.facility if "facility" in req.model_fields_set else Facility(amount=100.0, currency=base.currency)
+    if cy is not None:
+        snap = make_snapshot(req.company_id, cy.fiscal_year_end, base, facility, req.covenants, shocks, cy.cash_basis)
     try:
-        results = [run_scenario(base, req.facility, s, req.covenants) for s in shocks]
+        results = [run_scenario(base, facility, s, req.covenants) for s in shocks]
     except (FXBlocked, ScenarioInputError) as e:
         raise HTTPException(422, str(e))
-    sched = amortization_schedule(req.facility) if req.facility else []
+    sched = amortization_schedule(facility) if facility else []
     return ScenarioResponse(baseline=base.model_dump(), results=results, facility_schedule=sched, snapshot=snap)
 
 
@@ -539,8 +615,10 @@ def scenario_grid(req: GridRequest):
 @app.post("/documents/upload")
 async def upload_document(file: UploadFile = File(...), company_name: str = Form(""), cik: str = Form("")):
     data = await file.read(pdf_extract.MAX_BYTES + 1)
+    sha = hashlib.sha256(data).hexdigest()               # of the PDF itself: the only trace of the file that is kept
     try:
-        extraction = pdf_extract.extract(data).to_dict()
+        # parsing a long PDF takes seconds: run it off the event loop so other requests (and /health) are served
+        extraction = (await run_in_threadpool(_extract, data)).to_dict()
     except pdf_extract.ExtractionError as e:
         store.audit("upload_rejected", file.filename or "?", reason=str(e))
         raise HTTPException(422, str(e))
@@ -554,12 +632,20 @@ async def upload_document(file: UploadFile = File(...), company_name: str = Form
                                    f"{len(_curated())} sample issuers held offline")
     else:
         extraction["sec_check"] = "Not checked against SEC: no CIK given"
-    sha = hashlib.sha256((file.filename or "").encode() + str(extraction["candidates"]).encode()).hexdigest()
     doc_id = store.create_document(filename=file.filename or "upload.pdf", sha256=sha, extraction=extraction,
-                                   company_name=company_name.strip() or (file.filename or "Uploaded company").rsplit(".", 1)[0])
+                                   company_name=(store.clean_name(company_name)
+                                                 or (file.filename or "Uploaded company").rsplit(".", 1)[0]))
     store.audit("document_uploaded", doc_id, filename=file.filename, pages=extraction["pages"],
                 candidates=len(extraction["candidates"]), cross_checked_cik=cik10)
     return _document_view(doc_id)
+
+
+_PARSE_SLOTS = threading.BoundedSemaphore(2)   # each parse can take seconds and much memory on a small instance
+
+
+def _extract(data: bytes):
+    with _PARSE_SLOTS:
+        return pdf_extract.extract(data)
 
 
 def _document_view(doc_id: str) -> dict:
@@ -616,7 +702,7 @@ def finalize_document(doc_id: str):
     doc = _document_view(doc_id)
     if doc["blocking"]:
         raise HTTPException(409, "Review required before analysis: " + "; ".join(doc["blocking"]))
-    store.finalize(doc["id"])
+    store.finalize(doc["id"])            # a repeat (e.g. after a lost response) changes nothing and answers the same
     return {"company_id": doc["company_id"], **_document_view(doc["id"])}
 
 
@@ -646,6 +732,11 @@ def create_memo(req: MemoRequest):
         raise HTTPException(422, str(e))
     except (ValueError, StopIteration) as e:
         raise HTTPException(422, f"Memo could not be built: {e}")
+    except store.Gone:
+        raise HTTPException(404, UPLOAD_GONE)
+
+
+UPLOAD_GONE = "The uploaded report this memo is about was deleted or has expired (uploads are kept 24 hours)."
 
 
 def _memo(memo_id: str) -> dict:
@@ -664,6 +755,8 @@ def get_memo(memo_id: str):
 def edit_memo_sentence(memo_id: str, sentence_id: str, body: MemoEdit):
     try:
         return memo_service.edit_sentence(_memo(memo_id), sentence_id, body.text)
+    except store.Gone:
+        raise HTTPException(404, UPLOAD_GONE)
     except KeyError:
         raise HTTPException(404, "Sentence not found")
 
@@ -678,14 +771,18 @@ def memo_pdf(memo_id: str, snapshot: Optional[str] = None):
                                  "Regenerate the memo before exporting.")
     store.audit("memo_exported", memo_id, flagged=m["summary"]["flagged"])
     name = "".join(ch for ch in m["package"]["meta.company"]["display"] if ch.isalnum() or ch in " -")[:40].strip()
-    return Response(render_pdf(m), media_type="application/pdf",
-                    headers={"content-disposition": f'attachment; filename="CreditLens memo - {name}.pdf"'})
+    # headers are Latin-1: an ASCII fallback name, and the real one UTF-8 encoded (RFC 5987) for browsers that read it
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().strip() or "company"
+    disposition = (f'attachment; filename="CreditLens memo - {ascii_name}.pdf"; '
+                   f"filename*=UTF-8''{quote(f'CreditLens memo - {name}.pdf')}")
+    return Response(render_pdf(m), media_type="application/pdf", headers={"content-disposition": disposition})
 
 
 @app.get("/audit")
 def audit(request: Request, subject: Optional[str] = None, limit: int = 100):
     """Operator-only: raw audit entries can reveal what was uploaded, so they need CREDITLENS_ADMIN_TOKEN."""
     token = os.environ.get("CREDITLENS_ADMIN_TOKEN")
-    if not token or request.headers.get("x-admin-token") != token:
+    supplied = request.headers.get("x-admin-token") or ""
+    if not token or not hmac.compare_digest(supplied.encode(), token.encode()):   # constant time: no timing oracle
         raise HTTPException(404, "Not found")
     return store.audit_log(subject, min(max(limit, 1), 500))

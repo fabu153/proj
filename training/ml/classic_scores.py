@@ -26,7 +26,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 
 from backend.app.finance.credit_extras import altman_z2, ohlson_o
 from training.ml.evaluate import cluster_bootstrap
-from training.ml.run_baselines import load_dataset, sha256_file
+from training.ml.dataset import load_dataset, sha256_file
 from training.ml.splits import SplitSpec, assign_splits
 
 OUT = Path("training/experiments/classic_scores_v1")

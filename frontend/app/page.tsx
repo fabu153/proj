@@ -21,7 +21,10 @@ export default function Start() {
     if (apiState.phase !== "ready") return;
     api
       .companies()
-      .then((cs) => setCompanies(cs.filter((c) => !c.synthetic).length ? cs.filter((c) => !c.synthetic) : cs))
+      .then((cs) => {
+        setCompanies(cs.filter((c) => !c.synthetic).length ? cs.filter((c) => !c.synthetic) : cs);
+        setError(null);
+      })
       .catch((e) => setError((e as Error).message));
   }, [apiState.phase]);
 

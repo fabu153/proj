@@ -15,7 +15,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 ENGINE_VERSION = "1.2.0"   # 1.2: EBITDA shocks scale |EBITDA| (losses deepen); explicit covenant states
 # 1.1: refinancing/rate-floor validation, no interest clamp
@@ -30,6 +30,7 @@ class UseOfProceeds(str, Enum):
 
 class Baseline(BaseModel):
     """Reviewed historical figures, single currency & scale."""
+    model_config = ConfigDict(allow_inf_nan=False)
     currency: str
     scale: str = "millions"
     ebitda: float
@@ -41,6 +42,7 @@ class Baseline(BaseModel):
 
 
 class Facility(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
     amount: float = Field(gt=0)
     currency: str = "EUR"
     coupon: float = Field(0.06, ge=0, lt=1, description="All-in annual rate")
@@ -68,6 +70,7 @@ class Shock(BaseModel):
 
 
 class Covenants(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
     max_net_leverage: Optional[float] = None
     min_ebitda_interest_cover: Optional[float] = None
     # Some loan agreements define non-positive EBITDA as an automatic leverage breach. That is a contractual
@@ -128,13 +131,14 @@ def _facility_in_reporting_ccy(base: Baseline, fac: Facility) -> tuple[float, st
                  f"({fac.fx_rate_date or 'user-entered, undated'}) = {amt:,.2f} {base.currency}.")
 
 
-def pro_forma(base: Baseline, fac: Facility) -> tuple[float, float, float, float, float, list[str]]:
-    """Return (gross_debt, cash, existing_interest, new_interest, floating_debt, steps) at close."""
+def pro_forma(base: Baseline, fac: Facility) -> tuple[float, float, float, float, float, float, list[str]]:
+    """Return (gross_debt, cash, existing_interest, new_interest, floating_debt, existing_debt, steps) at close;
+    existing_debt is the borrower's own debt still outstanding (after any refinancing)."""
     steps: list[str] = []
     amt, fx_step = _facility_in_reporting_ccy(base, fac)
     steps.append(fx_step)
 
-    gd, cash, existing_int = base.gross_debt, base.cash, base.interest_expense
+    gd, cash, existing_int, existing_debt = base.gross_debt, base.cash, base.interest_expense, base.gross_debt
     existing_floating = base.gross_debt * base.existing_floating_share
     use = fac.use_of_proceeds
 
@@ -166,7 +170,12 @@ def pro_forma(base: Baseline, fac: Facility) -> tuple[float, float, float, float
                     f"{rate:.2%} would remove {saved:,.2f} of interest, but total reported interest expense is only "
                     f"{base.interest_expense:,.2f}. Use a rate of at most {max_rate:.2%} (or leave it blank to use the "
                     f"average cost of debt, {base.interest_expense / base.gross_debt:.2%}).")
+            if saved > base.interest_expense:          # within the rounding tolerance above
+                steps.append(f"Interest on retired debt at {rate:.2%} ({saved:,.2f}) exceeds reported interest "
+                             f"{base.interest_expense:,.2f} by rounding only; capped at {base.interest_expense:,.2f}.")
+                saved = base.interest_expense
             existing_int -= saved
+            existing_debt = base.gross_debt - repaid
             # repaid debt is assumed to come pro rata from the fixed and floating buckets
             existing_floating *= (base.gross_debt - repaid) / base.gross_debt
             gd = gd - repaid + amt
@@ -185,15 +194,16 @@ def pro_forma(base: Baseline, fac: Facility) -> tuple[float, float, float, float
                  + ("; first-year interest on the full opening balance, repayments lower it from year 2 "
                     "(see the repayment schedule)." if fac.annual_amortization else "."))
     floating_debt = existing_floating + (amt if fac.floating else 0.0)
-    return gd, cash, existing_int, new_int, floating_debt, steps
+    return gd, cash, existing_int, new_int, floating_debt, existing_debt, steps
 
 
 def run_scenario(base: Baseline, fac: Optional[Facility], shock: Shock,
                  covenants: Optional[Covenants] = None) -> ScenarioResult:
     if fac is not None:
-        gd, cash, existing_int, new_int, floating_debt, steps = pro_forma(base, fac)
+        gd, cash, existing_int, new_int, floating_debt, existing_debt, steps = pro_forma(base, fac)
     else:
         gd, cash, existing_int, new_int = base.gross_debt, base.cash, base.interest_expense, 0.0
+        existing_debt = base.gross_debt
         floating_debt = base.gross_debt * base.existing_floating_share
         steps = ["No new facility (status quo)."]
 
@@ -215,8 +225,9 @@ def run_scenario(base: Baseline, fac: Optional[Facility], shock: Shock,
         if fac is not None and fac.floating and fac.coupon + delta_rate < 0:
             raise ScenarioInputError(f"A {shock.rate_shock_bps:+.0f} bp shock would take the facility coupon "
                                      f"({fac.coupon:.2%}) below zero.")
-        avg = base.interest_expense / base.gross_debt if base.gross_debt > 0 else 0.0
-        if base.existing_floating_share > 0 and avg + delta_rate < 0:
+        # the debt that reprices is what remains after any refinancing, at its own average cost
+        avg = existing_int / existing_debt if existing_debt > 0 else 0.0
+        if base.existing_floating_share > 0 and existing_debt > 0 and avg + delta_rate < 0:
             raise ScenarioInputError(f"A {shock.rate_shock_bps:+.0f} bp shock would take the existing floating debt "
                                      f"(average cost {avg:.2%}) below zero.")
     rate_add = floating_debt * delta_rate
@@ -236,7 +247,7 @@ def run_scenario(base: Baseline, fac: Optional[Facility], shock: Shock,
     flags: list[str] = []
     if not lev_ok:
         flags.append("NON_POSITIVE_EBITDA: leverage undefined")
-    if cover is not None and cover < 1.0:
+    if cover is not None and cover < 1.0 - 1e-9:            # the same float tolerance as covenant headroom
         flags.append("INTEREST_COVER_BELOW_1X")
     if nd < 0:
         flags.append("NET_CASH_POSITION")
@@ -277,7 +288,7 @@ def assess_covenants(cov: Covenants, net_lev: Optional[float], cover: Optional[f
                 out["max_net_leverage"] = CovenantAssessment(covenant="max_net_leverage", limit=lim, value=None,
                                                              headroom=None, state=CovenantState.NOT_TESTABLE, reason=why)
         else:
-            h = lim - net_lev
+            h = _snap(lim - net_lev)
             out["max_net_leverage"] = CovenantAssessment(
                 covenant="max_net_leverage", limit=lim, value=net_lev, headroom=h,
                 state=CovenantState.PASS if h >= 0 else CovenantState.BREACH,
@@ -290,12 +301,18 @@ def assess_covenants(cov: Covenants, net_lev: Optional[float], cover: Optional[f
                 state=CovenantState.NOT_TESTABLE,
                 reason="interest expense is zero or unavailable, so EBITDA / interest is undefined")
         else:
-            h = cover - lim
+            h = _snap(cover - lim)
             out["min_ebitda_interest_cover"] = CovenantAssessment(
                 covenant="min_ebitda_interest_cover", limit=lim, value=cover, headroom=h,
                 state=CovenantState.PASS if h >= 0 else CovenantState.BREACH,
                 reason=f"EBITDA / interest {cover:.2f}x against a minimum of {lim:.2f}x")
     return out
+
+
+def _snap(headroom: float) -> float:
+    """Float noise is not a breach: a ratio exactly at its limit (2.9999999999999996x against 3.00x) has zero
+    headroom."""
+    return 0.0 if abs(headroom) < 1e-9 else headroom
 
 
 def amortization_schedule(fac: Facility) -> list[dict]:
@@ -309,8 +326,10 @@ def amortization_schedule(fac: Facility) -> list[dict]:
     return rows
 
 
+# The one list of fixed stress cases (configs/assumptions.yaml stress_cases): the default of /scenarios and of the
+# memo, and the cases the loan lab sends (frontend LoanLab.tsx FIXED). Same inputs, same snapshot id everywhere.
 DEFAULT_CASES = [
-    Shock(name="base", ebitda_shock=0.0, rate_shock_bps=0),
-    Shock(name="downside", ebitda_shock=-0.20, rate_shock_bps=200),
-    Shock(name="severe_downside", ebitda_shock=-0.35, rate_shock_bps=400),
+    Shock(name="Base", ebitda_shock=0.0, rate_shock_bps=0),
+    Shock(name="Downside", ebitda_shock=-0.20, rate_shock_bps=200),
+    Shock(name="Severe", ebitda_shock=-0.35, rate_shock_bps=400),
 ]

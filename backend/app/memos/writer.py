@@ -51,9 +51,12 @@ class TemplateWriter:
             out["executive"].append(S("The next-FY accounting-stress screen was withheld: {{risk.gate}}."))
         if h("covenant.max_net_leverage"):
             st = v("scen.downside.headroom_lev_state")
-            if st == "breach":
+            if st == "breach" and h("scen.downside.headroom_lev_shortfall"):
                 out["executive"].append(S("The downside case breaches the maximum net debt / EBITDA covenant of "
                                           "{{covenant.max_net_leverage}} by {{scen.downside.headroom_lev_shortfall}}."))
+            elif st == "breach":                   # breached by the agreement's definition: there is no ratio
+                out["executive"].append(S("The downside case breaches the maximum net debt / EBITDA covenant of "
+                                          "{{covenant.max_net_leverage}}: {{scen.downside.headroom_lev_policy}}."))
             elif st == "pass":
                 out["executive"].append(S("The maximum net debt / EBITDA covenant of {{covenant.max_net_leverage}} holds in "
                                           "the downside case, with headroom of {{scen.downside.headroom_lev}}."))
@@ -166,7 +169,7 @@ class TemplateWriter:
                                        "framing"))
             out["stress"].append(S("Proceeds spent on capex or acquisitions are assumed to add no EBITDA.", "framing"))
         elif h("scen.unavailable"):
-            out["stress"].append(S("Stress cases could not be run because these inputs are missing: {{scen.unavailable}}."))
+            out["stress"].append(S("Stress cases could not be run because {{scen.unavailable}}."))
 
         # covenant headroom: base, downside and the analyst's own case, one sentence each, by the engine's state
         any_cov = False
@@ -183,8 +186,11 @@ class TemplateWriter:
                 any_cov = True
                 lead = ("Against " + what + " of {{" + cov + "}}, in " + names[case]) if first else "In " + names[case]
                 first = False
-                if st == "breach":
+                if st == "breach" and h(f"scen.{case}.{item}_shortfall"):
                     out["covenants"].append(S(lead + " the covenant is breached by {{scen." + case + "." + item + "_shortfall}}."))
+                elif st == "breach":                     # the agreement defines it as breached; there is no ratio
+                    out["covenants"].append(S(lead + " the covenant is breached: {{scen." + case + "." + item +
+                                              "_policy}}."))
                 elif st == "pass":
                     out["covenants"].append(S(lead + " headroom is {{scen." + case + "." + item + "}}."))
                 else:

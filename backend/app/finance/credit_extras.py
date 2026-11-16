@@ -58,8 +58,8 @@ def maturity_wall(supplemental: dict, vals: dict, fcf: Optional[float], scale: f
     out = {"available": True, "version": EXTRAS_VERSION, "buckets": buckets, "schedule_total": total,
            "long_term_debt_balance": None, "short_term_borrowings": stb, "cash": cash, "fcf": fcf,
            "within_two_years_share": None, "coverage_12m": None, "runway_through": None, "notes": []}
-    ltd = sum(v for v in (vals.get("long_term_debt"), vals.get("current_maturities_ltd")) if v is not None) or None
-    out["long_term_debt_balance"] = ltd
+    parts = [v for v in (vals.get("long_term_debt"), vals.get("current_maturities_ltd")) if v is not None]
+    out["long_term_debt_balance"] = sum(parts) if parts else None       # a reported 0 is 0, not unavailable
     if buckets[1]["value"] is not None and y1 is not None and total > 0:
         out["within_two_years_share"] = (y1 + buckets[1]["value"]) / total
     if buckets[5]["value"] is None:
