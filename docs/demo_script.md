@@ -48,7 +48,7 @@ debt/EBITDA > 5x, negative operating cash flow, in the next fiscal year. The UI 
 not set to 0; the score is withheld when the company is outside the population or more than 12 of 31 inputs are
 missing; uploaded figures with low confidence must be reviewed before analysis.
 
-**What does AI do versus Python?** The network learns a risk function from 1,626 training company-years; Python
+**What does AI do versus Python?** The network learns a risk function from 1,219 labelled training company-years; Python
 computes every ratio and scenario (reconciled to Excel to 1e-9); the language model only arranges sentences around
 numbered references, and a validator rejects any figure it cannot trace.
 
@@ -71,6 +71,6 @@ comparisons; the three sample issuers were also reconciled line by line against 
 found and fixed are in `docs/defects.md`.
 
 **Why does the neural screen use different D&A for United Rentals than the ratios?** The network was trained and
-evaluated on the v1.0 input definitions across 1,626 company-years. Feeding it corrected definitions for three
+evaluated on the v1.0 input definitions. Feeding it corrected definitions for three
 companies would score them on inputs it never saw. The credit ratios use the corrected figures; the screen keeps
 its training basis until a documented retrain.

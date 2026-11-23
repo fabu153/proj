@@ -15,8 +15,9 @@
 ## Data
 - SEC XBRL companyfacts, 600-company survivorship-aware universe; label `stress_v1` (next fiscal year).
 - Population: revenue ≥ USD 50m, scorable, ≥ 4 of 7 critical facts.
-- Splits by filing date with purge — train 1626 rows (2009-11-25 → 2018-12-20),
-  validation 497, test 1307 (2021-01-07 → 2025-11-21).
+- Splits by filing date with purge — train 1,626 company-years in the window (2009-11-25 → 2018-12-20),
+  validation 497, test 1,307 (2021-01-07 → 2025-11-21). Of these, 1,219 / 389 / 1,086 have an observable
+  next-year label; only labelled rows are used for fitting, selection and evaluation.
 
 ## Results on the frozen test window (evaluated once)
 | model | test PR-AUC | 95% CI | ROC-AUC | Brier |
