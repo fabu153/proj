@@ -19,7 +19,10 @@
   validation 497, test 1,307 (2021-01-07 → 2025-11-21). Of these, 1,219 / 389 / 1,086 have an observable
   next-year label; only labelled rows are used for fitting, selection and evaluation.
 
-## Results on the frozen test window (evaluated once)
+## Results on the frozen test window
+The window was frozen before training and this comparison was run once; later research experiments also inspected
+the window, so their results there are exploratory.
+
 | model | test PR-AUC | 95% CI | ROC-AUC | Brier |
 |---|---|---|---|---|
 | MLP ensemble (deployed) | 0.805 | 0.752–0.853 | 0.904 | 0.1134 |

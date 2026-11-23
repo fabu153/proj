@@ -13,6 +13,12 @@
    "stopped_filers_stressed_in_t": 0.3674418604651163,
    "labelled_rows_stressed_in_t": 0.21638381201044388
   },
+  "labelled_rows_outside_split": {
+   "labelled_rows_excluded": 370,
+   "purged_train_window_label_public_after_val_start": 145,
+   "purged_val_window_label_public_after_test_start": 186,
+   "filed_after_test_window": 39
+  },
   "sensitivity_deployed_network": {
    "frozen_test": {
     "rows": 1086,

@@ -30,6 +30,15 @@ No local setup? Open `notebooks/reproduce_results.ipynb` in Google Colab (File �
 | Missing-label breakdown and non-filer sensitivity; expected-loss (probability × debt) ranking | `training/ml/supplementary_checks.py` | frozen network, walk-forward predictions |
 | Watch-list and recurrent-network research | `training/ml/onset_watchlist.py`, `experiment_onset_gru.py` | `training/experiments/` |
 
+Where each item of the manuscript comes from:
+
+| Manuscript item | File |
+|---|---|
+| Tables 1–5, Annexes C–E, abstract and in-text numbers | `training/experiments/results_summary_v1/numbers.json` and `tables/` |
+| Figures 1–4 | `training/experiments/results_summary_v1/figures/` |
+| Missing-label breakdown, purge counts, non-filer sensitivity, expected-loss ranking | `training/experiments/supplementary_v1/results.json` |
+| Walk-forward run time | `training/experiments/walk_forward_v1/results.json` (`provenance.minutes`) |
+
 Outputs: `training/experiments/results_summary_v1/` holds `numbers.json`, `tables/*.md` and `figures/*.png`. CI
 re-computes it on every push and fails if any number changes.
 
@@ -66,7 +75,7 @@ own calendar frames on **99.4–99.7%** of 2,560 tag-consistent comparisons; 8.9
 which is why the panel keeps the **original** vintage.
 
 Model population (decided at the Week-2 gate, before fitting): year-t revenue ≥ USD 50m, scorable, ≥ 4/7 critical
-facts. Split by filing date with purge: train 2009–2018, validation 2019–2020, **test 2021–2025 (evaluated once)**.
+facts. Split by filing date with purge: train 2009–2018, validation 2019–2020, **test 2021–2025** (frozen before training; the original model comparison was run once, and later research experiments also inspected it, so only that comparison is strictly confirmatory).
 
 | next-FY stress (test prevalence 29.7%) | PR-AUC (95% CI, company bootstrap) | ROC-AUC |
 |---|---|---|

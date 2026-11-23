@@ -39,7 +39,7 @@ baselines. Result: MLP 0.805 vs XGBoost 0.825 test PR-AUC; paired company-bootst
 **How do you prevent look-ahead?** Features are dated by the 10-K filing date; labels come only from year t+1 and
 carry their own publication date; the split is by filing date (train 2009–18, validation 2019–20, test 2021–25) with a
 purge that drops training labels published after validation starts; the original reported vintage is used (8.9% of
-values were later restated). Test was evaluated once.
+values were later restated). The test window was frozen before training and the original comparison was run once; later research experiments also looked at it, so only that first comparison is strictly confirmatory.
 
 **Is this a real PD?** No. It is a pre-registered accounting-stress proxy: at least two of EBIT cover < 1.5x,
 debt/EBITDA > 5x, negative operating cash flow, in the next fiscal year. The UI and memo never say "default".

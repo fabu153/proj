@@ -2,7 +2,8 @@
 
     python -m training.ml.supplementary_checks         # ~20 s, CPU only
 
-1. Missing labels: why lending-population rows have no observable next-year outcome (insufficient t+1 data,
+1. Missing labels: which labelled rows the frozen split leaves out (purge or filed after the test window), why
+   lending-population rows have no observable next-year outcome (insufficient t+1 data,
    t+1 failed hard checks, t+1 not yet reported, firm stopped filing), and a sensitivity analysis that re-scores
    test-window firms that never filed again as STRESSED (all of them, or only those already weak in year t),
    using the frozen deployed network. Distressed exits never receive a label, so this bounds the selection bias.
@@ -72,7 +73,16 @@ def missing_labels() -> dict:
         y = df.loc[rows, TARGET].fillna(1).astype(int)
         sens[name] = {"added_rows": int(extra.sum()), "pr_auc": float(average_precision_score(y, p[rows])),
                       "mean_network_score_of_added": float(p[extra].mean())}
-    return {"breakdown": breakdown, "sensitivity_deployed_network": sens}
+    # labelled rows left out of the frozen split: purged at a window boundary, or filed after the test window
+    from training.ml.splits import SplitSpec, assign_splits
+    split = assign_splits(df, SplitSpec(**sp))
+    ex = lab & (split == "excluded")
+    v0, t0, t1 = (pd.Timestamp(sp[k]) for k in ("val_start", "test_start", "test_end"))
+    excluded = {"labelled_rows_excluded": int(ex.sum()),
+                "purged_train_window_label_public_after_val_start": int((ex & (asof < v0)).sum()),
+                "purged_val_window_label_public_after_test_start": int((ex & (asof >= v0) & (asof < t0)).sum()),
+                "filed_after_test_window": int((ex & (asof >= t1)).sum())}
+    return {"breakdown": breakdown, "labelled_rows_outside_split": excluded, "sensitivity_deployed_network": sens}
 
 
 def expected_loss_ranking() -> dict:
