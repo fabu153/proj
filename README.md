@@ -27,6 +27,7 @@ No local setup? Open `notebooks/reproduce_results.ipynb` in Google Colab (File �
 | Walk-forward validation 2016–25 | `training/ml/walk_forward.py` | `configs/experiment_walk_forward_v1.yaml` |
 | Economic value at fixed review budgets | `training/ml/economic_value.py` | `configs/economic_value_v1.yaml` |
 | Robustness by year, sector, size, status | `training/ml/robustness.py` | walk-forward predictions |
+| Missing-label breakdown and non-filer sensitivity; expected-loss (probability × debt) ranking | `training/ml/supplementary_checks.py` | frozen network, walk-forward predictions |
 | Watch-list and recurrent-network research | `training/ml/onset_watchlist.py`, `experiment_onset_gru.py` | `training/experiments/` |
 
 Outputs: `training/experiments/results_summary_v1/` holds `numbers.json`, `tables/*.md` and `figures/*.png`. CI

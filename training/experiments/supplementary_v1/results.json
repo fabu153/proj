@@ -1,0 +1,148 @@
+{
+ "experiment": "supplementary_v1",
+ "missing_labels": {
+  "breakdown": {
+   "lending_rows": 4435,
+   "labelled": 3064,
+   "unlabelled": 1371,
+   "insufficient_t+1_data": 824,
+   "t+1_failed_hard_checks": 80,
+   "t+1_not_yet_reported": 229,
+   "no_t+1_before_data_end": 238,
+   "of_which_firm_never_files_again": 215,
+   "stopped_filers_stressed_in_t": 0.3674418604651163,
+   "labelled_rows_stressed_in_t": 0.21638381201044388
+  },
+  "sensitivity_deployed_network": {
+   "frozen_test": {
+    "rows": 1086,
+    "pr_auc": 0.8054597850314418
+   },
+   "stopped_filers_stressed_in_t_as_stressed": {
+    "added_rows": 31,
+    "pr_auc": 0.8271749011338889,
+    "mean_network_score_of_added": 0.7292964475612265
+   },
+   "stopped_filers_with_1plus_condition_as_stressed": {
+    "added_rows": 49,
+    "pr_auc": 0.8279625870909715,
+    "mean_network_score_of_added": 0.6272706074346832
+   },
+   "all_stopped_filers_as_stressed": {
+    "added_rows": 78,
+    "pr_auc": 0.8066629112110619,
+    "mean_network_score_of_added": 0.42459489205895407
+   }
+  }
+ },
+ "expected_loss_ranking_walk_forward": {
+  "mlp": {
+   "10%": {
+    "reviews": 201,
+    "caught": 179,
+    "stressed_debt_flagged": 0.16483260436915032
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 324,
+    "stressed_debt_flagged": 0.3935485361642961
+   }
+  },
+  "logistic": {
+   "10%": {
+    "reviews": 201,
+    "caught": 184,
+    "stressed_debt_flagged": 0.1563904163158483
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 325,
+    "stressed_debt_flagged": 0.3980671611879082
+   }
+  },
+  "xgboost": {
+   "10%": {
+    "reviews": 201,
+    "caught": 182,
+    "stressed_debt_flagged": 0.20282868116211755
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 326,
+    "stressed_debt_flagged": 0.4869176941170445
+   }
+  },
+  "rule_score": {
+   "10%": {
+    "reviews": 201,
+    "caught": 166,
+    "stressed_debt_flagged": 0.21241677875692117
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 310,
+    "stressed_debt_flagged": 0.5773493264562296
+   }
+  },
+  "mlp_x_debt": {
+   "10%": {
+    "reviews": 201,
+    "caught": 106,
+    "stressed_debt_flagged": 0.6998607309858283
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 177,
+    "stressed_debt_flagged": 0.8453038288766035
+   }
+  },
+  "logistic_x_debt": {
+   "10%": {
+    "reviews": 201,
+    "caught": 108,
+    "stressed_debt_flagged": 0.6839763030686783
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 184,
+    "stressed_debt_flagged": 0.8363626659118887
+   }
+  },
+  "xgboost_x_debt": {
+   "10%": {
+    "reviews": 201,
+    "caught": 109,
+    "stressed_debt_flagged": 0.6851684840807608
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 180,
+    "stressed_debt_flagged": 0.8247435960015556
+   }
+  },
+  "rule_score_x_debt": {
+   "10%": {
+    "reviews": 201,
+    "caught": 102,
+    "stressed_debt_flagged": 0.6811803432425851
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 177,
+    "stressed_debt_flagged": 0.8109886534164468
+   }
+  },
+  "debt_only": {
+   "10%": {
+    "reviews": 201,
+    "caught": 30,
+    "stressed_debt_flagged": 0.42795738103800096
+   },
+   "20%": {
+    "reviews": 405,
+    "caught": 90,
+    "stressed_debt_flagged": 0.7065483805436842
+   }
+  }
+ }
+}

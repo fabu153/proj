@@ -11,6 +11,9 @@ No app, model, calibration, replay or release-manifest file changed.
   alarms, debt captured and net value for a lender reviewing 5–30% of its book each year, with a sensitivity grid.
 - **Robustness** (`training/ml/robustness.py`): results by year, sector, size and status in the filing year, and
   calibration by year.
+- **Supplementary checks** (`training/ml/supplementary_checks.py`): why 1,371 lending rows have no observable
+  label, a sensitivity analysis scoring firms that stopped filing as stressed, and expected-loss ranking
+  (probability × reported debt) against probability ranking and debt size alone.
 - **Results summary** (`training/ml/results_summary.py`): every headline number with company-clustered intervals,
   results tables and figures, written to `training/experiments/results_summary_v1/`.
 - **Reproduction**: `Makefile` (`make results`, `make experiments`, `make verify-training`), exact versions in

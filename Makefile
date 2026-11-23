@@ -23,6 +23,7 @@ experiments:
 	$(PY) -m training.ml.economic_value
 	$(PY) -m training.ml.robustness
 	$(PY) -m training.ml.onset_watchlist
+	$(PY) -m training.ml.supplementary_checks
 	$(PY) -m training.ml.results_summary
 
 verify-training:
