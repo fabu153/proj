@@ -18,6 +18,10 @@ jobs:
       - run: pip install -r requirements-ml.txt
       - name: Unit + integration tests
         run: python -m pytest -q
+      - name: Results summary reproduces from committed experiment results
+        run: |
+          python -m training.ml.results_summary
+          git diff --exit-code -- training/experiments/results_summary_v1/numbers.json
       - name: Docker image builds
         run: docker build -t creditlens-api .
 

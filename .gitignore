@@ -19,3 +19,4 @@ node_modules/
 # release media: the mp4 is committed, the raw recording is not
 release/*.webm
 release/_video/
+

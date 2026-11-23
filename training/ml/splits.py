@@ -45,3 +45,19 @@ def audit_splits(df: pd.DataFrame, split: pd.Series) -> dict:
                   "label_available_max": str(d["label_available_date"].max())}
     out["excluded_rows"] = int((split == "excluded").sum())
     return out
+
+
+def walk_forward_masks(df: pd.DataFrame, year: int, val_years: int) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Expanding-window fold for test year `year` (walk_forward_v1).
+
+    train: filed before the validation window AND label public before it;
+    val:   filed in [year - val_years, year) AND label public before the test year;
+    test:  filed in `year`, with an observed label (its publication date may be later: it is only scored).
+    """
+    asof, lab = pd.to_datetime(df["as_of_date"]), pd.to_datetime(df["label_available_date"])
+    v0, t0, t1 = (pd.Timestamp(f"{year - val_years}-01-01"), pd.Timestamp(f"{year}-01-01"),
+                  pd.Timestamp(f"{year + 1}-01-01"))
+    train = (asof < v0) & (lab < v0)
+    val = (asof >= v0) & (asof < t0) & (lab < t0)
+    test = (asof >= t0) & (asof < t1) & lab.notna()
+    return train, val, test

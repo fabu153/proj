@@ -1,0 +1,20 @@
+# Walk-forward (rolling-origin, expanding-window) validation — FROZEN before fitting. Research only.
+# Re-runs the SAME modelling protocol (rows, features, preprocessing, grids, seeds, selection rule, Platt calibration)
+# once per test year, each time using only data that was public before that year. The deployed artifact is not
+# retrained or replaced; this measures how well the protocol generalises across ten different market years.
+experiment: walk_forward_v1
+base_config: configs/experiment_baselines_v1.yaml     # panel, row filters, preprocessing, logistic/XGBoost grids
+mlp_config: configs/experiment_mlp_v1.yaml            # MLP architecture, grid, seeds, early stopping
+target: label_next_fy
+
+test_years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]   # by filing year of year-t accounts
+validation_years: 2          # validation = the two filing years before the test year
+# fold for test year Y:
+#   train : filed before Y-2 and its label already public before Y-2
+#   val   : filed in [Y-2, Y) and its label public before Y
+#   test  : filed in [Y, Y+1) with an observed label
+# so nothing a model sees in training or selection was public after the start of the year it is tested on.
+
+models: [no_skill, rule_score, logistic, xgboost, mlp, altman_z2, ohlson_o]
+textbook_scores: training/experiments/classic_scores_v1/panel_scores.csv   # original coefficients, not refitted
+bootstrap: {resamples: 1000, cluster: cik, seed: 7}

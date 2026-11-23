@@ -240,11 +240,17 @@ def write_report(cfg, results, out: Path, prov):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/experiment_mlp_v1.yaml")
+    ap.add_argument("--out", default=None, help="results folder (default training/experiments/<experiment>)")
+    ap.add_argument("--artifact-dir", default=None, help="where to export the model (default backend/models/stress_mlp_v1); "
+                                                         "pass a scratch folder to verify the frozen artifact without overwriting it")
     args = ap.parse_args()
+    if args.artifact_dir:
+        global ARTIFACT
+        ARTIFACT = Path(args.artifact_dir)
     cfg = yaml.safe_load(Path(args.config).read_text())
     base_cfg = yaml.safe_load(Path(cfg["base_config"]).read_text())
     cfg["risk_bands"] = {k: list(v) for k, v in cfg["risk_bands"].items()}
-    out = Path("training/experiments") / cfg["experiment"]
+    out = Path(args.out) if args.out else Path("training/experiments") / cfg["experiment"]
     out.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(4)
 

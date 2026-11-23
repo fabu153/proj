@@ -1,0 +1,21 @@
+# Economic evaluation of a credit-monitoring screen — assumptions FROZEN before computing results.
+# Setting: a lender has one loan of equal size to every borrower in the screened population. Each year its credit
+# team can review only a fixed share of the book (the review budget). It reviews the borrowers the model ranks
+# riskiest. A review of a borrower that turns out to be stressed the next year allows early action (tighter
+# covenants, reduced commitment, collateral, sale of the loan) that avoids part of the expected loss.
+experiment: economic_value_v1
+budgets: [0.05, 0.10, 0.15, 0.20, 0.30]       # share of borrowers reviewed each filing year
+headline_budget: 0.10
+models: [rule_score, logistic, xgboost, mlp, ensemble_equal, altman_z2, ohlson_o]
+
+loss_model:                    # expected loss avoided per stressed borrower that is reviewed in time (USD m)
+  exposure_usd_m: 25           # illustrative loan size per borrower
+  pd_given_stress: 0.10        # probability that a next-year-stressed borrower defaults (assumption, see report)
+  lgd: 0.45                    # Basel II foundation IRB supervisory LGD for senior unsecured corporate claims
+  share_avoided_by_early_action: 0.50
+  # loss avoided per caught borrower = 25 x 0.10 x 0.45 x 0.50 = USD 0.5625 m
+review_cost_usd_m: 0.005       # cost of one analyst review (about a day of senior analyst time)
+sensitivity:
+  pd_given_stress: [0.05, 0.10, 0.20]
+  share_avoided_by_early_action: [0.25, 0.50, 0.75]
+bootstrap: {resamples: 1000, cluster: cik, seed: 7}

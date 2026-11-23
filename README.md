@@ -5,6 +5,33 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 > Decision support only. Outputs are an **indicative next-fiscal-year accounting-stress screen**,
 > not a probability of default, not a credit rating, and never a loan approval. Analyst review required.
 
+## Reproduce the results
+
+Every evaluation result — headline numbers, tables and figures — is computed by code from data committed here.
+
+```bash
+make setup             # exact library versions (requirements-repro.txt), CPU only, 2-4 min
+make results           # numbers, tables and figures -> training/experiments/results_summary_v1/ (~1 min)
+make experiments       # re-run walk-forward, economic value, robustness, textbook scores, watch-list (~10 min)
+make verify-training   # re-train baselines + deployed network in a scratch folder, check bit-identical (~5 min)
+make test              # automated tests
+make data              # rebuild the panel from SEC EDGAR (~15 min; SEC_USER_AGENT="Name email")
+```
+
+No local setup? Open `notebooks/reproduce_results.ipynb` in Google Colab (File → Open notebook → GitHub → `fabu153/proj`).
+
+| Result | Produced by | From |
+|---|---|---|
+| Data counts and chronological split | `training/ml/results_summary.py` | `training/data/panel_v1.csv`, `configs/experiment_baselines_v1.yaml` |
+| Frozen 2021–25 test, calibration | `training/ml/results_summary.py` | `training/experiments/{baselines_v1,mlp_v1,classic_scores_v1}` |
+| Walk-forward validation 2016–25 | `training/ml/walk_forward.py` | `configs/experiment_walk_forward_v1.yaml` |
+| Economic value at fixed review budgets | `training/ml/economic_value.py` | `configs/economic_value_v1.yaml` |
+| Robustness by year, sector, size, status | `training/ml/robustness.py` | walk-forward predictions |
+| Watch-list and recurrent-network research | `training/ml/onset_watchlist.py`, `experiment_onset_gru.py` | `training/experiments/` |
+
+Outputs: `training/experiments/results_summary_v1/` holds `numbers.json`, `tables/*.md` and `figures/*.png`. CI
+re-computes it on every push and fails if any number changes.
+
 ## Status
 
 | Week | Deliverable | State |
@@ -16,7 +43,8 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | 5 | Next.js analyst workspace (ledger, evidence rail, trends, neural screen, loan lab), Model X-Ray page, Excel reconciliation of 8 loan cases | ✅ |
 | 6 | Annual-report upload with page-cited extraction and review gate; evidence-checked credit memo; PDF export | ✅ |
 | 7 | Browser E2E tests, WCAG 2.1 AA scans, security hardening, test matrix, defect log | ✅ |
-| 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos, defence deck | ✅ |
+| 8 | Frozen v1.0.0 (checksummed), demo script, fallback video, sample memos | ✅ |
+| v1.7 | Walk-forward validation 2016–25; economic value at fixed review budgets; robustness by year, sector and size; results summary (numbers, tables, figures); `make` reproduction, Colab notebook, bit-identical re-training check | ✅ |
 | v1.6 | Peer percentiles; debt maturity wall and liquidity runway; Altman Z″ and Ohlson O as textbook benchmarks | ✅ |
 | v1.5 | Canonical onset statistics; watch-list threshold research; Experimental research in Model X-Ray | ✅ |
 | v1.4 | Search any U.S. public company (server-side SEC, five clear outcomes); fiscal-year columns by heading; negative-EBITDA stress; PASS / BREACH / NOT TESTABLE covenants; no outdated memo export | ✅ |
@@ -24,7 +52,7 @@ Evidence-linked credit analyst copilot — IE Master in Finance, AI in Finance c
 | v1.2 | Stage C Model X-Ray in three layers (what it learned, how it performed, where it fails) and Stage D Historical Model Replay on frozen held-out predictions | ✅ |
 | v1.1 | Stage A financial correctness (10-K reconciliation, refinancing, restricted cash, currency gating, review completeness) and Stage B workflow (start page, shared analysis snapshot, review summary, loading/stale states) | ✅ |
 
-**Release v1.6.0** — 323 automated tests + 20 browser tests, 343 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
+**Release v1.7.0** — 335 automated tests + 20 browser tests, 355 passed, 0 failed (`docs/test_matrix.md`; browser tests run against mocked SEC).
 Model artifacts unchanged since v1.0.0; see `CHANGELOG.md` for what changed and why.
 Demo: `docs/demo_script.md`, fallback video `release/creditlens_demo.mp4`, sample memos `docs/samples/`.
 
@@ -235,7 +263,7 @@ project has another name, add its URL to `CREDITLENS_CORS_ORIGINS` on Render.
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-ml.txt
-pytest -q                                        # 323 tests (+20 browser tests with E2E_BASE_URL)
+pytest -q                                        # 335 tests (+20 browser tests with E2E_BASE_URL)
 uvicorn backend.app.api.main:app --reload        # http://localhost:8000/docs
 cd frontend && npm install && npm run dev        # http://localhost:3000
 ```

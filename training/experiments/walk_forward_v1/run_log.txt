@@ -1,0 +1,30 @@
+fold 2016: train 522 (101) | val 182 (41) | test 151 (33)
+    mlp lr=0.0003,wd=0.01,pos_weight=none val PR-AUC 0.758
+    no_skill 0.219 rule_score 0.696 logistic 0.732 xgboost 0.718 mlp 0.681
+fold 2017: train 696 (145) | val 175 (39) | test 84 (19)
+    mlp lr=0.0003,wd=0.01,pos_weight=none val PR-AUC 0.777
+    no_skill 0.226 rule_score 0.595 logistic 0.695 xgboost 0.765 mlp 0.739
+fold 2018: train 854 (174) | val 121 (32) | test 125 (40)
+    mlp lr=0.001,wd=0.0001,pos_weight=none val PR-AUC 0.687
+    no_skill 0.320 rule_score 0.711 logistic 0.845 xgboost 0.760 mlp 0.846
+fold 2019: train 1007 (208) | val 118 (33) | test 359 (76)
+    mlp lr=0.001,wd=0.0001,pos_weight=none val PR-AUC 0.781
+    no_skill 0.212 rule_score 0.634 logistic 0.758 xgboost 0.732 mlp 0.715
+fold 2020: train 1098 (227) | val 307 (71) | test 216 (65)
+    mlp lr=0.001,wd=0.0001,pos_weight=none val PR-AUC 0.816
+    no_skill 0.301 rule_score 0.773 logistic 0.843 xgboost 0.837 mlp 0.853
+fold 2021: train 1219 (262) | val 389 (84) | test 244 (72)
+    mlp lr=0.0003,wd=0.0001,pos_weight=none val PR-AUC 0.782
+    no_skill 0.295 rule_score 0.642 logistic 0.787 xgboost 0.800 mlp 0.762
+fold 2022: train 1538 (324) | val 268 (89) | test 218 (75)
+    mlp lr=0.0003,wd=0.01,pos_weight=balanced val PR-AUC 0.828
+    no_skill 0.344 rule_score 0.724 logistic 0.800 xgboost 0.784 mlp 0.810
+fold 2023: train 1745 (375) | val 264 (87) | test 217 (62)
+    mlp lr=0.001,wd=0.01,pos_weight=none val PR-AUC 0.779
+    no_skill 0.286 rule_score 0.676 logistic 0.797 xgboost 0.799 mlp 0.797
+fold 2024: train 1982 (456) | val 237 (76) | test 194 (57)
+    mlp lr=0.0003,wd=0.01,pos_weight=balanced val PR-AUC 0.771
+    no_skill 0.294 rule_score 0.826 logistic 0.853 xgboost 0.891 mlp 0.876
+fold 2025: train 2192 (519) | val 233 (59) | test 213 (56)
+    mlp lr=0.001,wd=0.0001,pos_weight=balanced val PR-AUC 0.812
+    no_skill 0.263 rule_score 0.790 logistic 0.890 xgboost 0.900 mlp 0.899

@@ -198,9 +198,10 @@ def write_report(cfg, audit, all_results, out: Path, provenance: dict):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/experiment_baselines_v1.yaml")
+    ap.add_argument("--out", default=None, help="results folder (default training/experiments/<experiment>)")
     args = ap.parse_args()
     cfg = yaml.safe_load(Path(args.config).read_text())
-    out = Path("training/experiments") / cfg["experiment"]
+    out = Path(args.out) if args.out else Path("training/experiments") / cfg["experiment"]
     out.mkdir(parents=True, exist_ok=True)
 
     df = load_dataset(cfg)

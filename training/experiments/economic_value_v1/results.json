@@ -1,0 +1,2071 @@
+{
+ "experiment": "economic_value_v1",
+ "assumptions": {
+  "experiment": "economic_value_v1",
+  "budgets": [
+   0.05,
+   0.1,
+   0.15,
+   0.2,
+   0.3
+  ],
+  "headline_budget": 0.1,
+  "models": [
+   "rule_score",
+   "logistic",
+   "xgboost",
+   "mlp",
+   "ensemble_equal",
+   "altman_z2",
+   "ohlson_o"
+  ],
+  "loss_model": {
+   "exposure_usd_m": 25,
+   "pd_given_stress": 0.1,
+   "lgd": 0.45,
+   "share_avoided_by_early_action": 0.5
+  },
+  "review_cost_usd_m": 0.005,
+  "sensitivity": {
+   "pd_given_stress": [
+    0.05,
+    0.1,
+    0.2
+   ],
+   "share_avoided_by_early_action": [
+    0.25,
+    0.5,
+    0.75
+   ]
+  },
+  "bootstrap": {
+   "resamples": 1000,
+   "cluster": "cik",
+   "seed": 7
+  }
+ },
+ "walk_forward_2016_2025": {
+  "all_borrowers": {
+   "rows": 2021,
+   "stressed": 555,
+   "years": 10,
+   "prevalence": 0.27461652647204354,
+   "stressed_debt_usd_bn": 806.4085824690001,
+   "loss_avoided_per_catch_usd_m": 0.5625,
+   "review_cost_usd_m": 0.005,
+   "budgets": {
+    "5%": {
+     "rule_score": {
+      "reviews": 102,
+      "caught": 90,
+      "false_alarms": 12,
+      "missed": 465,
+      "precision": 0.8823529411764706,
+      "recall": 0.16216216216216217,
+      "lift_vs_random": 3.2130365659777422,
+      "debt_flagged_share": 0.10029564194662965,
+      "net_value_usd_m_per_year": 5.0115,
+      "value_over_random_usd_m_per_year": 3.4868876793666503
+     },
+     "logistic": {
+      "reviews": 102,
+      "caught": 98,
+      "false_alarms": 4,
+      "missed": 457,
+      "precision": 0.9607843137254902,
+      "recall": 0.17657657657657658,
+      "lift_vs_random": 3.4986398162868753,
+      "debt_flagged_share": 0.06736029786003445,
+      "net_value_usd_m_per_year": 5.4615,
+      "value_over_random_usd_m_per_year": 3.93688767936665
+     },
+     "xgboost": {
+      "reviews": 102,
+      "caught": 94,
+      "false_alarms": 8,
+      "missed": 461,
+      "precision": 0.9215686274509803,
+      "recall": 0.16936936936936936,
+      "lift_vs_random": 3.3558381911323085,
+      "debt_flagged_share": 0.06386424868187683,
+      "net_value_usd_m_per_year": 5.2365,
+      "value_over_random_usd_m_per_year": 3.71188767936665
+     },
+     "mlp": {
+      "reviews": 102,
+      "caught": 96,
+      "false_alarms": 6,
+      "missed": 459,
+      "precision": 0.9411764705882353,
+      "recall": 0.17297297297297298,
+      "lift_vs_random": 3.427239003709592,
+      "debt_flagged_share": 0.06367859600871005,
+      "net_value_usd_m_per_year": 5.349,
+      "value_over_random_usd_m_per_year": 3.8243876793666503
+     },
+     "ensemble_equal": {
+      "reviews": 102,
+      "caught": 97,
+      "false_alarms": 5,
+      "missed": 458,
+      "precision": 0.9509803921568627,
+      "recall": 0.17477477477477477,
+      "lift_vs_random": 3.462939409998233,
+      "debt_flagged_share": 0.07927693279784455,
+      "net_value_usd_m_per_year": 5.4052500000000006,
+      "value_over_random_usd_m_per_year": 3.88063767936665
+     },
+     "altman_z2": {
+      "reviews": 102,
+      "caught": 87,
+      "false_alarms": 15,
+      "missed": 468,
+      "precision": 0.8529411764705882,
+      "recall": 0.15675675675675677,
+      "lift_vs_random": 3.1059353471118176,
+      "debt_flagged_share": 0.0543256296527376,
+      "net_value_usd_m_per_year": 4.8427500000000006,
+      "value_over_random_usd_m_per_year": 3.31813767936665
+     },
+     "ohlson_o": {
+      "reviews": 102,
+      "caught": 77,
+      "false_alarms": 25,
+      "missed": 478,
+      "precision": 0.7549019607843137,
+      "recall": 0.13873873873873874,
+      "lift_vs_random": 2.7489312842254017,
+      "debt_flagged_share": 0.06599438551988107,
+      "net_value_usd_m_per_year": 4.2802500000000006,
+      "value_over_random_usd_m_per_year": 2.75563767936665
+     },
+     "_random_expected_caught": 28.010885700148442
+    },
+    "10%": {
+     "rule_score": {
+      "reviews": 201,
+      "caught": 166,
+      "false_alarms": 35,
+      "missed": 389,
+      "precision": 0.8258706467661692,
+      "recall": 0.2990990990990991,
+      "lift_vs_random": 3.0073595984043746,
+      "debt_flagged_share": 0.21241677875692117,
+      "net_value_usd_m_per_year": 9.237,
+      "value_over_random_usd_m_per_year": 6.232616897575458
+     },
+     "logistic": {
+      "reviews": 201,
+      "caught": 184,
+      "false_alarms": 17,
+      "missed": 371,
+      "precision": 0.9154228855721394,
+      "recall": 0.33153153153153153,
+      "lift_vs_random": 3.3334588319662948,
+      "debt_flagged_share": 0.1563904163158483,
+      "net_value_usd_m_per_year": 10.249500000000001,
+      "value_over_random_usd_m_per_year": 7.245116897575457
+     },
+     "xgboost": {
+      "reviews": 201,
+      "caught": 182,
+      "false_alarms": 19,
+      "missed": 373,
+      "precision": 0.9054726368159204,
+      "recall": 0.3279279279279279,
+      "lift_vs_random": 3.297225583792748,
+      "debt_flagged_share": 0.20282868116211755,
+      "net_value_usd_m_per_year": 10.137,
+      "value_over_random_usd_m_per_year": 7.132616897575458
+     },
+     "mlp": {
+      "reviews": 201,
+      "caught": 179,
+      "false_alarms": 22,
+      "missed": 376,
+      "precision": 0.8905472636815921,
+      "recall": 0.3225225225225225,
+      "lift_vs_random": 3.2428757115324283,
+      "debt_flagged_share": 0.16483260436915032,
+      "net_value_usd_m_per_year": 9.968250000000001,
+      "value_over_random_usd_m_per_year": 6.963866897575459
+     },
+     "ensemble_equal": {
+      "reviews": 201,
+      "caught": 184,
+      "false_alarms": 17,
+      "missed": 371,
+      "precision": 0.9154228855721394,
+      "recall": 0.33153153153153153,
+      "lift_vs_random": 3.3334588319662948,
+      "debt_flagged_share": 0.15925953633180367,
+      "net_value_usd_m_per_year": 10.249500000000001,
+      "value_over_random_usd_m_per_year": 7.245116897575457
+     },
+     "altman_z2": {
+      "reviews": 201,
+      "caught": 156,
+      "false_alarms": 45,
+      "missed": 399,
+      "precision": 0.7761194029850746,
+      "recall": 0.2810810810810811,
+      "lift_vs_random": 2.826193357536641,
+      "debt_flagged_share": 0.13682222552020204,
+      "net_value_usd_m_per_year": 8.6745,
+      "value_over_random_usd_m_per_year": 5.670116897575458
+     },
+     "ohlson_o": {
+      "reviews": 201,
+      "caught": 145,
+      "false_alarms": 56,
+      "missed": 410,
+      "precision": 0.7213930348258707,
+      "recall": 0.26126126126126126,
+      "lift_vs_random": 2.6269104925821347,
+      "debt_flagged_share": 0.13478448562912998,
+      "net_value_usd_m_per_year": 8.05575,
+      "value_over_random_usd_m_per_year": 5.051366897575457
+     },
+     "_random_expected_caught": 55.19792182088075
+    },
+    "15%": {
+     "rule_score": {
+      "reviews": 305,
+      "caught": 237,
+      "false_alarms": 68,
+      "missed": 318,
+      "precision": 0.7770491803278688,
+      "recall": 0.42702702702702705,
+      "lift_vs_random": 2.829579087284005,
+      "debt_flagged_share": 0.2787996760508719,
+      "net_value_usd_m_per_year": 13.178749999999999,
+      "value_over_random_usd_m_per_year": 8.619860217714002
+     },
+     "logistic": {
+      "reviews": 305,
+      "caught": 258,
+      "false_alarms": 47,
+      "missed": 297,
+      "precision": 0.8459016393442623,
+      "recall": 0.4648648648648649,
+      "lift_vs_random": 3.080301284891449,
+      "debt_flagged_share": 0.2643647229959824,
+      "net_value_usd_m_per_year": 14.36,
+      "value_over_random_usd_m_per_year": 9.801110217714003
+     },
+     "xgboost": {
+      "reviews": 305,
+      "caught": 261,
+      "false_alarms": 44,
+      "missed": 294,
+      "precision": 0.8557377049180328,
+      "recall": 0.4702702702702703,
+      "lift_vs_random": 3.1161187416925125,
+      "debt_flagged_share": 0.2961151270226958,
+      "net_value_usd_m_per_year": 14.528749999999999,
+      "value_over_random_usd_m_per_year": 9.969860217714004
+     },
+     "mlp": {
+      "reviews": 305,
+      "caught": 259,
+      "false_alarms": 46,
+      "missed": 296,
+      "precision": 0.8491803278688524,
+      "recall": 0.4666666666666667,
+      "lift_vs_random": 3.0922404371584697,
+      "debt_flagged_share": 0.2980349844655071,
+      "net_value_usd_m_per_year": 14.41625,
+      "value_over_random_usd_m_per_year": 9.857360217714003
+     },
+     "ensemble_equal": {
+      "reviews": 305,
+      "caught": 264,
+      "false_alarms": 41,
+      "missed": 291,
+      "precision": 0.8655737704918033,
+      "recall": 0.4756756756756757,
+      "lift_vs_random": 3.1519361984935754,
+      "debt_flagged_share": 0.2847835235370009,
+      "net_value_usd_m_per_year": 14.6975,
+      "value_over_random_usd_m_per_year": 10.138610217714003
+     },
+     "altman_z2": {
+      "reviews": 305,
+      "caught": 221,
+      "false_alarms": 84,
+      "missed": 334,
+      "precision": 0.7245901639344262,
+      "recall": 0.3981981981981982,
+      "lift_vs_random": 2.6385526510116675,
+      "debt_flagged_share": 0.32419615964596965,
+      "net_value_usd_m_per_year": 12.278749999999999,
+      "value_over_random_usd_m_per_year": 7.719860217714003
+     },
+     "ohlson_o": {
+      "reviews": 305,
+      "caught": 200,
+      "false_alarms": 105,
+      "missed": 355,
+      "precision": 0.6557377049180327,
+      "recall": 0.36036036036036034,
+      "lift_vs_random": 2.3878304534042236,
+      "debt_flagged_share": 0.22984701247909306,
+      "net_value_usd_m_per_year": 11.0975,
+      "value_over_random_usd_m_per_year": 6.5386102177140035
+     },
+     "_random_expected_caught": 83.75804057397328
+    },
+    "20%": {
+     "rule_score": {
+      "reviews": 405,
+      "caught": 310,
+      "false_alarms": 95,
+      "missed": 245,
+      "precision": 0.7654320987654321,
+      "recall": 0.5585585585585585,
+      "lift_vs_random": 2.787276165053943,
+      "debt_flagged_share": 0.5773493264562296,
+      "net_value_usd_m_per_year": 17.235,
+      "value_over_random_usd_m_per_year": 11.181392256308758
+     },
+     "logistic": {
+      "reviews": 405,
+      "caught": 325,
+      "false_alarms": 80,
+      "missed": 230,
+      "precision": 0.8024691358024691,
+      "recall": 0.5855855855855856,
+      "lift_vs_random": 2.922144366588811,
+      "debt_flagged_share": 0.3980671611879082,
+      "net_value_usd_m_per_year": 18.07875,
+      "value_over_random_usd_m_per_year": 12.025142256308758
+     },
+     "xgboost": {
+      "reviews": 405,
+      "caught": 326,
+      "false_alarms": 79,
+      "missed": 229,
+      "precision": 0.8049382716049382,
+      "recall": 0.5873873873873874,
+      "lift_vs_random": 2.9311355800244687,
+      "debt_flagged_share": 0.4869176941170445,
+      "net_value_usd_m_per_year": 18.134999999999998,
+      "value_over_random_usd_m_per_year": 12.081392256308757
+     },
+     "mlp": {
+      "reviews": 405,
+      "caught": 324,
+      "false_alarms": 81,
+      "missed": 231,
+      "precision": 0.8,
+      "recall": 0.5837837837837838,
+      "lift_vs_random": 2.913153153153153,
+      "debt_flagged_share": 0.3935485361642961,
+      "net_value_usd_m_per_year": 18.0225,
+      "value_over_random_usd_m_per_year": 11.968892256308758
+     },
+     "ensemble_equal": {
+      "reviews": 405,
+      "caught": 326,
+      "false_alarms": 79,
+      "missed": 229,
+      "precision": 0.8049382716049382,
+      "recall": 0.5873873873873874,
+      "lift_vs_random": 2.9311355800244687,
+      "debt_flagged_share": 0.39195988864633735,
+      "net_value_usd_m_per_year": 18.134999999999998,
+      "value_over_random_usd_m_per_year": 12.081392256308757
+     },
+     "altman_z2": {
+      "reviews": 405,
+      "caught": 270,
+      "false_alarms": 135,
+      "missed": 285,
+      "precision": 0.6666666666666666,
+      "recall": 0.4864864864864865,
+      "lift_vs_random": 2.4276276276276274,
+      "debt_flagged_share": 0.49682650521319527,
+      "net_value_usd_m_per_year": 14.985,
+      "value_over_random_usd_m_per_year": 8.931392256308758
+     },
+     "ohlson_o": {
+      "reviews": 405,
+      "caught": 247,
+      "false_alarms": 158,
+      "missed": 308,
+      "precision": 0.6098765432098765,
+      "recall": 0.44504504504504505,
+      "lift_vs_random": 2.2208297186074963,
+      "debt_flagged_share": 0.32308274884712745,
+      "net_value_usd_m_per_year": 13.69125,
+      "value_over_random_usd_m_per_year": 7.637642256308757
+     },
+     "_random_expected_caught": 111.21969322117764
+    },
+    "30%": {
+     "rule_score": {
+      "reviews": 606,
+      "caught": 405,
+      "false_alarms": 201,
+      "missed": 150,
+      "precision": 0.6683168316831684,
+      "recall": 0.7297297297297297,
+      "lift_vs_random": 2.4336366069039337,
+      "debt_flagged_share": 0.7694379734020906,
+      "net_value_usd_m_per_year": 22.47825,
+      "value_over_random_usd_m_per_year": 13.420259153884214
+     },
+     "logistic": {
+      "reviews": 606,
+      "caught": 417,
+      "false_alarms": 189,
+      "missed": 138,
+      "precision": 0.6881188118811881,
+      "recall": 0.7513513513513513,
+      "lift_vs_random": 2.5057443582196055,
+      "debt_flagged_share": 0.6915249671073996,
+      "net_value_usd_m_per_year": 23.15325,
+      "value_over_random_usd_m_per_year": 14.095259153884214
+     },
+     "xgboost": {
+      "reviews": 606,
+      "caught": 422,
+      "false_alarms": 184,
+      "missed": 133,
+      "precision": 0.6963696369636964,
+      "recall": 0.7603603603603604,
+      "lift_vs_random": 2.5357892546011356,
+      "debt_flagged_share": 0.7348793244109368,
+      "net_value_usd_m_per_year": 23.4345,
+      "value_over_random_usd_m_per_year": 14.376509153884214
+     },
+     "mlp": {
+      "reviews": 606,
+      "caught": 420,
+      "false_alarms": 186,
+      "missed": 135,
+      "precision": 0.693069306930693,
+      "recall": 0.7567567567567568,
+      "lift_vs_random": 2.5237712960485235,
+      "debt_flagged_share": 0.7418868928233394,
+      "net_value_usd_m_per_year": 23.322,
+      "value_over_random_usd_m_per_year": 14.264009153884214
+     },
+     "ensemble_equal": {
+      "reviews": 606,
+      "caught": 426,
+      "false_alarms": 180,
+      "missed": 129,
+      "precision": 0.7029702970297029,
+      "recall": 0.7675675675675676,
+      "lift_vs_random": 2.55982517170636,
+      "debt_flagged_share": 0.760881510311291,
+      "net_value_usd_m_per_year": 23.6595,
+      "value_over_random_usd_m_per_year": 14.601509153884214
+     },
+     "altman_z2": {
+      "reviews": 606,
+      "caught": 325,
+      "false_alarms": 281,
+      "missed": 230,
+      "precision": 0.5363036303630363,
+      "recall": 0.5855855855855856,
+      "lift_vs_random": 1.952918264799453,
+      "debt_flagged_share": 0.6234291579657466,
+      "net_value_usd_m_per_year": 17.97825,
+      "value_over_random_usd_m_per_year": 8.920259153884214
+     },
+     "ohlson_o": {
+      "reviews": 606,
+      "caught": 314,
+      "false_alarms": 292,
+      "missed": 241,
+      "precision": 0.5181518151815182,
+      "recall": 0.5657657657657658,
+      "lift_vs_random": 1.886819492760087,
+      "debt_flagged_share": 0.4367290480660759,
+      "net_value_usd_m_per_year": 17.3595,
+      "value_over_random_usd_m_per_year": 8.301509153884215
+     },
+     "_random_expected_caught": 166.4176150420584
+    }
+   }
+  },
+  "healthy_borrowers_only": {
+   "rows": 1401,
+   "stressed": 135,
+   "years": 10,
+   "prevalence": 0.09635974304068523,
+   "stressed_debt_usd_bn": 222.143313764,
+   "loss_avoided_per_catch_usd_m": 0.5625,
+   "review_cost_usd_m": 0.005,
+   "budgets": {
+    "5%": {
+     "rule_score": {
+      "reviews": 72,
+      "caught": 15,
+      "false_alarms": 57,
+      "missed": 120,
+      "precision": 0.20833333333333334,
+      "recall": 0.1111111111111111,
+      "lift_vs_random": 2.162037037037037,
+      "debt_flagged_share": 0.19384138676236085,
+      "net_value_usd_m_per_year": 0.8077500000000001,
+      "value_over_random_usd_m_per_year": 0.4534930406852248
+     },
+     "logistic": {
+      "reviews": 72,
+      "caught": 23,
+      "false_alarms": 49,
+      "missed": 112,
+      "precision": 0.3194444444444444,
+      "recall": 0.17037037037037037,
+      "lift_vs_random": 3.315123456790123,
+      "debt_flagged_share": 0.16584112363219045,
+      "net_value_usd_m_per_year": 1.2577500000000001,
+      "value_over_random_usd_m_per_year": 0.9034930406852248
+     },
+     "xgboost": {
+      "reviews": 72,
+      "caught": 30,
+      "false_alarms": 42,
+      "missed": 105,
+      "precision": 0.4166666666666667,
+      "recall": 0.2222222222222222,
+      "lift_vs_random": 4.324074074074074,
+      "debt_flagged_share": 0.1286379137900074,
+      "net_value_usd_m_per_year": 1.6515,
+      "value_over_random_usd_m_per_year": 1.297243040685225
+     },
+     "mlp": {
+      "reviews": 72,
+      "caught": 29,
+      "false_alarms": 43,
+      "missed": 106,
+      "precision": 0.4027777777777778,
+      "recall": 0.21481481481481482,
+      "lift_vs_random": 4.1799382716049385,
+      "debt_flagged_share": 0.20913447258356707,
+      "net_value_usd_m_per_year": 1.59525,
+      "value_over_random_usd_m_per_year": 1.240993040685225
+     },
+     "ensemble_equal": {
+      "reviews": 72,
+      "caught": 32,
+      "false_alarms": 40,
+      "missed": 103,
+      "precision": 0.4444444444444444,
+      "recall": 0.23703703703703705,
+      "lift_vs_random": 4.612345679012345,
+      "debt_flagged_share": 0.1963856981459592,
+      "net_value_usd_m_per_year": 1.764,
+      "value_over_random_usd_m_per_year": 1.409743040685225
+     },
+     "altman_z2": {
+      "reviews": 72,
+      "caught": 21,
+      "false_alarms": 51,
+      "missed": 114,
+      "precision": 0.2916666666666667,
+      "recall": 0.15555555555555556,
+      "lift_vs_random": 3.026851851851852,
+      "debt_flagged_share": 0.12049786482179471,
+      "net_value_usd_m_per_year": 1.14525,
+      "value_over_random_usd_m_per_year": 0.7909930406852248
+     },
+     "ohlson_o": {
+      "reviews": 72,
+      "caught": 13,
+      "false_alarms": 59,
+      "missed": 122,
+      "precision": 0.18055555555555555,
+      "recall": 0.0962962962962963,
+      "lift_vs_random": 1.8737654320987653,
+      "debt_flagged_share": 0.035445743860493574,
+      "net_value_usd_m_per_year": 0.6952499999999999,
+      "value_over_random_usd_m_per_year": 0.3409930406852248
+     },
+     "_random_expected_caught": 6.937901498929337
+    },
+    "10%": {
+     "rule_score": {
+      "reviews": 139,
+      "caught": 38,
+      "false_alarms": 101,
+      "missed": 97,
+      "precision": 0.2733812949640288,
+      "recall": 0.2814814814814815,
+      "lift_vs_random": 2.8370903277378097,
+      "debt_flagged_share": 0.3490631976768786,
+      "net_value_usd_m_per_year": 2.068,
+      "value_over_random_usd_m_per_year": 1.3840872591006423
+     },
+     "logistic": {
+      "reviews": 139,
+      "caught": 42,
+      "false_alarms": 97,
+      "missed": 93,
+      "precision": 0.302158273381295,
+      "recall": 0.3111111111111111,
+      "lift_vs_random": 3.1357314148681055,
+      "debt_flagged_share": 0.2449341321152905,
+      "net_value_usd_m_per_year": 2.293,
+      "value_over_random_usd_m_per_year": 1.6090872591006424
+     },
+     "xgboost": {
+      "reviews": 139,
+      "caught": 48,
+      "false_alarms": 91,
+      "missed": 87,
+      "precision": 0.34532374100719426,
+      "recall": 0.35555555555555557,
+      "lift_vs_random": 3.583693045563549,
+      "debt_flagged_share": 0.3376630166086767,
+      "net_value_usd_m_per_year": 2.6305,
+      "value_over_random_usd_m_per_year": 1.9465872591006423
+     },
+     "mlp": {
+      "reviews": 139,
+      "caught": 47,
+      "false_alarms": 92,
+      "missed": 88,
+      "precision": 0.3381294964028777,
+      "recall": 0.34814814814814815,
+      "lift_vs_random": 3.5090327737809752,
+      "debt_flagged_share": 0.3601120199817782,
+      "net_value_usd_m_per_year": 2.57425,
+      "value_over_random_usd_m_per_year": 1.8903372591006424
+     },
+     "ensemble_equal": {
+      "reviews": 139,
+      "caught": 49,
+      "false_alarms": 90,
+      "missed": 86,
+      "precision": 0.35251798561151076,
+      "recall": 0.362962962962963,
+      "lift_vs_random": 3.6583533173461227,
+      "debt_flagged_share": 0.34882354607945737,
+      "net_value_usd_m_per_year": 2.68675,
+      "value_over_random_usd_m_per_year": 2.0028372591006423
+     },
+     "altman_z2": {
+      "reviews": 139,
+      "caught": 29,
+      "false_alarms": 110,
+      "missed": 106,
+      "precision": 0.20863309352517986,
+      "recall": 0.21481481481481482,
+      "lift_vs_random": 2.165147881694644,
+      "debt_flagged_share": 0.20792525874566886,
+      "net_value_usd_m_per_year": 1.56175,
+      "value_over_random_usd_m_per_year": 0.8778372591006424
+     },
+     "ohlson_o": {
+      "reviews": 139,
+      "caught": 24,
+      "false_alarms": 115,
+      "missed": 111,
+      "precision": 0.17266187050359713,
+      "recall": 0.17777777777777778,
+      "lift_vs_random": 1.7918465227817746,
+      "debt_flagged_share": 0.10062141385784248,
+      "net_value_usd_m_per_year": 1.2805,
+      "value_over_random_usd_m_per_year": 0.5965872591006424
+     },
+     "_random_expected_caught": 13.394004282655247
+    },
+    "15%": {
+     "rule_score": {
+      "reviews": 210,
+      "caught": 56,
+      "false_alarms": 154,
+      "missed": 79,
+      "precision": 0.26666666666666666,
+      "recall": 0.4148148148148148,
+      "lift_vs_random": 2.7674074074074073,
+      "debt_flagged_share": 0.4642454803053939,
+      "net_value_usd_m_per_year": 3.045,
+      "value_over_random_usd_m_per_year": 2.011750535331905
+     },
+     "logistic": {
+      "reviews": 210,
+      "caught": 56,
+      "false_alarms": 154,
+      "missed": 79,
+      "precision": 0.26666666666666666,
+      "recall": 0.4148148148148148,
+      "lift_vs_random": 2.7674074074074073,
+      "debt_flagged_share": 0.3965091361632255,
+      "net_value_usd_m_per_year": 3.045,
+      "value_over_random_usd_m_per_year": 2.011750535331905
+     },
+     "xgboost": {
+      "reviews": 210,
+      "caught": 61,
+      "false_alarms": 149,
+      "missed": 74,
+      "precision": 0.2904761904761905,
+      "recall": 0.45185185185185184,
+      "lift_vs_random": 3.0144973544973546,
+      "debt_flagged_share": 0.4342558898598425,
+      "net_value_usd_m_per_year": 3.3262500000000004,
+      "value_over_random_usd_m_per_year": 2.293000535331905
+     },
+     "mlp": {
+      "reviews": 210,
+      "caught": 60,
+      "false_alarms": 150,
+      "missed": 75,
+      "precision": 0.2857142857142857,
+      "recall": 0.4444444444444444,
+      "lift_vs_random": 2.9650793650793648,
+      "debt_flagged_share": 0.42310798025572577,
+      "net_value_usd_m_per_year": 3.2700000000000005,
+      "value_over_random_usd_m_per_year": 2.2367505353319053
+     },
+     "ensemble_equal": {
+      "reviews": 210,
+      "caught": 61,
+      "false_alarms": 149,
+      "missed": 74,
+      "precision": 0.2904761904761905,
+      "recall": 0.45185185185185184,
+      "lift_vs_random": 3.0144973544973546,
+      "debt_flagged_share": 0.4307122902949404,
+      "net_value_usd_m_per_year": 3.3262500000000004,
+      "value_over_random_usd_m_per_year": 2.293000535331905
+     },
+     "altman_z2": {
+      "reviews": 210,
+      "caught": 35,
+      "false_alarms": 175,
+      "missed": 100,
+      "precision": 0.16666666666666666,
+      "recall": 0.25925925925925924,
+      "lift_vs_random": 1.7296296296296294,
+      "debt_flagged_share": 0.24252703392295838,
+      "net_value_usd_m_per_year": 1.86375,
+      "value_over_random_usd_m_per_year": 0.8305005353319057
+     },
+     "ohlson_o": {
+      "reviews": 210,
+      "caught": 38,
+      "false_alarms": 172,
+      "missed": 97,
+      "precision": 0.18095238095238095,
+      "recall": 0.2814814814814815,
+      "lift_vs_random": 1.8778835978835977,
+      "debt_flagged_share": 0.21160808089834968,
+      "net_value_usd_m_per_year": 2.0324999999999998,
+      "value_over_random_usd_m_per_year": 0.9992505353319057
+     },
+     "_random_expected_caught": 20.235546038543898
+    },
+    "20%": {
+     "rule_score": {
+      "reviews": 280,
+      "caught": 61,
+      "false_alarms": 219,
+      "missed": 74,
+      "precision": 0.21785714285714286,
+      "recall": 0.45185185185185184,
+      "lift_vs_random": 2.260873015873016,
+      "debt_flagged_share": 0.5335966965943834,
+      "net_value_usd_m_per_year": 3.2912500000000002,
+      "value_over_random_usd_m_per_year": 1.9135840471092078
+     },
+     "logistic": {
+      "reviews": 280,
+      "caught": 70,
+      "false_alarms": 210,
+      "missed": 65,
+      "precision": 0.25,
+      "recall": 0.5185185185185185,
+      "lift_vs_random": 2.594444444444444,
+      "debt_flagged_share": 0.5208597570842168,
+      "net_value_usd_m_per_year": 3.7975000000000003,
+      "value_over_random_usd_m_per_year": 2.419834047109208
+     },
+     "xgboost": {
+      "reviews": 280,
+      "caught": 72,
+      "false_alarms": 208,
+      "missed": 63,
+      "precision": 0.2571428571428571,
+      "recall": 0.5333333333333333,
+      "lift_vs_random": 2.668571428571428,
+      "debt_flagged_share": 0.5561642585527232,
+      "net_value_usd_m_per_year": 3.91,
+      "value_over_random_usd_m_per_year": 2.5323340471092077
+     },
+     "mlp": {
+      "reviews": 280,
+      "caught": 68,
+      "false_alarms": 212,
+      "missed": 67,
+      "precision": 0.24285714285714285,
+      "recall": 0.5037037037037037,
+      "lift_vs_random": 2.52031746031746,
+      "debt_flagged_share": 0.47191829021409454,
+      "net_value_usd_m_per_year": 3.685,
+      "value_over_random_usd_m_per_year": 2.3073340471092076
+     },
+     "ensemble_equal": {
+      "reviews": 280,
+      "caught": 73,
+      "false_alarms": 207,
+      "missed": 62,
+      "precision": 0.26071428571428573,
+      "recall": 0.5407407407407407,
+      "lift_vs_random": 2.7056349206349206,
+      "debt_flagged_share": 0.5092461163795462,
+      "net_value_usd_m_per_year": 3.96625,
+      "value_over_random_usd_m_per_year": 2.5885840471092076
+     },
+     "altman_z2": {
+      "reviews": 280,
+      "caught": 48,
+      "false_alarms": 232,
+      "missed": 87,
+      "precision": 0.17142857142857143,
+      "recall": 0.35555555555555557,
+      "lift_vs_random": 1.779047619047619,
+      "debt_flagged_share": 0.3018296470729333,
+      "net_value_usd_m_per_year": 2.56,
+      "value_over_random_usd_m_per_year": 1.1823340471092076
+     },
+     "ohlson_o": {
+      "reviews": 280,
+      "caught": 49,
+      "false_alarms": 231,
+      "missed": 86,
+      "precision": 0.175,
+      "recall": 0.362962962962963,
+      "lift_vs_random": 1.8161111111111108,
+      "debt_flagged_share": 0.31611061153342707,
+      "net_value_usd_m_per_year": 2.61625,
+      "value_over_random_usd_m_per_year": 1.2385840471092078
+     },
+     "_random_expected_caught": 26.980728051391864
+    },
+    "30%": {
+     "rule_score": {
+      "reviews": 420,
+      "caught": 65,
+      "false_alarms": 355,
+      "missed": 70,
+      "precision": 0.15476190476190477,
+      "recall": 0.48148148148148145,
+      "lift_vs_random": 1.606084656084656,
+      "debt_flagged_share": 0.5764839113323492,
+      "net_value_usd_m_per_year": 3.44625,
+      "value_over_random_usd_m_per_year": 1.3797510706638114
+     },
+     "logistic": {
+      "reviews": 420,
+      "caught": 87,
+      "false_alarms": 333,
+      "missed": 48,
+      "precision": 0.20714285714285716,
+      "recall": 0.6444444444444445,
+      "lift_vs_random": 2.14968253968254,
+      "debt_flagged_share": 0.6228049697727206,
+      "net_value_usd_m_per_year": 4.68375,
+      "value_over_random_usd_m_per_year": 2.6172510706638112
+     },
+     "xgboost": {
+      "reviews": 420,
+      "caught": 90,
+      "false_alarms": 330,
+      "missed": 45,
+      "precision": 0.21428571428571427,
+      "recall": 0.6666666666666666,
+      "lift_vs_random": 2.2238095238095235,
+      "debt_flagged_share": 0.7043437549969436,
+      "net_value_usd_m_per_year": 4.8525,
+      "value_over_random_usd_m_per_year": 2.7860010706638114
+     },
+     "mlp": {
+      "reviews": 420,
+      "caught": 87,
+      "false_alarms": 333,
+      "missed": 48,
+      "precision": 0.20714285714285716,
+      "recall": 0.6444444444444445,
+      "lift_vs_random": 2.14968253968254,
+      "debt_flagged_share": 0.6464215257298063,
+      "net_value_usd_m_per_year": 4.68375,
+      "value_over_random_usd_m_per_year": 2.6172510706638112
+     },
+     "ensemble_equal": {
+      "reviews": 420,
+      "caught": 91,
+      "false_alarms": 329,
+      "missed": 44,
+      "precision": 0.21666666666666667,
+      "recall": 0.674074074074074,
+      "lift_vs_random": 2.2485185185185186,
+      "debt_flagged_share": 0.6882777166385189,
+      "net_value_usd_m_per_year": 4.9087499999999995,
+      "value_over_random_usd_m_per_year": 2.8422510706638113
+     },
+     "altman_z2": {
+      "reviews": 420,
+      "caught": 65,
+      "false_alarms": 355,
+      "missed": 70,
+      "precision": 0.15476190476190477,
+      "recall": 0.48148148148148145,
+      "lift_vs_random": 1.606084656084656,
+      "debt_flagged_share": 0.5022341205170248,
+      "net_value_usd_m_per_year": 3.44625,
+      "value_over_random_usd_m_per_year": 1.3797510706638114
+     },
+     "ohlson_o": {
+      "reviews": 420,
+      "caught": 62,
+      "false_alarms": 358,
+      "missed": 73,
+      "precision": 0.14761904761904762,
+      "recall": 0.45925925925925926,
+      "lift_vs_random": 1.531957671957672,
+      "debt_flagged_share": 0.3951355558477533,
+      "net_value_usd_m_per_year": 3.2775,
+      "value_over_random_usd_m_per_year": 1.2110010706638115
+     },
+     "_random_expected_caught": 40.471092077087796
+    }
+   }
+  },
+  "paired_at_headline_budget": {
+   "mlp_minus_logistic": {
+    "extra_caught": -5,
+    "ci95": [
+     -29.025,
+     18.0
+    ]
+   },
+   "mlp_minus_xgboost": {
+    "extra_caught": -3,
+    "ci95": [
+     -25.0,
+     17.0
+    ]
+   },
+   "mlp_minus_rule_score": {
+    "extra_caught": 13,
+    "ci95": [
+     -20.0,
+     48.0
+    ]
+   },
+   "mlp_minus_altman_z2": {
+    "extra_caught": 23,
+    "ci95": [
+     -9.0,
+     55.02499999999998
+    ]
+   },
+   "mlp_minus_ohlson_o": {
+    "extra_caught": 34,
+    "ci95": [
+     5.0,
+     66.0
+    ]
+   },
+   "ensemble_equal_minus_logistic": {
+    "extra_caught": 0,
+    "ci95": [
+     -13.024999999999999,
+     13.024999999999977
+    ]
+   }
+  },
+  "sensitivity_headline_budget": [
+   {
+    "pd_given_stress": 0.05,
+    "share_avoided": 0.25,
+    "loss_avoided_per_catch_usd_m": 0.140625,
+    "mlp_net_value_usd_m_per_year": 2.4166875,
+    "mlp_over_random_usd_m_per_year": 1.7409667243938647,
+    "altman_net_value_usd_m_per_year": 2.0932500000000003
+   },
+   {
+    "pd_given_stress": 0.05,
+    "share_avoided": 0.5,
+    "loss_avoided_per_catch_usd_m": 0.28125,
+    "mlp_net_value_usd_m_per_year": 4.933875,
+    "mlp_over_random_usd_m_per_year": 3.4819334487877294,
+    "altman_net_value_usd_m_per_year": 4.287
+   },
+   {
+    "pd_given_stress": 0.05,
+    "share_avoided": 0.75,
+    "loss_avoided_per_catch_usd_m": 0.421875,
+    "mlp_net_value_usd_m_per_year": 7.451062500000001,
+    "mlp_over_random_usd_m_per_year": 5.222900173181594,
+    "altman_net_value_usd_m_per_year": 6.4807500000000005
+   },
+   {
+    "pd_given_stress": 0.1,
+    "share_avoided": 0.25,
+    "loss_avoided_per_catch_usd_m": 0.28125,
+    "mlp_net_value_usd_m_per_year": 4.933875,
+    "mlp_over_random_usd_m_per_year": 3.4819334487877294,
+    "altman_net_value_usd_m_per_year": 4.287
+   },
+   {
+    "pd_given_stress": 0.1,
+    "share_avoided": 0.5,
+    "loss_avoided_per_catch_usd_m": 0.5625,
+    "mlp_net_value_usd_m_per_year": 9.968250000000001,
+    "mlp_over_random_usd_m_per_year": 6.963866897575459,
+    "altman_net_value_usd_m_per_year": 8.6745
+   },
+   {
+    "pd_given_stress": 0.1,
+    "share_avoided": 0.75,
+    "loss_avoided_per_catch_usd_m": 0.84375,
+    "mlp_net_value_usd_m_per_year": 15.002625,
+    "mlp_over_random_usd_m_per_year": 10.445800346363187,
+    "altman_net_value_usd_m_per_year": 13.062000000000001
+   },
+   {
+    "pd_given_stress": 0.2,
+    "share_avoided": 0.25,
+    "loss_avoided_per_catch_usd_m": 0.5625,
+    "mlp_net_value_usd_m_per_year": 9.968250000000001,
+    "mlp_over_random_usd_m_per_year": 6.963866897575459,
+    "altman_net_value_usd_m_per_year": 8.6745
+   },
+   {
+    "pd_given_stress": 0.2,
+    "share_avoided": 0.5,
+    "loss_avoided_per_catch_usd_m": 1.125,
+    "mlp_net_value_usd_m_per_year": 20.037,
+    "mlp_over_random_usd_m_per_year": 13.927733795150917,
+    "altman_net_value_usd_m_per_year": 17.4495
+   },
+   {
+    "pd_given_stress": 0.2,
+    "share_avoided": 0.75,
+    "loss_avoided_per_catch_usd_m": 1.6875,
+    "mlp_net_value_usd_m_per_year": 30.10575,
+    "mlp_over_random_usd_m_per_year": 20.891600692726374,
+    "altman_net_value_usd_m_per_year": 26.2245
+   }
+  ]
+ },
+ "frozen_test_2021_2025": {
+  "all_borrowers": {
+   "rows": 1086,
+   "stressed": 322,
+   "years": 5,
+   "prevalence": 0.2965009208103131,
+   "stressed_debt_usd_bn": 581.379024022,
+   "loss_avoided_per_catch_usd_m": 0.5625,
+   "review_cost_usd_m": 0.005,
+   "budgets": {
+    "5%": {
+     "rule_score": {
+      "reviews": 55,
+      "caught": 50,
+      "false_alarms": 5,
+      "missed": 272,
+      "precision": 0.9090909090909091,
+      "recall": 0.15527950310559005,
+      "lift_vs_random": 3.0660643704121964,
+      "debt_flagged_share": 0.10012074584376018,
+      "net_value_usd_m_per_year": 5.57,
+      "value_over_random_usd_m_per_year": 3.7904005524861875
+     },
+     "logistic": {
+      "reviews": 55,
+      "caught": 53,
+      "false_alarms": 2,
+      "missed": 269,
+      "precision": 0.9636363636363636,
+      "recall": 0.16459627329192547,
+      "lift_vs_random": 3.250028232636928,
+      "debt_flagged_share": 0.06677350708568217,
+      "net_value_usd_m_per_year": 5.907500000000001,
+      "value_over_random_usd_m_per_year": 4.127900552486187
+     },
+     "xgboost": {
+      "reviews": 55,
+      "caught": 51,
+      "false_alarms": 4,
+      "missed": 271,
+      "precision": 0.9272727272727272,
+      "recall": 0.15838509316770186,
+      "lift_vs_random": 3.12738565782044,
+      "debt_flagged_share": 0.058678584177314724,
+      "net_value_usd_m_per_year": 5.6825,
+      "value_over_random_usd_m_per_year": 3.9029005524861873
+     },
+     "mlp": {
+      "reviews": 55,
+      "caught": 51,
+      "false_alarms": 4,
+      "missed": 271,
+      "precision": 0.9272727272727272,
+      "recall": 0.15838509316770186,
+      "lift_vs_random": 3.12738565782044,
+      "debt_flagged_share": 0.04926123093652628,
+      "net_value_usd_m_per_year": 5.6825,
+      "value_over_random_usd_m_per_year": 3.9029005524861873
+     },
+     "ensemble_equal": {
+      "reviews": 55,
+      "caught": 55,
+      "false_alarms": 0,
+      "missed": 267,
+      "precision": 1.0,
+      "recall": 0.17080745341614906,
+      "lift_vs_random": 3.372670807453416,
+      "debt_flagged_share": 0.07378798206929575,
+      "net_value_usd_m_per_year": 6.1325,
+      "value_over_random_usd_m_per_year": 4.3529005524861875
+     },
+     "altman_z2": {
+      "reviews": 55,
+      "caught": 47,
+      "false_alarms": 8,
+      "missed": 275,
+      "precision": 0.8545454545454545,
+      "recall": 0.14596273291925466,
+      "lift_vs_random": 2.8821005081874644,
+      "debt_flagged_share": 0.05422505404805773,
+      "net_value_usd_m_per_year": 5.2325,
+      "value_over_random_usd_m_per_year": 3.452900552486187
+     },
+     "ohlson_o": {
+      "reviews": 55,
+      "caught": 43,
+      "false_alarms": 12,
+      "missed": 279,
+      "precision": 0.7818181818181819,
+      "recall": 0.13354037267080746,
+      "lift_vs_random": 2.636815358554489,
+      "debt_flagged_share": 0.0495528610590358,
+      "net_value_usd_m_per_year": 4.782500000000001,
+      "value_over_random_usd_m_per_year": 3.002900552486188
+     },
+     "_random_expected_caught": 16.307550644567222
+    },
+    "10%": {
+     "rule_score": {
+      "reviews": 108,
+      "caught": 90,
+      "false_alarms": 18,
+      "missed": 232,
+      "precision": 0.8333333333333334,
+      "recall": 0.2795031055900621,
+      "lift_vs_random": 2.81055900621118,
+      "debt_flagged_share": 0.21394620955277738,
+      "net_value_usd_m_per_year": 10.017,
+      "value_over_random_usd_m_per_year": 6.522513812154696
+     },
+     "logistic": {
+      "reviews": 108,
+      "caught": 100,
+      "false_alarms": 8,
+      "missed": 222,
+      "precision": 0.9259259259259259,
+      "recall": 0.3105590062111801,
+      "lift_vs_random": 3.1228433402346445,
+      "debt_flagged_share": 0.141134325336263,
+      "net_value_usd_m_per_year": 11.142,
+      "value_over_random_usd_m_per_year": 7.647513812154695
+     },
+     "xgboost": {
+      "reviews": 108,
+      "caught": 102,
+      "false_alarms": 6,
+      "missed": 220,
+      "precision": 0.9444444444444444,
+      "recall": 0.3167701863354037,
+      "lift_vs_random": 3.185300207039337,
+      "debt_flagged_share": 0.16629207911763533,
+      "net_value_usd_m_per_year": 11.367,
+      "value_over_random_usd_m_per_year": 7.872513812154695
+     },
+     "mlp": {
+      "reviews": 108,
+      "caught": 99,
+      "false_alarms": 9,
+      "missed": 223,
+      "precision": 0.9166666666666666,
+      "recall": 0.30745341614906835,
+      "lift_vs_random": 3.091614906832298,
+      "debt_flagged_share": 0.15425449322988719,
+      "net_value_usd_m_per_year": 11.0295,
+      "value_over_random_usd_m_per_year": 7.535013812154695
+     },
+     "ensemble_equal": {
+      "reviews": 108,
+      "caught": 101,
+      "false_alarms": 7,
+      "missed": 221,
+      "precision": 0.9351851851851852,
+      "recall": 0.3136645962732919,
+      "lift_vs_random": 3.154071773636991,
+      "debt_flagged_share": 0.13596400808056813,
+      "net_value_usd_m_per_year": 11.2545,
+      "value_over_random_usd_m_per_year": 7.760013812154694
+     },
+     "altman_z2": {
+      "reviews": 108,
+      "caught": 83,
+      "false_alarms": 25,
+      "missed": 239,
+      "precision": 0.7685185185185185,
+      "recall": 0.2577639751552795,
+      "lift_vs_random": 2.5919599723947546,
+      "debt_flagged_share": 0.11265117641657757,
+      "net_value_usd_m_per_year": 9.2295,
+      "value_over_random_usd_m_per_year": 5.735013812154696
+     },
+     "ohlson_o": {
+      "reviews": 108,
+      "caught": 82,
+      "false_alarms": 26,
+      "missed": 240,
+      "precision": 0.7592592592592593,
+      "recall": 0.2546583850931677,
+      "lift_vs_random": 2.5607315389924086,
+      "debt_flagged_share": 0.11145827840281339,
+      "net_value_usd_m_per_year": 9.117,
+      "value_over_random_usd_m_per_year": 5.622513812154695
+     },
+     "_random_expected_caught": 32.02209944751382
+    },
+    "15%": {
+     "rule_score": {
+      "reviews": 164,
+      "caught": 128,
+      "false_alarms": 36,
+      "missed": 194,
+      "precision": 0.7804878048780488,
+      "recall": 0.39751552795031053,
+      "lift_vs_random": 2.632328435085593,
+      "debt_flagged_share": 0.2517754658524814,
+      "net_value_usd_m_per_year": 14.236,
+      "value_over_random_usd_m_per_year": 8.929558011049725
+     },
+     "logistic": {
+      "reviews": 164,
+      "caught": 139,
+      "false_alarms": 25,
+      "missed": 183,
+      "precision": 0.8475609756097561,
+      "recall": 0.43167701863354035,
+      "lift_vs_random": 2.858544159975761,
+      "debt_flagged_share": 0.20178889284206555,
+      "net_value_usd_m_per_year": 15.473500000000001,
+      "value_over_random_usd_m_per_year": 10.167058011049724
+     },
+     "xgboost": {
+      "reviews": 164,
+      "caught": 147,
+      "false_alarms": 17,
+      "missed": 175,
+      "precision": 0.8963414634146342,
+      "recall": 0.45652173913043476,
+      "lift_vs_random": 3.0230646871686107,
+      "debt_flagged_share": 0.35671750016586806,
+      "net_value_usd_m_per_year": 16.3735,
+      "value_over_random_usd_m_per_year": 11.067058011049724
+     },
+     "mlp": {
+      "reviews": 164,
+      "caught": 143,
+      "false_alarms": 21,
+      "missed": 179,
+      "precision": 0.8719512195121951,
+      "recall": 0.4440993788819876,
+      "lift_vs_random": 2.9408044235721857,
+      "debt_flagged_share": 0.25669994239309296,
+      "net_value_usd_m_per_year": 15.9235,
+      "value_over_random_usd_m_per_year": 10.617058011049725
+     },
+     "ensemble_equal": {
+      "reviews": 164,
+      "caught": 145,
+      "false_alarms": 19,
+      "missed": 177,
+      "precision": 0.8841463414634146,
+      "recall": 0.4503105590062112,
+      "lift_vs_random": 2.9819345553703984,
+      "debt_flagged_share": 0.2358567783033933,
+      "net_value_usd_m_per_year": 16.148500000000002,
+      "value_over_random_usd_m_per_year": 10.842058011049724
+     },
+     "altman_z2": {
+      "reviews": 164,
+      "caught": 124,
+      "false_alarms": 40,
+      "missed": 198,
+      "precision": 0.7560975609756098,
+      "recall": 0.38509316770186336,
+      "lift_vs_random": 2.550068171489168,
+      "debt_flagged_share": 0.287059853844477,
+      "net_value_usd_m_per_year": 13.786000000000001,
+      "value_over_random_usd_m_per_year": 8.479558011049724
+     },
+     "ohlson_o": {
+      "reviews": 164,
+      "caught": 119,
+      "false_alarms": 45,
+      "missed": 203,
+      "precision": 0.725609756097561,
+      "recall": 0.3695652173913043,
+      "lift_vs_random": 2.447242841993637,
+      "debt_flagged_share": 0.22005579128558103,
+      "net_value_usd_m_per_year": 13.223500000000001,
+      "value_over_random_usd_m_per_year": 7.917058011049724
+     },
+     "_random_expected_caught": 48.62615101289135
+    },
+    "20%": {
+     "rule_score": {
+      "reviews": 218,
+      "caught": 169,
+      "false_alarms": 49,
+      "missed": 153,
+      "precision": 0.7752293577981652,
+      "recall": 0.5248447204968945,
+      "lift_vs_random": 2.614593424126731,
+      "debt_flagged_share": 0.5831961955634123,
+      "net_value_usd_m_per_year": 18.7945,
+      "value_over_random_usd_m_per_year": 11.740814917127071
+     },
+     "logistic": {
+      "reviews": 218,
+      "caught": 180,
+      "false_alarms": 38,
+      "missed": 142,
+      "precision": 0.8256880733944955,
+      "recall": 0.5590062111801242,
+      "lift_vs_random": 2.784774061200068,
+      "debt_flagged_share": 0.3416855216202003,
+      "net_value_usd_m_per_year": 20.032,
+      "value_over_random_usd_m_per_year": 12.97831491712707
+     },
+     "xgboost": {
+      "reviews": 218,
+      "caught": 184,
+      "false_alarms": 34,
+      "missed": 138,
+      "precision": 0.8440366972477065,
+      "recall": 0.5714285714285714,
+      "lift_vs_random": 2.8466579292267364,
+      "debt_flagged_share": 0.5310027858423698,
+      "net_value_usd_m_per_year": 20.482,
+      "value_over_random_usd_m_per_year": 13.428314917127071
+     },
+     "mlp": {
+      "reviews": 218,
+      "caught": 176,
+      "false_alarms": 42,
+      "missed": 146,
+      "precision": 0.8073394495412844,
+      "recall": 0.546583850931677,
+      "lift_vs_random": 2.7228901931734,
+      "debt_flagged_share": 0.33255840870289766,
+      "net_value_usd_m_per_year": 19.582,
+      "value_over_random_usd_m_per_year": 12.528314917127071
+     },
+     "ensemble_equal": {
+      "reviews": 218,
+      "caught": 185,
+      "false_alarms": 33,
+      "missed": 137,
+      "precision": 0.8486238532110092,
+      "recall": 0.5745341614906833,
+      "lift_vs_random": 2.8621288962334033,
+      "debt_flagged_share": 0.42995527315849813,
+      "net_value_usd_m_per_year": 20.5945,
+      "value_over_random_usd_m_per_year": 13.54081491712707
+     },
+     "altman_z2": {
+      "reviews": 218,
+      "caught": 155,
+      "false_alarms": 63,
+      "missed": 167,
+      "precision": 0.7110091743119266,
+      "recall": 0.4813664596273292,
+      "lift_vs_random": 2.397999886033392,
+      "debt_flagged_share": 0.477768079767338,
+      "net_value_usd_m_per_year": 17.2195,
+      "value_over_random_usd_m_per_year": 10.16581491712707
+     },
+     "ohlson_o": {
+      "reviews": 218,
+      "caught": 146,
+      "false_alarms": 72,
+      "missed": 176,
+      "precision": 0.6697247706422018,
+      "recall": 0.453416149068323,
+      "lift_vs_random": 2.2587611829733887,
+      "debt_flagged_share": 0.3076930948255725,
+      "net_value_usd_m_per_year": 16.207,
+      "value_over_random_usd_m_per_year": 9.153314917127071
+     },
+     "_random_expected_caught": 64.63720073664825
+    },
+    "30%": {
+     "rule_score": {
+      "reviews": 325,
+      "caught": 228,
+      "false_alarms": 97,
+      "missed": 94,
+      "precision": 0.7015384615384616,
+      "recall": 0.7080745341614907,
+      "lift_vs_random": 2.3660582895365505,
+      "debt_flagged_share": 0.7829523878122839,
+      "net_value_usd_m_per_year": 25.325,
+      "value_over_random_usd_m_per_year": 14.80918508287293
+     },
+     "logistic": {
+      "reviews": 325,
+      "caught": 238,
+      "false_alarms": 87,
+      "missed": 84,
+      "precision": 0.7323076923076923,
+      "recall": 0.7391304347826086,
+      "lift_vs_random": 2.4698327759197323,
+      "debt_flagged_share": 0.7861842570789138,
+      "net_value_usd_m_per_year": 26.45,
+      "value_over_random_usd_m_per_year": 15.93418508287293
+     },
+     "xgboost": {
+      "reviews": 325,
+      "caught": 239,
+      "false_alarms": 86,
+      "missed": 83,
+      "precision": 0.7353846153846154,
+      "recall": 0.7422360248447205,
+      "lift_vs_random": 2.4802102245580504,
+      "debt_flagged_share": 0.8005821415125347,
+      "net_value_usd_m_per_year": 26.5625,
+      "value_over_random_usd_m_per_year": 16.04668508287293
+     },
+     "mlp": {
+      "reviews": 325,
+      "caught": 237,
+      "false_alarms": 88,
+      "missed": 85,
+      "precision": 0.7292307692307692,
+      "recall": 0.7360248447204969,
+      "lift_vs_random": 2.459455327281414,
+      "debt_flagged_share": 0.7290143226356954,
+      "net_value_usd_m_per_year": 26.3375,
+      "value_over_random_usd_m_per_year": 15.821685082872929
+     },
+     "ensemble_equal": {
+      "reviews": 325,
+      "caught": 242,
+      "false_alarms": 83,
+      "missed": 80,
+      "precision": 0.7446153846153846,
+      "recall": 0.7515527950310559,
+      "lift_vs_random": 2.511342570473005,
+      "debt_flagged_share": 0.7824553287887216,
+      "net_value_usd_m_per_year": 26.9,
+      "value_over_random_usd_m_per_year": 16.38418508287293
+     },
+     "altman_z2": {
+      "reviews": 325,
+      "caught": 186,
+      "false_alarms": 139,
+      "missed": 136,
+      "precision": 0.5723076923076923,
+      "recall": 0.577639751552795,
+      "lift_vs_random": 1.9302054467271856,
+      "debt_flagged_share": 0.6243445824806099,
+      "net_value_usd_m_per_year": 20.6,
+      "value_over_random_usd_m_per_year": 10.084185082872926
+     },
+     "ohlson_o": {
+      "reviews": 325,
+      "caught": 188,
+      "false_alarms": 137,
+      "missed": 134,
+      "precision": 0.5784615384615385,
+      "recall": 0.5838509316770186,
+      "lift_vs_random": 1.9509603440038221,
+      "debt_flagged_share": 0.4291391748088919,
+      "net_value_usd_m_per_year": 20.825,
+      "value_over_random_usd_m_per_year": 10.309185082872926
+     },
+     "_random_expected_caught": 96.36279926335176
+    }
+   }
+  },
+  "healthy_borrowers_only": {
+   "rows": 727,
+   "stressed": 73,
+   "years": 5,
+   "prevalence": 0.10041265474552957,
+   "stressed_debt_usd_bn": 140.82329894,
+   "loss_avoided_per_catch_usd_m": 0.5625,
+   "review_cost_usd_m": 0.005,
+   "budgets": {
+    "5%": {
+     "rule_score": {
+      "reviews": 38,
+      "caught": 6,
+      "false_alarms": 32,
+      "missed": 67,
+      "precision": 0.15789473684210525,
+      "recall": 0.0821917808219178,
+      "lift_vs_random": 1.5724585436193221,
+      "debt_flagged_share": 0.17084976123340914,
+      "net_value_usd_m_per_year": 0.637,
+      "value_over_random_usd_m_per_year": 0.24573590096286108
+     },
+     "logistic": {
+      "reviews": 38,
+      "caught": 13,
+      "false_alarms": 25,
+      "missed": 60,
+      "precision": 0.34210526315789475,
+      "recall": 0.1780821917808219,
+      "lift_vs_random": 3.4069935111751986,
+      "debt_flagged_share": 0.18308517485437628,
+      "net_value_usd_m_per_year": 1.4244999999999999,
+      "value_over_random_usd_m_per_year": 1.033235900962861
+     },
+     "xgboost": {
+      "reviews": 38,
+      "caught": 19,
+      "false_alarms": 19,
+      "missed": 54,
+      "precision": 0.5,
+      "recall": 0.2602739726027397,
+      "lift_vs_random": 4.97945205479452,
+      "debt_flagged_share": 0.2974128095866066,
+      "net_value_usd_m_per_year": 2.0995,
+      "value_over_random_usd_m_per_year": 1.7082359009628612
+     },
+     "mlp": {
+      "reviews": 38,
+      "caught": 11,
+      "false_alarms": 27,
+      "missed": 62,
+      "precision": 0.2894736842105263,
+      "recall": 0.1506849315068493,
+      "lift_vs_random": 2.882840663302091,
+      "debt_flagged_share": 0.17779599326577172,
+      "net_value_usd_m_per_year": 1.1995,
+      "value_over_random_usd_m_per_year": 0.8082359009628611
+     },
+     "ensemble_equal": {
+      "reviews": 38,
+      "caught": 16,
+      "false_alarms": 22,
+      "missed": 57,
+      "precision": 0.42105263157894735,
+      "recall": 0.2191780821917808,
+      "lift_vs_random": 4.19322278298486,
+      "debt_flagged_share": 0.19918024589063785,
+      "net_value_usd_m_per_year": 1.762,
+      "value_over_random_usd_m_per_year": 1.370735900962861
+     },
+     "altman_z2": {
+      "reviews": 38,
+      "caught": 13,
+      "false_alarms": 25,
+      "missed": 60,
+      "precision": 0.34210526315789475,
+      "recall": 0.1780821917808219,
+      "lift_vs_random": 3.4069935111751986,
+      "debt_flagged_share": 0.09101719026239423,
+      "net_value_usd_m_per_year": 1.4244999999999999,
+      "value_over_random_usd_m_per_year": 1.033235900962861
+     },
+     "ohlson_o": {
+      "reviews": 38,
+      "caught": 8,
+      "false_alarms": 30,
+      "missed": 65,
+      "precision": 0.21052631578947367,
+      "recall": 0.1095890410958904,
+      "lift_vs_random": 2.09661139149243,
+      "debt_flagged_share": 0.03330441081342843,
+      "net_value_usd_m_per_year": 0.8619999999999999,
+      "value_over_random_usd_m_per_year": 0.4707359009628611
+     },
+     "_random_expected_caught": 3.815680880330124
+    },
+    "10%": {
+     "rule_score": {
+      "reviews": 72,
+      "caught": 21,
+      "false_alarms": 51,
+      "missed": 52,
+      "precision": 0.2916666666666667,
+      "recall": 0.2876712328767123,
+      "lift_vs_random": 2.904680365296804,
+      "debt_flagged_share": 0.3961577481349124,
+      "net_value_usd_m_per_year": 2.2905,
+      "value_over_random_usd_m_per_year": 1.5491574965612105
+     },
+     "logistic": {
+      "reviews": 72,
+      "caught": 25,
+      "false_alarms": 47,
+      "missed": 48,
+      "precision": 0.3472222222222222,
+      "recall": 0.3424657534246575,
+      "lift_vs_random": 3.457952815829528,
+      "debt_flagged_share": 0.3966618715117568,
+      "net_value_usd_m_per_year": 2.7405,
+      "value_over_random_usd_m_per_year": 1.9991574965612102
+     },
+     "xgboost": {
+      "reviews": 72,
+      "caught": 27,
+      "false_alarms": 45,
+      "missed": 46,
+      "precision": 0.375,
+      "recall": 0.3698630136986301,
+      "lift_vs_random": 3.7345890410958904,
+      "debt_flagged_share": 0.40679667657414986,
+      "net_value_usd_m_per_year": 2.9655,
+      "value_over_random_usd_m_per_year": 2.2241574965612103
+     },
+     "mlp": {
+      "reviews": 72,
+      "caught": 26,
+      "false_alarms": 46,
+      "missed": 47,
+      "precision": 0.3611111111111111,
+      "recall": 0.3561643835616438,
+      "lift_vs_random": 3.5962709284627095,
+      "debt_flagged_share": 0.4054861334936427,
+      "net_value_usd_m_per_year": 2.853,
+      "value_over_random_usd_m_per_year": 2.11165749656121
+     },
+     "ensemble_equal": {
+      "reviews": 72,
+      "caught": 26,
+      "false_alarms": 46,
+      "missed": 47,
+      "precision": 0.3611111111111111,
+      "recall": 0.3561643835616438,
+      "lift_vs_random": 3.5962709284627095,
+      "debt_flagged_share": 0.385628900911757,
+      "net_value_usd_m_per_year": 2.853,
+      "value_over_random_usd_m_per_year": 2.11165749656121
+     },
+     "altman_z2": {
+      "reviews": 72,
+      "caught": 18,
+      "false_alarms": 54,
+      "missed": 55,
+      "precision": 0.25,
+      "recall": 0.2465753424657534,
+      "lift_vs_random": 2.48972602739726,
+      "debt_flagged_share": 0.20398373145085189,
+      "net_value_usd_m_per_year": 1.953,
+      "value_over_random_usd_m_per_year": 1.2116574965612106
+     },
+     "ohlson_o": {
+      "reviews": 72,
+      "caught": 14,
+      "false_alarms": 58,
+      "missed": 59,
+      "precision": 0.19444444444444445,
+      "recall": 0.1917808219178082,
+      "lift_vs_random": 1.936453576864536,
+      "debt_flagged_share": 0.07073463258550756,
+      "net_value_usd_m_per_year": 1.503,
+      "value_over_random_usd_m_per_year": 0.7616574965612105
+     },
+     "_random_expected_caught": 7.229711141678129
+    },
+    "15%": {
+     "rule_score": {
+      "reviews": 109,
+      "caught": 32,
+      "false_alarms": 77,
+      "missed": 41,
+      "precision": 0.29357798165137616,
+      "recall": 0.4383561643835616,
+      "lift_vs_random": 2.9237149679527463,
+      "debt_flagged_share": 0.5059377637031232,
+      "net_value_usd_m_per_year": 3.4909999999999997,
+      "value_over_random_usd_m_per_year": 2.3686898211829432
+     },
+     "logistic": {
+      "reviews": 109,
+      "caught": 33,
+      "false_alarms": 76,
+      "missed": 40,
+      "precision": 0.30275229357798167,
+      "recall": 0.4520547945205479,
+      "lift_vs_random": 3.0150810607012697,
+      "debt_flagged_share": 0.42944329133183134,
+      "net_value_usd_m_per_year": 3.6034999999999995,
+      "value_over_random_usd_m_per_year": 2.4811898211829435
+     },
+     "xgboost": {
+      "reviews": 109,
+      "caught": 36,
+      "false_alarms": 73,
+      "missed": 37,
+      "precision": 0.3302752293577982,
+      "recall": 0.4931506849315068,
+      "lift_vs_random": 3.2891793389468393,
+      "debt_flagged_share": 0.5267738470933452,
+      "net_value_usd_m_per_year": 3.941,
+      "value_over_random_usd_m_per_year": 2.8186898211829434
+     },
+     "mlp": {
+      "reviews": 109,
+      "caught": 35,
+      "false_alarms": 74,
+      "missed": 38,
+      "precision": 0.3211009174311927,
+      "recall": 0.4794520547945205,
+      "lift_vs_random": 3.197813246198316,
+      "debt_flagged_share": 0.49483577301856946,
+      "net_value_usd_m_per_year": 3.8284999999999996,
+      "value_over_random_usd_m_per_year": 2.706189821182943
+     },
+     "ensemble_equal": {
+      "reviews": 109,
+      "caught": 35,
+      "false_alarms": 74,
+      "missed": 38,
+      "precision": 0.3211009174311927,
+      "recall": 0.4794520547945205,
+      "lift_vs_random": 3.197813246198316,
+      "debt_flagged_share": 0.4885877657383617,
+      "net_value_usd_m_per_year": 3.8284999999999996,
+      "value_over_random_usd_m_per_year": 2.706189821182943
+     },
+     "altman_z2": {
+      "reviews": 109,
+      "caught": 21,
+      "false_alarms": 88,
+      "missed": 52,
+      "precision": 0.1926605504587156,
+      "recall": 0.2876712328767123,
+      "lift_vs_random": 1.9186879477189898,
+      "debt_flagged_share": 0.23815817585191984,
+      "net_value_usd_m_per_year": 2.2535,
+      "value_over_random_usd_m_per_year": 1.1311898211829436
+     },
+     "ohlson_o": {
+      "reviews": 109,
+      "caught": 21,
+      "false_alarms": 88,
+      "missed": 52,
+      "precision": 0.1926605504587156,
+      "recall": 0.2876712328767123,
+      "lift_vs_random": 1.9186879477189898,
+      "debt_flagged_share": 0.18834766341683884,
+      "net_value_usd_m_per_year": 2.2535,
+      "value_over_random_usd_m_per_year": 1.1311898211829436
+     },
+     "_random_expected_caught": 10.944979367262723
+    },
+    "20%": {
+     "rule_score": {
+      "reviews": 146,
+      "caught": 36,
+      "false_alarms": 110,
+      "missed": 37,
+      "precision": 0.2465753424657534,
+      "recall": 0.4931506849315068,
+      "lift_vs_random": 2.455620191405517,
+      "debt_flagged_share": 0.6148289494332166,
+      "net_value_usd_m_per_year": 3.904,
+      "value_over_random_usd_m_per_year": 2.4007221458046764
+     },
+     "logistic": {
+      "reviews": 146,
+      "caught": 45,
+      "false_alarms": 101,
+      "missed": 28,
+      "precision": 0.3082191780821918,
+      "recall": 0.6164383561643836,
+      "lift_vs_random": 3.0695252392568966,
+      "debt_flagged_share": 0.6231054140436402,
+      "net_value_usd_m_per_year": 4.9165,
+      "value_over_random_usd_m_per_year": 3.4132221458046765
+     },
+     "xgboost": {
+      "reviews": 146,
+      "caught": 43,
+      "false_alarms": 103,
+      "missed": 30,
+      "precision": 0.2945205479452055,
+      "recall": 0.589041095890411,
+      "lift_vs_random": 2.9331018952899233,
+      "debt_flagged_share": 0.6022738110909931,
+      "net_value_usd_m_per_year": 4.6915,
+      "value_over_random_usd_m_per_year": 3.1882221458046764
+     },
+     "mlp": {
+      "reviews": 146,
+      "caught": 45,
+      "false_alarms": 101,
+      "missed": 28,
+      "precision": 0.3082191780821918,
+      "recall": 0.6164383561643836,
+      "lift_vs_random": 3.0695252392568966,
+      "debt_flagged_share": 0.65044539986971,
+      "net_value_usd_m_per_year": 4.9165,
+      "value_over_random_usd_m_per_year": 3.4132221458046765
+     },
+     "ensemble_equal": {
+      "reviews": 146,
+      "caught": 43,
+      "false_alarms": 103,
+      "missed": 30,
+      "precision": 0.2945205479452055,
+      "recall": 0.589041095890411,
+      "lift_vs_random": 2.9331018952899233,
+      "debt_flagged_share": 0.5553689593887595,
+      "net_value_usd_m_per_year": 4.6915,
+      "value_over_random_usd_m_per_year": 3.1882221458046764
+     },
+     "altman_z2": {
+      "reviews": 146,
+      "caught": 28,
+      "false_alarms": 118,
+      "missed": 45,
+      "precision": 0.1917808219178082,
+      "recall": 0.3835616438356164,
+      "lift_vs_random": 1.9099268155376243,
+      "debt_flagged_share": 0.28741750333689486,
+      "net_value_usd_m_per_year": 3.004,
+      "value_over_random_usd_m_per_year": 1.5007221458046769
+     },
+     "ohlson_o": {
+      "reviews": 146,
+      "caught": 29,
+      "false_alarms": 117,
+      "missed": 44,
+      "precision": 0.19863013698630136,
+      "recall": 0.3972602739726027,
+      "lift_vs_random": 1.9781384875211108,
+      "debt_flagged_share": 0.3434080132620986,
+      "net_value_usd_m_per_year": 3.1165,
+      "value_over_random_usd_m_per_year": 1.6132221458046767
+     },
+     "_random_expected_caught": 14.660247592847318
+    },
+    "30%": {
+     "rule_score": {
+      "reviews": 218,
+      "caught": 38,
+      "false_alarms": 180,
+      "missed": 35,
+      "precision": 0.1743119266055046,
+      "recall": 0.5205479452054794,
+      "lift_vs_random": 1.735955762221943,
+      "debt_flagged_share": 0.6340129482482921,
+      "net_value_usd_m_per_year": 4.057,
+      "value_over_random_usd_m_per_year": 1.8123796423658873
+     },
+     "logistic": {
+      "reviews": 218,
+      "caught": 49,
+      "false_alarms": 169,
+      "missed": 24,
+      "precision": 0.22477064220183487,
+      "recall": 0.6712328767123288,
+      "lift_vs_random": 2.238469272338821,
+      "debt_flagged_share": 0.700223064878017,
+      "net_value_usd_m_per_year": 5.2945,
+      "value_over_random_usd_m_per_year": 3.0498796423658874
+     },
+     "xgboost": {
+      "reviews": 218,
+      "caught": 52,
+      "false_alarms": 166,
+      "missed": 21,
+      "precision": 0.23853211009174313,
+      "recall": 0.7123287671232876,
+      "lift_vs_random": 2.375518411461606,
+      "debt_flagged_share": 0.7333124754022325,
+      "net_value_usd_m_per_year": 5.632,
+      "value_over_random_usd_m_per_year": 3.3873796423658873
+     },
+     "mlp": {
+      "reviews": 218,
+      "caught": 50,
+      "false_alarms": 168,
+      "missed": 23,
+      "precision": 0.22935779816513763,
+      "recall": 0.684931506849315,
+      "lift_vs_random": 2.2841523187130828,
+      "debt_flagged_share": 0.6865048799999374,
+      "net_value_usd_m_per_year": 5.407,
+      "value_over_random_usd_m_per_year": 3.162379642365887
+     },
+     "ensemble_equal": {
+      "reviews": 218,
+      "caught": 53,
+      "false_alarms": 165,
+      "missed": 20,
+      "precision": 0.24311926605504589,
+      "recall": 0.726027397260274,
+      "lift_vs_random": 2.421201457835868,
+      "debt_flagged_share": 0.737083392601284,
+      "net_value_usd_m_per_year": 5.7445,
+      "value_over_random_usd_m_per_year": 3.4998796423658876
+     },
+     "altman_z2": {
+      "reviews": 218,
+      "caught": 36,
+      "false_alarms": 182,
+      "missed": 37,
+      "precision": 0.1651376146788991,
+      "recall": 0.4931506849315068,
+      "lift_vs_random": 1.6445896694734197,
+      "debt_flagged_share": 0.4498940762635708,
+      "net_value_usd_m_per_year": 3.832,
+      "value_over_random_usd_m_per_year": 1.5873796423658872
+     },
+     "ohlson_o": {
+      "reviews": 218,
+      "caught": 34,
+      "false_alarms": 184,
+      "missed": 39,
+      "precision": 0.1559633027522936,
+      "recall": 0.4657534246575342,
+      "lift_vs_random": 1.5532235767248965,
+      "debt_flagged_share": 0.4247679805845627,
+      "net_value_usd_m_per_year": 3.607,
+      "value_over_random_usd_m_per_year": 1.3623796423658872
+     },
+     "_random_expected_caught": 21.889958734525447
+    }
+   }
+  },
+  "paired_at_headline_budget": {
+   "mlp_minus_logistic": {
+    "extra_caught": -1,
+    "ci95": [
+     -20.0,
+     17.0
+    ]
+   },
+   "mlp_minus_xgboost": {
+    "extra_caught": -3,
+    "ci95": [
+     -25.0,
+     16.0
+    ]
+   },
+   "mlp_minus_rule_score": {
+    "extra_caught": 9,
+    "ci95": [
+     -16.025,
+     32.0
+    ]
+   },
+   "mlp_minus_altman_z2": {
+    "extra_caught": 16,
+    "ci95": [
+     -6.024999999999999,
+     38.0
+    ]
+   },
+   "mlp_minus_ohlson_o": {
+    "extra_caught": 17,
+    "ci95": [
+     -3.0,
+     36.0
+    ]
+   },
+   "ensemble_equal_minus_logistic": {
+    "extra_caught": 1,
+    "ci95": [
+     -9.0,
+     10.0
+    ]
+   }
+  },
+  "sensitivity_headline_budget": [
+   {
+    "pd_given_stress": 0.05,
+    "share_avoided": 0.25,
+    "loss_avoided_per_catch_usd_m": 0.140625,
+    "mlp_net_value_usd_m_per_year": 2.676375,
+    "mlp_over_random_usd_m_per_year": 1.8837534530386737,
+    "altman_net_value_usd_m_per_year": 2.226375
+   },
+   {
+    "pd_given_stress": 0.05,
+    "share_avoided": 0.5,
+    "loss_avoided_per_catch_usd_m": 0.28125,
+    "mlp_net_value_usd_m_per_year": 5.46075,
+    "mlp_over_random_usd_m_per_year": 3.7675069060773474,
+    "altman_net_value_usd_m_per_year": 4.5607500000000005
+   },
+   {
+    "pd_given_stress": 0.05,
+    "share_avoided": 0.75,
+    "loss_avoided_per_catch_usd_m": 0.421875,
+    "mlp_net_value_usd_m_per_year": 8.245125,
+    "mlp_over_random_usd_m_per_year": 5.651260359116021,
+    "altman_net_value_usd_m_per_year": 6.895125
+   },
+   {
+    "pd_given_stress": 0.1,
+    "share_avoided": 0.25,
+    "loss_avoided_per_catch_usd_m": 0.28125,
+    "mlp_net_value_usd_m_per_year": 5.46075,
+    "mlp_over_random_usd_m_per_year": 3.7675069060773474,
+    "altman_net_value_usd_m_per_year": 4.5607500000000005
+   },
+   {
+    "pd_given_stress": 0.1,
+    "share_avoided": 0.5,
+    "loss_avoided_per_catch_usd_m": 0.5625,
+    "mlp_net_value_usd_m_per_year": 11.0295,
+    "mlp_over_random_usd_m_per_year": 7.535013812154695,
+    "altman_net_value_usd_m_per_year": 9.2295
+   },
+   {
+    "pd_given_stress": 0.1,
+    "share_avoided": 0.75,
+    "loss_avoided_per_catch_usd_m": 0.84375,
+    "mlp_net_value_usd_m_per_year": 16.59825,
+    "mlp_over_random_usd_m_per_year": 11.302520718232042,
+    "altman_net_value_usd_m_per_year": 13.898249999999999
+   },
+   {
+    "pd_given_stress": 0.2,
+    "share_avoided": 0.25,
+    "loss_avoided_per_catch_usd_m": 0.5625,
+    "mlp_net_value_usd_m_per_year": 11.0295,
+    "mlp_over_random_usd_m_per_year": 7.535013812154695,
+    "altman_net_value_usd_m_per_year": 9.2295
+   },
+   {
+    "pd_given_stress": 0.2,
+    "share_avoided": 0.5,
+    "loss_avoided_per_catch_usd_m": 1.125,
+    "mlp_net_value_usd_m_per_year": 22.166999999999998,
+    "mlp_over_random_usd_m_per_year": 15.07002762430939,
+    "altman_net_value_usd_m_per_year": 18.567
+   },
+   {
+    "pd_given_stress": 0.2,
+    "share_avoided": 0.75,
+    "loss_avoided_per_catch_usd_m": 1.6875,
+    "mlp_net_value_usd_m_per_year": 33.304500000000004,
+    "mlp_over_random_usd_m_per_year": 22.605041436464084,
+    "altman_net_value_usd_m_per_year": 27.904500000000002
+   }
+  ]
+ }
+}

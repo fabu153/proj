@@ -17,7 +17,7 @@ MATRIX = [
     ("D01", "Annual vs quarterly classification", "No quarter as annual", ["test_d01_"]),
     ("D02", "Units and sign conventions", "Scaling detected", ["test_d02_", "test_prior_year_column", "test_capex_sign"]),
     ("D03", "PDF extraction uncertainty", "Low confidence requires review", ["test_d03_", "test_gate_blocks", "test_cross_check_flags", "test_full_upload_to_memo_flow"]),
-    ("M01", "No future labels in model input", "As-of audit passes", ["test_m01_", "test_features_never_use_next_year", "test_panel_rows_are_point_in_time", "test_no_train_label_is_public"]),
+    ("M01", "No future labels in model input", "As-of audit passes", ["test_m01_", "test_features_never_use_next_year", "test_panel_rows_are_point_in_time", "test_no_train_label_is_public", "test_walk_forward_fold_has_no_look_ahead"]),
     ("M02", "Train-only preprocessing", "Fold pipelines tested", ["test_preprocessor_fits_on_train_only", "test_purge_drops"]),
     ("M03", "Probability calibration", "Metrics + plot reported", ["test_probabilities_are_valid", "test_numpy_forward_matches_pytorch"]),
     ("M04", "Unknown / poor-coverage company", "Output withheld with reason", ["test_m04_"]),

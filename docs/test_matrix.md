@@ -1,6 +1,6 @@
 # Test matrix (Blueprint p.22)
 
-_Generated 2026-11-08 22:11 UTC by `scripts/test_matrix.py`: 343 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
+_Generated 2026-11-23 19:56 UTC by `scripts/test_matrix.py`: 355 passed, 0 failed, 0 skipped (browser tests run only with `E2E_BASE_URL`)._
 
 | ID | Check | Pass condition | Tests | Result |
 |---|---|---|---|---|
@@ -11,7 +11,7 @@ _Generated 2026-11-08 22:11 UTC by `scripts/test_matrix.py`: 343 passed, 0 faile
 | D01 | Annual vs quarterly classification | No quarter as annual | 1 | ✅ pass |
 | D02 | Units and sign conventions | Scaling detected | 4 | ✅ pass |
 | D03 | PDF extraction uncertainty | Low confidence requires review | 4 | ✅ pass |
-| M01 | No future labels in model input | As-of audit passes | 4 | ✅ pass |
+| M01 | No future labels in model input | As-of audit passes | 14 | ✅ pass |
 | M02 | Train-only preprocessing | Fold pipelines tested | 2 | ✅ pass |
 | M03 | Probability calibration | Metrics + plot reported | 2 | ✅ pass |
 | M04 | Unknown / poor-coverage company | Output withheld with reason | 2 | ✅ pass |

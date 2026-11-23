@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.7.0 — Extended evaluation and one-command reproduction
+
+No app, model, calibration, replay or release-manifest file changed.
+
+- **Walk-forward validation** (`training/ml/walk_forward.py`, `configs/experiment_walk_forward_v1.yaml`): every model
+  re-selected and re-fitted for each test year 2016–2025 on data public before that year; 2,021 out-of-sample
+  predictions. Re-running it reproduces the committed predictions exactly.
+- **Economic value** (`training/ml/economic_value.py`, `configs/economic_value_v1.yaml`): borrowers caught, false
+  alarms, debt captured and net value for a lender reviewing 5–30% of its book each year, with a sensitivity grid.
+- **Robustness** (`training/ml/robustness.py`): results by year, sector, size and status in the filing year, and
+  calibration by year.
+- **Results summary** (`training/ml/results_summary.py`): every headline number with company-clustered intervals,
+  results tables and figures, written to `training/experiments/results_summary_v1/`.
+- **Reproduction**: `Makefile` (`make results`, `make experiments`, `make verify-training`), exact versions in
+  `requirements-repro.txt`, a Colab notebook (`notebooks/reproduce_results.ipynb`), and
+  `scripts/verify_training.py`, which re-trains the baselines and the deployed network in a scratch folder and
+  confirms identical predictions and weights. CI fails if the results summary stops reproducing.
+- `run_baselines` and `train_mlp` accept `--out` (and `--artifact-dir`) so re-training never overwrites committed
+  artifacts. The walk-forward fold rule lives in `training/ml/splits.py` (`walk_forward_masks`) and is unit-tested
+  for look-ahead.
+
 ## 1.6.2 — Alignment
 
 - Debt maturities footer: wrapped text stays in its own column, aligned with the first line.
